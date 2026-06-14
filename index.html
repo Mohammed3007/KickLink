@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>KickLink — Player App</title>
+    <style>
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      html, body, #root { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+      ::-webkit-scrollbar { width: 0; height: 0; }
+      @keyframes klSpin    { to { transform: rotate(360deg); } }
+      @keyframes klFade    { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes klSlideUp { from { transform: translateY(16px); } to { transform: translateY(0); } }
+      @keyframes klDrop    { from { transform: translateY(-12px); } to { transform: translateY(0); } }
+      @keyframes klPop     { 0% { transform: scale(0.7); } 100% { transform: scale(1); } }
+      @keyframes klPulse   { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.06); opacity: 0.75; } }
+      @keyframes klBlink   { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+      @keyframes klPushIn  { from { transform: translateX(22px); } to { transform: translateX(0); } }
+      @keyframes klPopIn   { from { transform: translateX(-18px); } to { transform: translateX(0); } }
+      @keyframes klRootIn  { from { transform: scale(0.994); } to { transform: scale(1); } }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
