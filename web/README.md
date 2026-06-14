@@ -64,27 +64,59 @@ npm run build && npm run start
 
 ---
 
-## Deploy to the cloud (Vercel + managed Postgres)
+## Deploy to the cloud — Vercel + Neon (recommended)
 
-The easiest hosted path. ~10 minutes, free tiers available.
+The fastest way to a real public URL. ~10 minutes, free tiers.
 
-1. **Database** — create a free Postgres at [Neon](https://neon.tech) or
-   [Supabase](https://supabase.com) and copy its connection string.
-2. **Push this repo to GitHub**, then import it in
-   [Vercel](https://vercel.com/new). Set the **Root Directory** to `web`.
-3. **Environment variables** in Vercel → Project → Settings:
-   - `DATABASE_URL` = your Neon/Supabase string
-   - `AUTH_SECRET` = `openssl rand -base64 32`
-   - `AUTH_TRUST_HOST` = `true`
-4. **Apply the schema** to the cloud DB once (from your machine, with the cloud
-   `DATABASE_URL` in your shell):
+### Step 1 — Database (Neon)
+
+1. Create a free project at [neon.tech](https://neon.tech).
+2. Copy the **Pooled** connection string (Neon → Connect → "Pooled connection").
+   It looks like `postgresql://USER:PASS@ep-xxx-pooler.../neondb?sslmode=require`.
+   Use the *pooled* one — it's built for serverless.
+3. Apply the schema + (optional) demo data from your machine:
    ```bash
-   DATABASE_URL="<cloud-url>" npm run db:deploy
-   DATABASE_URL="<cloud-url>" npm run db:seed   # optional demo data
+   cd web
+   npm install
+   DATABASE_URL="<neon-pooled-url>" npm run db:deploy
+   DATABASE_URL="<neon-pooled-url>" npm run db:seed   # optional
    ```
-5. **Deploy.** Vercel builds and hosts it; every push redeploys.
 
-`postinstall` runs `prisma generate` automatically on the build.
+### Step 2 — Deploy (pick one)
+
+**A. Vercel CLI — no GitHub needed (fastest):**
+```bash
+cd web
+npx vercel            # first run links/creates the project
+# add env vars (run once each, choose Production):
+npx vercel env add DATABASE_URL
+npx vercel env add AUTH_SECRET          # paste: openssl rand -base64 32
+npx vercel env add AUTH_TRUST_HOST      # value: true
+npx vercel --prod     # deploy to your public URL
+```
+
+**B. GitHub + Vercel dashboard:**
+1. Push this repo to GitHub.
+2. Import it at [vercel.com/new](https://vercel.com/new) and set
+   **Root Directory = `web`**.
+3. Add the same three env vars in Project → Settings → Environment Variables.
+4. Deploy. Every push redeploys automatically.
+
+`postinstall` runs `prisma generate` during the build — no extra config needed.
+The app runs on Vercel's Node.js runtime (not edge), so the Postgres driver
+works as-is.
+
+> Want real payments? Add `STRIPE_SECRET_KEY` and
+> `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` as env vars; otherwise the local test
+> payment flow is used.
+
+---
+
+## Self-host anywhere (Docker)
+
+Already covered above — `docker compose up --build` runs the app + Postgres on
+any machine or VPS. Point a domain + reverse proxy (Caddy/Nginx) at port 3000
+for a public site.
 
 ---
 
