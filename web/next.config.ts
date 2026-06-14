@@ -16,8 +16,11 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Self-contained server bundle for Docker / VPS hosting.
+  output: "standalone",
   // Repo has lockfiles at both root and web/ — pin the workspace root.
   turbopack: { root: path.join(__dirname) },
+  outputFileTracingRoot: path.join(__dirname),
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

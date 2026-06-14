@@ -1,36 +1,110 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# KickLink — web app
 
-## Getting Started
+Pickup-soccer club management: private clubs, games, payments, waitlists and
+spot transfers. Next.js 16 (App Router) · Postgres + Prisma · Auth.js · Tailwind v4.
 
-First, run the development server:
+**Demo accounts** (after seeding): `player@kicklink.app` / `organizer@kicklink.app`,
+password `password`.
+
+---
+
+## Quickest way to run it: Docker
+
+Requires Docker Desktop (or Docker Engine + Compose). From this `web/` folder:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker compose up --build
+# in another terminal, load demo data (first run only):
+docker compose run --rm app npm run db:seed
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open **http://localhost:3000**. That's it — Postgres and the app both run in
+containers; migrations apply automatically on boot.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+To stop: `docker compose down` (add `-v` to also wipe the database).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+> Before deploying for real, change `AUTH_SECRET` in `docker-compose.yml` to a
+> long random value: `openssl rand -base64 32`.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Run locally with Node (no Docker)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Requires **Node 20.9+** and a **Postgres 14+** database.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Create `.env` from the example and point `DATABASE_URL` at your Postgres:
+   ```bash
+   cp .env.example .env
+   # edit .env: set DATABASE_URL and AUTH_SECRET (openssl rand -base64 32)
+   ```
+3. Set up the schema + demo data, then start:
+   ```bash
+   npm run db:setup      # apply migrations + seed
+   npm run dev           # http://localhost:3000
+   ```
 
-## Deploy on Vercel
+For production-style serving instead of dev:
+```bash
+npm run build && npm run start
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Environment variables
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Variable                             | Required | Notes                                                  |
+| ------------------------------------ | -------- | ------------------------------------------------------ |
+| `DATABASE_URL`                       | yes      | Postgres connection string                             |
+| `AUTH_SECRET`                        | yes      | `openssl rand -base64 32`                              |
+| `AUTH_TRUST_HOST`                    | prod     | set `true` when behind a proxy / on a platform         |
+| `STRIPE_SECRET_KEY`                  | no       | set to take real payments (else a local test flow runs)|
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | no       | Stripe publishable key                                 |
+
+---
+
+## Deploy to the cloud (Vercel + managed Postgres)
+
+The easiest hosted path. ~10 minutes, free tiers available.
+
+1. **Database** — create a free Postgres at [Neon](https://neon.tech) or
+   [Supabase](https://supabase.com) and copy its connection string.
+2. **Push this repo to GitHub**, then import it in
+   [Vercel](https://vercel.com/new). Set the **Root Directory** to `web`.
+3. **Environment variables** in Vercel → Project → Settings:
+   - `DATABASE_URL` = your Neon/Supabase string
+   - `AUTH_SECRET` = `openssl rand -base64 32`
+   - `AUTH_TRUST_HOST` = `true`
+4. **Apply the schema** to the cloud DB once (from your machine, with the cloud
+   `DATABASE_URL` in your shell):
+   ```bash
+   DATABASE_URL="<cloud-url>" npm run db:deploy
+   DATABASE_URL="<cloud-url>" npm run db:seed   # optional demo data
+   ```
+5. **Deploy.** Vercel builds and hosts it; every push redeploys.
+
+`postinstall` runs `prisma generate` automatically on the build.
+
+---
+
+## Project layout
+
+```
+app/(marketing)   public landing
+app/(auth)        login / signup
+app/(app)         authenticated player app + /manage organizer dashboard
+components/        UI kit + app components
+lib/              db, auth/session, queries, server actions, payments, waitlist
+prisma/           schema, migrations, seed
+proxy.ts          auth route gate (Next 16 middleware)
+```
+
+## Tech & security notes
+
+- Passwords hashed with bcrypt; JWT sessions via Auth.js.
+- Every mutation is a server action that re-checks auth + club membership +
+  capacity, inside DB transactions. Waitlist promotion is automatic.
+- Payments go through a Stripe-shaped service (`lib/payments.ts`) — set
+  `STRIPE_SECRET_KEY` to enable real charges; otherwise a local test flow runs.
+- Security headers set in `next.config.ts`.
