@@ -81,6 +81,23 @@ export async function signInAction(_prevState: ActionState, formData: FormData):
   redirect(returnTo);
 }
 
+export async function signInWithGoogleAction(formData: FormData) {
+  const returnTo = safeReturnPath(formValue(formData, 'returnTo'));
+  const supabase = await createUserServerSupabaseClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${getSiteUrl()}/auth/callback?next=${encodeURIComponent(returnTo)}`,
+    },
+  });
+
+  if (error || !data.url) {
+    redirect(`/sign-in?returnTo=${encodeURIComponent(returnTo)}&error=oauth_unavailable`);
+  }
+
+  redirect(data.url);
+}
+
 export async function signOutAction() {
   const supabase = await createUserServerSupabaseClient();
   await supabase.auth.signOut();

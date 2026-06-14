@@ -23,6 +23,12 @@ Profiles are created by the `public.handle_new_auth_user()` database trigger aft
 - Protected player pages that require a full profile redirect to `/player/profile`.
 - `/player/profile` does not redirect on incomplete profile, avoiding loops.
 
+## Google sign-in
+
+The UI includes a Supabase Google OAuth option. It requires Google to be configured in Supabase Auth
+providers. The app only stores public provider configuration in source control; provider secrets
+belong in Supabase configuration or server-side environment variables.
+
 ## Invitation security
 
 Organization invitations must use random high-entropy tokens. Only token hashes are stored. Tokens are bound to an organization, expire, may be revoked, may have a maximum use count, and are validated server-side. Raw invitation tokens must not appear in logs, audit metadata, URLs beyond the one-time user-facing link, or analytics.

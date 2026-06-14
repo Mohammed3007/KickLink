@@ -57,6 +57,8 @@ NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<local publishable key from supabase:start>
 NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000
 SUPABASE_SECRET_KEY=
+SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID=
+SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET=
 ```
 
 `SUPABASE_SECRET_KEY` is server-only and unused in Phase 1.
@@ -103,13 +105,15 @@ Implemented:
 - Next.js App Router web foundation.
 - Supabase local config, executable migration, seed strategy, generated DB types.
 - Supabase Auth signup, email-capture verification flow, sign in, sign out, password reset route,
-  update-password route, auth callback.
+  update-password route, auth callback, and Google OAuth entry point.
 - Request-specific Supabase SSR clients.
 - `proxy.ts` session refresh and coarse unauthenticated redirects.
 - Server-side auth/profile actions.
 - Database-triggered profile creation and database-backed profile completion.
 - Protected player routes.
 - Organizer application route outside the organizer workspace.
+- Database-backed organizer application submission and status view.
+- Safe platform-admin bootstrap helper that displays manual SQL and does not grant privileges.
 - Guarded organizer and platform-admin workspace shells.
 - Shared status constants, schemas, permissions, and tests.
 - Starter RLS policies and documented Phase 2 RLS test plan.

@@ -6,7 +6,7 @@ import { safeReturnPath } from '../../lib/auth/redirects';
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ returnTo?: string }>;
+  searchParams: Promise<{ error?: string; returnTo?: string }>;
 }) {
   const params = await searchParams;
   const returnTo = safeReturnPath(params.returnTo);
@@ -22,6 +22,9 @@ export default async function SignInPage({
       subtitle="Sign in to manage your pickup soccer registrations."
       title="Welcome back"
     >
+      {params.error === 'oauth_unavailable' ? (
+        <p className="form-message">Google sign-in is not configured for this environment yet.</p>
+      ) : null}
       <SignInForm returnTo={returnTo} />
     </AuthCard>
   );

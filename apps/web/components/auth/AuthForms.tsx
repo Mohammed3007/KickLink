@@ -7,6 +7,7 @@ import type { ActionState } from '../../lib/auth/actions';
 import {
   resetPasswordAction,
   signInAction,
+  signInWithGoogleAction,
   signUpAction,
   updatePasswordAction,
 } from '../../lib/auth/actions';
@@ -51,6 +52,16 @@ export function SignInForm({ returnTo }: { returnTo: string }) {
       </label>
       <SubmitButton label="Sign in" />
       <ActionMessage state={state} />
+      <div className="divider">or</div>
+      <button
+        className="ghost-button provider-button"
+        formAction={signInWithGoogleAction}
+        name="returnTo"
+        type="submit"
+        value={returnTo}
+      >
+        Continue with Google
+      </button>
     </form>
   );
 }
