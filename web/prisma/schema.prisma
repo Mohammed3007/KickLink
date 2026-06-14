@@ -62,21 +62,60 @@ enum NotifKind {
 // ─── Models ─────────────────────────────────────────────────────
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  passwordHash String
-  avatarColor  String   @default("#6E3BD8")
-  skill        String   @default("Intermediate")
-  city         String   @default("Ottawa")
-  createdAt    DateTime @default(now())
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  passwordHash  String? // null for OAuth-only accounts
+  emailVerified DateTime? // set once the email is confirmed
+  image         String? // avatar URL from OAuth
+  avatarColor   String    @default("#6E3BD8")
+  skill         String    @default("Intermediate")
+  city          String    @default("Ottawa")
+  createdAt     DateTime  @default(now())
 
+  accounts      Account[]
   memberships   Membership[]
   registrations Registration[]
   payments      Payment[]
   notifications Notification[]
   announcements Announcement[] @relation("AnnouncementAuthor")
   ownedOrgs     Organization[] @relation("OrgOwner")
+
+  verificationTokens EmailVerificationToken[]
+  passwordResets     PasswordResetToken[]
+}
+
+// Linked OAuth providers (e.g. Google).
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  provider          String
+  providerAccountId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Organization {

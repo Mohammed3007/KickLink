@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SignupForm } from "./signup-form";
+import { GoogleButton, OrDivider } from "@/components/auth/google-button";
+import { isGoogleEnabled } from "@/lib/flags";
 
 export const metadata: Metadata = { title: "Sign up" };
 
 export default function SignupPage() {
+  const google = isGoogleEnabled();
   return (
     <div>
       <h1 className="text-3xl font-bold tracking-[-0.02em] text-ink">
@@ -15,6 +18,12 @@ export default function SignupPage() {
       </p>
 
       <div className="mt-8">
+        {google && (
+          <>
+            <GoogleButton label="Sign up with Google" />
+            <OrDivider />
+          </>
+        )}
         <SignupForm />
       </div>
 

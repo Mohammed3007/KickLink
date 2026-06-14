@@ -6,7 +6,14 @@ import { authConfig } from "@/auth.config";
 // Optimistic auth gate only; real authorization happens in pages/actions.
 const { auth } = NextAuth(authConfig);
 
-const PUBLIC_ROUTES = new Set(["/", "/login", "/signup"]);
+const PUBLIC_ROUTES = new Set([
+  "/",
+  "/login",
+  "/signup",
+  "/verify",
+  "/forgot",
+  "/reset",
+]);
 
 export default auth((req) => {
   const { nextUrl } = req;

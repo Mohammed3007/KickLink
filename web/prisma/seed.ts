@@ -34,6 +34,7 @@ async function main() {
       email: "player@kicklink.app",
       name: "Daniel Osei",
       passwordHash: hash,
+      emailVerified: new Date(),
       avatarColor: "#6E3BD8",
       skill: "Intermediate",
     },
@@ -44,6 +45,7 @@ async function main() {
       email: "organizer@kicklink.app",
       name: "Maria Santos",
       passwordHash: hash,
+      emailVerified: new Date(),
       avatarColor: "#12915A",
       skill: "Advanced",
     },
@@ -63,6 +65,7 @@ async function main() {
           email: `player${i + 1}@kicklink.app`,
           name,
           passwordHash: hash,
+          emailVerified: new Date(),
           avatarColor: color(i),
         },
       })

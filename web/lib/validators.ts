@@ -14,6 +14,18 @@ export const signUpSchema = z.object({
     .max(100, "Password is too long"),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Enter a valid email"),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(10),
+  password: z
+    .string()
+    .min(8, "Use at least 8 characters")
+    .max(100, "Password is too long"),
+});
+
 export const createGameSchema = z.object({
   orgId: z.string().min(1, "Choose a club"),
   title: z.string().min(3, "Give the game a title").max(80),
