@@ -103,7 +103,7 @@ export default async function ProfilePage() {
             </Button>
           </Link>
         ) : (
-          <Link href="/manage">
+          <Link href="/manage/clubs/new">
             <div className="bg-brand-field flex items-center gap-3 rounded-2xl p-4 text-white shadow-brand">
               <LayoutDashboard className="size-6" />
               <div className="flex-1">

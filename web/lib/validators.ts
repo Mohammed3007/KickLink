@@ -38,6 +38,13 @@ export const joinClubSchema = z.object({
   code: z.string().min(2, "Enter an invite code").max(40),
 });
 
+export const createClubSchema = z.object({
+  name: z.string().min(3, "Give your club a name").max(60),
+  city: z.string().min(2, "Where do you play?").max(60),
+  venue: z.string().max(120).optional().default(""),
+  blurb: z.string().max(400).optional().default(""),
+});
+
 export type SignInInput = z.infer<typeof signInSchema>;
 export type SignUpInput = z.infer<typeof signUpSchema>;
 export type CreateGameInput = z.infer<typeof createGameSchema>;

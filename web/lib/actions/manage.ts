@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { createGameSchema, announcementSchema } from "@/lib/validators";
+import { promoteWaitlist } from "@/lib/waitlist";
 
 async function assertOrganizer(userId: string, orgId: string) {
   const m = await db.membership.findUnique({
@@ -135,9 +136,15 @@ export async function removePlayer(registrationId: string) {
   if (!reg) return;
   await assertOrganizer(user.id, reg.game.orgId);
 
-  await db.registration.update({
-    where: { id: registrationId },
-    data: { status: "CANCELLED", waitlistPos: null, offerExpiresAt: null },
+  const freedSpot = ["CONFIRMED", "PROVISIONAL", "OFFERED"].includes(reg.status);
+  await db.$transaction(async (tx) => {
+    await tx.registration.update({
+      where: { id: registrationId },
+      data: { status: "CANCELLED", waitlistPos: null, offerExpiresAt: null },
+    });
+    if (freedSpot) await promoteWaitlist(tx, reg.gameId);
   });
+
   revalidatePath(`/manage/games/${reg.gameId}`);
+  revalidatePath(`/games/${reg.gameId}`);
 }

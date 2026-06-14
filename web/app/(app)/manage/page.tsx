@@ -7,7 +7,6 @@ import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Empty } from "@/components/app/empty";
 import { DateChip } from "@/components/app/date-chip";
 import { formatPrice, formatGameDate, formatTime } from "@/lib/utils";
 
@@ -34,12 +33,22 @@ export default async function ManagePage() {
     return (
       <div className="mx-auto max-w-2xl px-5 py-8">
         <PageHeader title="Organize" />
-        <div className="mt-6">
-          <Empty
-            icon={Users}
-            title="You don't organize any clubs yet"
-            body="Organizer club creation is coming soon. Ask an existing organizer to add you, or log in as organizer@kicklink.app to explore the dashboard."
-          />
+        <div className="mt-6 rounded-2xl border border-dashed border-line py-14 text-center">
+          <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+            <Users className="size-6" />
+          </span>
+          <p className="mt-4 font-semibold text-ink">
+            Run your own pickup games
+          </p>
+          <p className="mx-auto mt-1 max-w-xs text-sm text-ink-2">
+            Create a club, invite your crew with a code, and start collecting
+            payments in minutes.
+          </p>
+          <Link href="/manage/clubs/new" className="mt-5 inline-block">
+            <Button size="lg">
+              <Plus className="size-4" /> Create a club
+            </Button>
+          </Link>
         </div>
       </div>
     );
@@ -51,11 +60,16 @@ export default async function ManagePage() {
         title="Organize"
         subtitle="Manage your clubs, games and rosters."
         action={
-          <Link href="/manage/games/new">
-            <Button>
-              <Plus className="size-4" /> New game
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/manage/clubs/new">
+              <Button variant="secondary">New club</Button>
+            </Link>
+            <Link href="/manage/games/new">
+              <Button>
+                <Plus className="size-4" /> New game
+              </Button>
+            </Link>
+          </div>
         }
       />
 

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { charge } from "@/lib/payments";
+import { promoteWaitlist } from "@/lib/waitlist";
 
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"] as const;
 
@@ -191,13 +192,15 @@ export async function joinWaitlist(gameId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
-/** Cancel a registration; refund if it was paid. */
+/** Cancel a registration; refund if paid, then promote the waitlist. */
 export async function cancelRegistration(gameId: string): Promise<ActionResult> {
   const user = await requireUser();
   const reg = await db.registration.findUnique({
     where: { userId_gameId: { userId: user.id, gameId } },
   });
   if (!reg) return { ok: false, error: "You're not registered." };
+
+  const freedSpot = ["CONFIRMED", "PROVISIONAL", "OFFERED"].includes(reg.status);
 
   await db.$transaction(async (tx) => {
     const refunding = reg.payStatus === "PAID";
@@ -216,13 +219,14 @@ export async function cancelRegistration(gameId: string): Promise<ActionResult> 
         data: { status: "REFUNDED" },
       });
     }
+    if (freedSpot) await promoteWaitlist(tx, gameId);
   });
 
   revalidateAll(gameId);
   return { ok: true };
 }
 
-/** Decline an offered spot. */
+/** Decline an offered spot, then offer it to the next person. */
 export async function declineOffer(gameId: string): Promise<ActionResult> {
   const user = await requireUser();
   const reg = await db.registration.findUnique({
@@ -231,9 +235,12 @@ export async function declineOffer(gameId: string): Promise<ActionResult> {
   if (!reg || reg.status !== "OFFERED") {
     return { ok: false, error: "No active offer." };
   }
-  await db.registration.update({
-    where: { id: reg.id },
-    data: { status: "CANCELLED", offerExpiresAt: null },
+  await db.$transaction(async (tx) => {
+    await tx.registration.update({
+      where: { id: reg.id },
+      data: { status: "CANCELLED", offerExpiresAt: null },
+    });
+    await promoteWaitlist(tx, gameId);
   });
   revalidateAll(gameId);
   return { ok: true };
