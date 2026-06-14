@@ -1,0 +1,11 @@
+-- KickLink local development seed.
+--
+-- Auth users should be created through Supabase Auth during Phase 1 smoke testing so the
+-- auth.users trigger, email capture, and profile lifecycle are exercised realistically.
+--
+-- First platform-admin bootstrap:
+-- 1. Sign up and verify a real local user.
+-- 2. Copy the user's UUID from Supabase Studio Auth.
+-- 3. Run the documented SQL in docs/platform-admin-bootstrap.md.
+--
+-- This file intentionally avoids public self-promotion and does not insert fake auth users.

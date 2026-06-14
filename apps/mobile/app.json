@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "KickLink",
+    "slug": "kicklink",
+    "scheme": "kicklink",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
