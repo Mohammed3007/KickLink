@@ -8,12 +8,27 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DateChip } from "@/components/app/date-chip";
+import { ConnectPayments } from "@/components/app/connect-payments";
+import { isStripeEnabled } from "@/lib/flags";
+import { refreshConnectStatus } from "@/lib/actions/payments";
 import { formatPrice, formatGameDate, formatTime } from "@/lib/utils";
 
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"];
 
-export default async function ManagePage() {
+export default async function ManagePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ connect?: string }>;
+}) {
   const user = await requireUser();
+  const { connect } = await searchParams;
+  const stripeEnabled = isStripeEnabled();
+
+  // Returning from Stripe onboarding — refresh this club's payout status.
+  if (connect && stripeEnabled) {
+    await refreshConnectStatus(connect);
+  }
+
   const orgs = await db.organization.findMany({
     where: { memberships: { some: { userId: user.id, role: "ORGANIZER" } } },
     include: {
@@ -103,6 +118,14 @@ export default async function ManagePage() {
               <Stat icon={<Users className="size-4" />} label="Members" value={String(org._count.memberships)} />
               <Stat icon={<CalendarDays className="size-4" />} label="Games" value={String(org.games.length)} />
               <Stat icon={<Wallet className="size-4" />} label="Collected" value={formatPrice(revenueCents)} />
+            </div>
+
+            <div className="mt-3">
+              <ConnectPayments
+                orgId={org.id}
+                chargesEnabled={org.chargesEnabled}
+                stripeEnabled={stripeEnabled}
+              />
             </div>
 
             <div className="mt-3 space-y-2.5">

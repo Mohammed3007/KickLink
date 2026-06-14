@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
-import { charge } from "@/lib/payments";
 import { promoteWaitlist } from "@/lib/waitlist";
 
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"] as const;
@@ -73,84 +72,6 @@ export async function reserveSpot(gameId: string): Promise<ActionResult> {
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not reserve." };
   }
-
-  revalidateAll(gameId);
-  return { ok: true };
-}
-
-/** Pay & confirm — initial paid join, paying a provisional spot, or accepting an offer. */
-export async function payAndConfirm(
-  gameId: string,
-  method: "apple_pay" | "card"
-): Promise<ActionResult> {
-  const user = await requireUser();
-  const loaded = await loadGameForUser(gameId, user.id);
-  if (!loaded.ok) return { ok: false, error: loaded.error };
-  const { game } = loaded;
-
-  const existing = await db.registration.findUnique({
-    where: { userId_gameId: { userId: user.id, gameId } },
-  });
-  const claimingExistingSpot =
-    existing && ["PROVISIONAL", "OFFERED"].includes(existing.status);
-
-  // For brand-new paid joins, enforce capacity. (Provisional/offered already hold a spot.)
-  if (!claimingExistingSpot) {
-    const taken = await db.registration.count({
-      where: { gameId, status: { in: [...OCCUPYING] } },
-    });
-    if (taken >= game.capacity) {
-      return { ok: false, error: "This game just filled up." };
-    }
-    if (existing && existing.status === "CONFIRMED") {
-      return { ok: false, error: "You're already confirmed." };
-    }
-  }
-
-  const result = await charge({
-    amountCents: game.priceCents,
-    method,
-    description: game.title,
-    userId: user.id,
-  });
-  if (!result.ok) return { ok: false, error: "Payment failed. Try again." };
-
-  await db.$transaction(async (tx) => {
-    await tx.registration.upsert({
-      where: { userId_gameId: { userId: user.id, gameId } },
-      create: {
-        userId: user.id,
-        gameId,
-        status: "CONFIRMED",
-        payStatus: "PAID",
-      },
-      update: {
-        status: "CONFIRMED",
-        payStatus: "PAID",
-        waitlistPos: null,
-        offerExpiresAt: null,
-      },
-    });
-    await tx.payment.create({
-      data: {
-        userId: user.id,
-        gameId,
-        amountCents: game.priceCents,
-        method: result.method,
-        status: "SUCCEEDED",
-        stripeId: result.providerId,
-      },
-    });
-    await tx.notification.create({
-      data: {
-        userId: user.id,
-        kind: "RECEIPT",
-        title: `Receipt — ${game.title}`,
-        body: `${(game.priceCents / 100).toFixed(2)} paid · ${result.method}`,
-        href: `/profile`,
-      },
-    });
-  });
 
   revalidateAll(gameId);
   return { ok: true };

@@ -54,13 +54,38 @@ npm run build && npm run start
 
 ### Environment variables
 
-| Variable                             | Required | Notes                                                  |
-| ------------------------------------ | -------- | ------------------------------------------------------ |
-| `DATABASE_URL`                       | yes      | Postgres connection string                             |
-| `AUTH_SECRET`                        | yes      | `openssl rand -base64 32`                              |
-| `AUTH_TRUST_HOST`                    | prod     | set `true` when behind a proxy / on a platform         |
-| `STRIPE_SECRET_KEY`                  | no       | set to take real payments (else a local test flow runs)|
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | no       | Stripe publishable key                                 |
+| Variable                             | Required | Notes                                                   |
+| ------------------------------------ | -------- | ------------------------------------------------------- |
+| `DATABASE_URL`                       | yes      | Postgres connection string                              |
+| `AUTH_SECRET`                        | yes      | `openssl rand -base64 32`                               |
+| `AUTH_TRUST_HOST`                    | prod     | set `true` when behind a proxy / on a platform          |
+| `NEXT_PUBLIC_APP_URL`                | prod     | public URL, used in verification/reset emails           |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | no    | enables "Continue with Google"                          |
+| `RESEND_API_KEY`                     | no       | sends real verification/reset emails (else logged)      |
+| `EMAIL_FROM`                         | no       | from-address for emails                                 |
+| `STRIPE_SECRET_KEY`                  | no       | enables real Stripe Connect payments                    |
+| `STRIPE_WEBHOOK_SECRET`             | no       | for the `/api/stripe/webhook` endpoint                  |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | no       | Stripe publishable key                                  |
+| `PLATFORM_FEE_BPS`                   | no       | platform fee in basis points (e.g. `500` = 5%)          |
+
+Without Google / Resend / Stripe keys the app still runs: Google button is
+hidden, emails are logged to the server console, and a local test-payment flow
+stands in for Stripe.
+
+### Turning on the real integrations
+
+- **Google sign-in:** create an OAuth client at console.cloud.google.com →
+  Credentials. Authorized redirect URI: `<APP_URL>/api/auth/callback/google`.
+  Set `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`.
+- **Email (verification + reset):** get a free key at resend.com, set
+  `RESEND_API_KEY` and `EMAIL_FROM`. Set `NEXT_PUBLIC_APP_URL` so links point at
+  your domain.
+- **Payments (Stripe Connect):** set `STRIPE_SECRET_KEY`. Each organizer then
+  clicks **Connect Stripe** on the Manage page to onboard their club's payout
+  account; player payments go to that account (minus `PLATFORM_FEE_BPS`).
+  Add a webhook in the Stripe dashboard pointing at
+  `<APP_URL>/api/stripe/webhook` for events `checkout.session.completed` and
+  `account.updated`, and set `STRIPE_WEBHOOK_SECRET`.
 
 ---
 

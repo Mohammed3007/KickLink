@@ -129,6 +129,10 @@ model Organization {
   inviteCode String   @unique @default(cuid())
   createdAt  DateTime @default(now())
 
+  // Stripe Connect — payments go to the club's connected account.
+  stripeAccountId String?
+  chargesEnabled  Boolean @default(false)
+
   ownerId String
   owner   User   @relation("OrgOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
@@ -201,10 +205,11 @@ model Registration {
 model Payment {
   id          String        @id @default(cuid())
   amountCents Int
-  method      String        @default("Card")
-  status      PaymentStatus @default(PENDING)
-  stripeId    String?
-  createdAt   DateTime      @default(now())
+  method          String        @default("Card")
+  status          PaymentStatus @default(PENDING)
+  stripeId        String? // payment intent id
+  stripeSessionId String? // checkout session id
+  createdAt       DateTime      @default(now())
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
