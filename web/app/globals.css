@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────────────────────
+   KickLink design system
+   Refined-minimal base · Club Violet energy · warm, human edges
+   ────────────────────────────────────────────────────────────── */
+
+@theme {
+  /* Brand — Club Violet */
+  --color-brand-50: #f4f0fd;
+  --color-brand-100: #e9ddfa;
+  --color-brand-200: #d6c2f4;
+  --color-brand-300: #b89aea;
+  --color-brand-400: #946bdd;
+  --color-brand-500: #7c4bd6;
+  --color-brand-600: #6e3bd8;
+  --color-brand-700: #5a2bbf;
+  --color-brand-800: #4a2399;
+  --color-brand-900: #3c1f7a;
+
+  /* Ink / text */
+  --color-ink: #15131c;
+  --color-ink-2: #5c5a66;
+  --color-ink-3: #8e8c99;
+
+  /* Surfaces */
+  --color-canvas: #f7f6fb;
+  --color-surface: #ffffff;
+  --color-surface-2: #f1eff7;
+  --color-line: #e9e7f0;
+  --color-line-2: #f0eef6;
+
+  /* Status */
+  --color-ok: #12915a;
+  --color-ok-bg: #e4f4ec;
+  --color-warn: #b7790e;
+  --color-warn-bg: #fbf0dc;
+  --color-info: #2666d6;
+  --color-info-bg: #e7f0fd;
+  --color-alert: #d85a18;
+  --color-alert-bg: #fceadd;
+  --color-bad: #cf3a40;
+  --color-bad-bg: #fbe9ea;
+
+  /* Radii */
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
+
+  /* Shadows — soft, layered, never harsh */
+  --shadow-card: 0 1px 2px rgba(21, 19, 28, 0.04), 0 4px 16px rgba(21, 19, 28, 0.05);
+  --shadow-pop: 0 8px 30px rgba(21, 19, 28, 0.12);
+  --shadow-brand: 0 10px 30px rgba(110, 59, 216, 0.28);
+
+  /* Motion */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --animate-fade-up: fade-up 0.6s var(--ease-out-soft) both;
+  --animate-fade-in: fade-in 0.5s ease both;
+  --animate-pop: pop 0.4s var(--ease-spring) both;
+  --animate-shimmer: shimmer 2.2s linear infinite;
+  --animate-float: float 7s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pop {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes shimmer {
+  to { background-position: 200% 0; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-geist-sans), -apple-system, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: var(--color-brand-200);
+    color: var(--color-brand-900);
+  }
+  /* Quiet, modern scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
+  }
+  *::-webkit-scrollbar { width: 8px; height: 8px; }
+  *::-webkit-scrollbar-thumb {
+    background: var(--color-line);
+    border-radius: 999px;
+  }
+  /* Accessible, on-brand focus ring */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
+
+@layer utilities {
+  /* Subtle violet field used on heros / brand panels */
+  .bg-brand-field {
+    background-image: radial-gradient(
+        120% 120% at 100% 0%,
+        #8a57e6 0%,
+        var(--color-brand-600) 45%,
+        var(--color-brand-800) 100%
+      );
+  }
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgba(21, 19, 28, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(21, 19, 28, 0.04) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  .text-balance { text-wrap: balance; }
+}

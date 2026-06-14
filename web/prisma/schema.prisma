@@ -1,0 +1,205 @@
+// KickLink — data model
+// Postgres in every environment. Local dev runs Postgres in-container;
+// production points DATABASE_URL at managed Postgres (Supabase/Neon/RDS).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ──────────────────────────────────────────────────────
+
+enum MemberRole {
+  PLAYER
+  ORGANIZER
+}
+
+enum GameModel {
+  PAY // pay now to reserve
+  LATER // reserve now, pay before deadline
+  FREE // no charge
+}
+
+enum TransferPolicy {
+  ALLOWED
+  NONE
+}
+
+enum RegStatus {
+  CONFIRMED
+  PROVISIONAL // reserved, payment pending
+  WAITLISTED
+  OFFERED // a spot has been offered from the waitlist
+  CANCELLED
+}
+
+enum PayStatus {
+  PAID
+  UNPAID
+  FREE
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  REFUNDED
+  FAILED
+}
+
+enum NotifKind {
+  OFFER
+  REMINDER
+  ANNOUNCE
+  WAITLIST
+  RECEIPT
+}
+
+// ─── Models ─────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  avatarColor  String   @default("#6E3BD8")
+  skill        String   @default("Intermediate")
+  city         String   @default("Ottawa")
+  createdAt    DateTime @default(now())
+
+  memberships   Membership[]
+  registrations Registration[]
+  payments      Payment[]
+  notifications Notification[]
+  announcements Announcement[] @relation("AnnouncementAuthor")
+  ownedOrgs     Organization[] @relation("OrgOwner")
+}
+
+model Organization {
+  id         String   @id @default(cuid())
+  name       String
+  handle     String   @unique
+  city       String   @default("Ottawa")
+  venue      String   @default("")
+  color      String   @default("#6E3BD8")
+  blurb      String   @default("")
+  inviteCode String   @unique @default(cuid())
+  createdAt  DateTime @default(now())
+
+  ownerId String
+  owner   User   @relation("OrgOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  memberships   Membership[]
+  games         Game[]
+  announcements Announcement[]
+}
+
+model Membership {
+  id       String     @id @default(cuid())
+  role     MemberRole @default(PLAYER)
+  joinedAt DateTime   @default(now())
+
+  userId String
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orgId  String
+  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, orgId])
+  @@index([orgId])
+}
+
+model Game {
+  id               String         @id @default(cuid())
+  title            String
+  venue            String
+  address          String         @default("")
+  startsAt         DateTime
+  durationMins     Int            @default(90)
+  format           String         @default("7-a-side")
+  skill            String         @default("Intermediate")
+  priceCents       Int            @default(0)
+  capacity         Int            @default(14)
+  model            GameModel      @default(PAY)
+  payDeadlineHrs   Int?
+  transfers        TransferPolicy @default(ALLOWED)
+  transferApproval Boolean        @default(true)
+  policy           String         @default("Full refund up to 24h before kickoff. No refund after.")
+  rules            String         @default("")
+  createdAt        DateTime       @default(now())
+
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  registrations Registration[]
+  payments      Payment[]
+
+  @@index([orgId])
+  @@index([startsAt])
+}
+
+model Registration {
+  id             String    @id @default(cuid())
+  status         RegStatus @default(CONFIRMED)
+  payStatus      PayStatus @default(UNPAID)
+  waitlistPos    Int?
+  offerExpiresAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId String
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId])
+  @@index([gameId])
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  amountCents Int
+  method      String        @default("Card")
+  status      PaymentStatus @default(PENDING)
+  stripeId    String?
+  createdAt   DateTime      @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId String
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+
+  orgId    String
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User         @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  kind      NotifKind
+  title     String
+  body      String
+  read      Boolean   @default(false)
+  href      String?
+  createdAt DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
