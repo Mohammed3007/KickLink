@@ -2,6 +2,7 @@ import { WorkspaceShell } from '../../../../components/layout/WorkspaceShell';
 import { requireUser } from '../../../../lib/auth/guards';
 import { createUserServerSupabaseClient } from '../../../../lib/supabase/server';
 import { statusDisplayLabel } from '@kicklink/shared';
+import Link from 'next/link';
 
 export default async function OrganizerApplicationStatusPage() {
   const identity = await requireUser('/account/organizer-application/status');
@@ -17,6 +18,7 @@ export default async function OrganizerApplicationStatusPage() {
       nav={[
         { href: '/player', label: 'Player home' },
         { href: '/account/organizer-application', label: 'Organizer application' },
+        { href: '/account/organizations/new', label: 'Create organization' },
         { href: '/account/platform-admin-bootstrap', label: 'Admin bootstrap' },
       ]}
       subtitle="Organizer access is not granted until platform approval."
@@ -54,6 +56,11 @@ export default async function OrganizerApplicationStatusPage() {
               <p className="muted status-note">
                 {applications[0].admin_note ?? applications[0].decision_reason}
               </p>
+            ) : null}
+            {applications.some((application) => application.status === 'approved') ? (
+              <Link className="button" href="/account/organizations/new">
+                Create organization
+              </Link>
             ) : null}
           </>
         ) : (

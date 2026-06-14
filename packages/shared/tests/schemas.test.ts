@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   eventDraftSchema,
+  freeEventCreateSchema,
+  freeRegistrationSchema,
+  organizationCreateSchema,
   organizerApplicationSchema,
   registrationIntentSchema,
   signUpSchema,
@@ -78,5 +81,40 @@ describe('validation schemas', () => {
       agreementAccepted: true,
     });
     expect(parsed.orgName).toBe('Glebe Indoor 5s');
+  });
+
+  it('normalizes organization handles for creation', () => {
+    const parsed = organizationCreateSchema.parse({
+      name: 'Westside Sundays',
+      handle: 'Westside-Sundays',
+      city: 'Toronto',
+      blurb: 'Friendly private pickup games for local players.',
+      requiresApproval: false,
+    });
+    expect(parsed.handle).toBe('westside-sundays');
+  });
+
+  it('validates free event and free registration inputs', () => {
+    const event = freeEventCreateSchema.parse({
+      organizationId: '00000000-0000-4000-8000-000000000001',
+      title: 'Sunday pickup',
+      format: '7v7',
+      skillLevel: 'Intermediate',
+      startAt: '2026-06-20T14:00:00.000Z',
+      arriveAt: '2026-06-20T13:45:00.000Z',
+      durationMin: '90',
+      venueName: 'Community Field',
+      venueAddress: '100 Main Street',
+      capacity: '14',
+      waitlistCapacity: '4',
+    });
+    expect(event.capacity).toBe(14);
+
+    expect(() =>
+      freeRegistrationSchema.parse({
+        eventId: '00000000-0000-4000-8000-000000000001',
+        idempotencyKey: 'too-short',
+      }),
+    ).toThrow();
   });
 });

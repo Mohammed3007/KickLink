@@ -673,6 +673,230 @@ as $$
     );
 $$;
 
+create or replace function public.register_for_free_event(p_event_id uuid, p_idempotency_key text)
+returns table (
+  registration_id uuid,
+  registration_status public.registration_status,
+  payment_status public.payment_status
+)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  requesting_user_id uuid := auth.uid();
+  locked_event record;
+  active_registration_count integer;
+  existing_registration record;
+  new_registration_id uuid;
+begin
+  if requesting_user_id is null then
+    raise exception 'Authentication required';
+  end if;
+
+  if p_idempotency_key is null or length(trim(p_idempotency_key)) < 16 then
+    raise exception 'Invalid idempotency key';
+  end if;
+
+  select r.id, r.registration_status, r.payment_status
+    into existing_registration
+  from public.registrations r
+  where r.user_id = requesting_user_id
+    and r.idempotency_key = p_idempotency_key
+    and r.archived_at is null;
+
+  if existing_registration.id is not null then
+    return query
+      select existing_registration.id, existing_registration.registration_status, existing_registration.payment_status;
+    return;
+  end if;
+
+  select e.*
+    into locked_event
+  from public.events e
+  where e.id = p_event_id
+    and e.archived_at is null
+  for update;
+
+  if locked_event.id is null then
+    raise exception 'Event not found';
+  end if;
+
+  if locked_event.status not in ('published', 'almost_full') then
+    raise exception 'Registration is closed for this event';
+  end if;
+
+  if locked_event.payment_model <> 'free' or locked_event.price_gross <> 0 then
+    raise exception 'This registration path only supports free games';
+  end if;
+
+  if locked_event.start_at <= now() then
+    raise exception 'Registration is closed for this event';
+  end if;
+
+  if not public.is_organization_member(locked_event.organization_id, requesting_user_id) then
+    raise exception 'Organization membership required';
+  end if;
+
+  if exists (
+    select 1
+    from public.registrations r
+    where r.event_id = p_event_id
+      and r.user_id = requesting_user_id
+      and r.registration_status in ('pending', 'provisional', 'confirmed', 'waitlisted', 'spot_offered', 'transfer_pending')
+      and r.archived_at is null
+  ) then
+    raise exception 'Active registration already exists';
+  end if;
+
+  select count(*)::integer
+    into active_registration_count
+  from public.registrations r
+  where r.event_id = p_event_id
+    and r.registration_status in ('pending', 'provisional', 'confirmed', 'spot_offered', 'transfer_pending')
+    and r.archived_at is null;
+
+  if active_registration_count >= locked_event.capacity then
+    raise exception 'Event is full';
+  end if;
+
+  insert into public.registrations (
+    event_id,
+    user_id,
+    registration_status,
+    payment_status,
+    amount_paid_gross,
+    currency,
+    idempotency_key,
+    created_by
+  )
+  values (
+    p_event_id,
+    requesting_user_id,
+    'confirmed',
+    'not_required',
+    0,
+    locked_event.currency,
+    p_idempotency_key,
+    requesting_user_id
+  )
+  returning id into new_registration_id;
+
+  insert into public.idempotency_keys (key, user_id, operation, result, expires_at)
+  values (
+    p_idempotency_key,
+    requesting_user_id,
+    'register_for_free_event',
+    jsonb_build_object('registration_id', new_registration_id),
+    now() + interval '24 hours'
+  )
+  on conflict (key) do nothing;
+
+  insert into public.audit_log_entries (
+    actor_user_id,
+    action,
+    target_type,
+    target_id,
+    organization_id,
+    metadata,
+    request_id
+  )
+  values (
+    requesting_user_id,
+    'registration_created',
+    'registration',
+    new_registration_id,
+    locked_event.organization_id,
+    jsonb_build_object('event_id', p_event_id, 'payment_model', 'free'),
+    p_idempotency_key
+  );
+
+  return query
+    select new_registration_id, 'confirmed'::public.registration_status, 'not_required'::public.payment_status;
+end;
+$$;
+
+create or replace function public.join_open_organization(p_organization_id uuid)
+returns table (
+  membership_id uuid,
+  membership_status public.membership_status
+)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  requesting_user_id uuid := auth.uid();
+  target_organization record;
+  new_membership_id uuid;
+  existing_membership record;
+begin
+  if requesting_user_id is null then
+    raise exception 'Authentication required';
+  end if;
+
+  select o.*
+    into target_organization
+  from public.organizations o
+  where o.id = p_organization_id
+    and o.status = 'active'
+    and o.archived_at is null;
+
+  if target_organization.id is null then
+    raise exception 'Organization not found or not joinable';
+  end if;
+
+  if target_organization.requires_approval then
+    raise exception 'This organization requires an invitation or approval';
+  end if;
+
+  select om.id, om.status
+    into existing_membership
+  from public.organization_members om
+  where om.organization_id = p_organization_id
+    and om.user_id = requesting_user_id
+    and om.archived_at is null;
+
+  if existing_membership.id is not null then
+    return query select existing_membership.id, existing_membership.status;
+    return;
+  end if;
+
+  insert into public.organization_members (
+    organization_id,
+    user_id,
+    status,
+    created_by
+  )
+  values (
+    p_organization_id,
+    requesting_user_id,
+    'active',
+    requesting_user_id
+  )
+  returning id into new_membership_id;
+
+  insert into public.audit_log_entries (
+    actor_user_id,
+    action,
+    target_type,
+    target_id,
+    organization_id,
+    metadata
+  )
+  values (
+    requesting_user_id,
+    'organization_member_joined',
+    'organization_member',
+    new_membership_id,
+    p_organization_id,
+    jsonb_build_object('join_method', 'organization_id')
+  );
+
+  return query select new_membership_id, 'active'::public.membership_status;
+end;
+$$;
+
 comment on function public.is_platform_admin(uuid) is
   'SECURITY DEFINER helper with fixed empty search_path to avoid recursive RLS checks. Phase 2 tests unauthorized access.';
 comment on function public.has_platform_permission(text, uuid) is
@@ -690,12 +914,16 @@ revoke all on function public.has_platform_permission(text, uuid) from public, a
 revoke all on function public.is_organization_owner(uuid, uuid) from public, anon;
 revoke all on function public.is_organization_member(uuid, uuid) from public, anon;
 revoke all on function public.has_organization_permission(uuid, text, uuid) from public, anon;
+revoke all on function public.register_for_free_event(uuid, text) from public, anon;
+revoke all on function public.join_open_organization(uuid) from public, anon;
 
 grant execute on function public.is_platform_admin(uuid) to authenticated;
 grant execute on function public.has_platform_permission(text, uuid) to authenticated;
 grant execute on function public.is_organization_owner(uuid, uuid) to authenticated;
 grant execute on function public.is_organization_member(uuid, uuid) to authenticated;
 grant execute on function public.has_organization_permission(uuid, text, uuid) to authenticated;
+grant execute on function public.register_for_free_event(uuid, text) to authenticated;
+grant execute on function public.join_open_organization(uuid) to authenticated;
 
 alter table public.profiles enable row level security;
 alter table public.organizer_applications enable row level security;
@@ -752,7 +980,13 @@ create policy "organizer_applications_update_own_unsubmitted"
 on public.organizer_applications for update
 to authenticated
 using (user_id = (select auth.uid()) and status in ('new', 'more_info_requested'))
-with check (user_id = (select auth.uid()));
+with check (user_id = (select auth.uid()) and status in ('new', 'more_info_requested'));
+
+create policy "organizer_applications_update_admin_review"
+on public.organizer_applications for update
+to authenticated
+using (public.has_platform_permission('review_organizer_applications'))
+with check (public.has_platform_permission('review_organizer_applications'));
 
 create policy "organizations_select_member_staff_or_admin"
 on public.organizations for select
@@ -761,6 +995,21 @@ using (
   public.is_organization_member(id)
   or public.has_organization_permission(id, 'manage_organization')
   or public.is_platform_admin()
+);
+
+create policy "organizations_insert_approved_owner"
+on public.organizations for insert
+to authenticated
+with check (
+  owner_user_id = (select auth.uid())
+  and created_by = (select auth.uid())
+  and exists (
+    select 1
+    from public.organizer_applications oa
+    where oa.user_id = (select auth.uid())
+      and oa.status = 'approved'
+      and oa.archived_at is null
+  )
 );
 
 create policy "organization_members_select_self_staff_or_admin"
@@ -772,6 +1021,29 @@ using (
   or public.is_platform_admin()
 );
 
+create policy "organization_members_insert_owner_or_join_rpc"
+on public.organization_members for insert
+to authenticated
+with check (
+  (
+    user_id = (select auth.uid())
+    and created_by = (select auth.uid())
+    and public.is_organization_owner(organization_id)
+  )
+  or (
+    user_id = (select auth.uid())
+    and created_by = (select auth.uid())
+    and exists (
+      select 1
+      from public.organizations o
+      where o.id = organization_id
+        and o.status = 'active'
+        and o.requires_approval = false
+        and o.archived_at is null
+    )
+  )
+);
+
 create policy "events_select_eligible"
 on public.events for select
 to authenticated
@@ -781,6 +1053,20 @@ using (
   or public.has_organization_permission(organization_id, 'manage_events')
   or public.is_platform_admin()
 );
+
+create policy "events_insert_manage_events"
+on public.events for insert
+to authenticated
+with check (
+  created_by = (select auth.uid())
+  and public.has_organization_permission(organization_id, 'manage_events')
+);
+
+create policy "events_update_manage_events"
+on public.events for update
+to authenticated
+using (public.has_organization_permission(organization_id, 'manage_events'))
+with check (public.has_organization_permission(organization_id, 'manage_events'));
 
 create policy "registrations_select_own_or_org_staff"
 on public.registrations for select
@@ -813,6 +1099,20 @@ using (
   or (
     organization_id is not null
     and public.has_organization_permission(organization_id, 'manage_organization')
+  )
+);
+
+create policy "audit_log_insert_authorized_actor"
+on public.audit_log_entries for insert
+to authenticated
+with check (
+  actor_user_id = (select auth.uid())
+  and (
+    public.is_platform_admin()
+    or (
+      organization_id is not null
+      and public.has_organization_permission(organization_id, 'manage_organization')
+    )
   )
 );
 

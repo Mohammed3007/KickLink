@@ -1667,6 +1667,21 @@ export type Database = {
         Returns: boolean
       }
       is_platform_admin: { Args: { target_user_id?: string }; Returns: boolean }
+      join_open_organization: {
+        Args: { p_organization_id: string }
+        Returns: {
+          membership_id: string
+          membership_status: Database["public"]["Enums"]["membership_status"]
+        }[]
+      }
+      register_for_free_event: {
+        Args: { p_event_id: string; p_idempotency_key: string }
+        Returns: {
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          registration_id: string
+          registration_status: Database["public"]["Enums"]["registration_status"]
+        }[]
+      }
     }
     Enums: {
       attendance_state: "present" | "late" | "no_show" | "excused"

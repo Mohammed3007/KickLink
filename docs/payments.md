@@ -1,10 +1,11 @@
 # Payments
 
-Phase 1 intentionally ships only a mock payment boundary.
+The current web milestone intentionally ships without live payment processing.
 
 - `packages/shared/src/payment.ts` defines `PaymentProvider`.
 - `MockPaymentProvider` supports the documented payment statuses: `not_required`, `unpaid`, `payment_due`, `processing`, `paid`, `failed`, `partially_refunded`, `refunded`, and `disputed`.
-- The mobile checkout screen never collects card data.
+- Free game registration creates real `registrations` records with `payment_status = 'not_required'`.
+- Paid games, checkout sessions, refunds, and disputes are not live yet.
 - No Stripe secret keys are present in this repository.
 
 Future Stripe Connect integration belongs behind the same provider boundary. Card entry must use

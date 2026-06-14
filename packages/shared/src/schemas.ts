@@ -119,6 +119,55 @@ export const organizerApplicationSchema = z.object({
   agreementAccepted: z.literal(true),
 });
 
+export const organizationCreateSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  handle: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(3)
+    .max(40)
+    .regex(/^[a-z0-9-]+$/, 'Use lowercase letters, numbers, and dashes only.'),
+  city: z.string().trim().min(2).max(80),
+  venueDefault: z.string().trim().max(120).optional(),
+  blurb: z.string().trim().min(10).max(300),
+  requiresApproval: z.boolean(),
+});
+
+export const organizationJoinSchema = z.object({
+  organizationId: z.string().uuid(),
+});
+
+export const freeEventCreateSchema = z
+  .object({
+    organizationId: z.string().uuid(),
+    title: z.string().trim().min(3).max(80),
+    format: z.string().trim().min(2).max(40),
+    skillLevel: z.string().trim().min(2).max(40),
+    startAt: z.string().datetime(),
+    arriveAt: z.string().datetime(),
+    durationMin: z.coerce.number().int().min(15).max(240),
+    venueName: z.string().trim().min(2).max(120),
+    venueAddress: z.string().trim().min(5).max(200),
+    capacity: z.coerce.number().int().min(1).max(200),
+    waitlistCapacity: z.coerce.number().int().min(0).max(200),
+  })
+  .refine((event) => new Date(event.arriveAt).getTime() <= new Date(event.startAt).getTime(), {
+    message: 'Arrival time must be before kickoff.',
+    path: ['arriveAt'],
+  });
+
+export const organizerApplicationDecisionSchema = z.object({
+  applicationId: z.string().uuid(),
+  decision: z.enum(['approved', 'rejected', 'more_info_requested']),
+  reason: z.string().trim().min(3).max(500),
+});
+
+export const freeRegistrationSchema = z.object({
+  eventId: z.string().uuid(),
+  idempotencyKey: z.string().trim().min(16).max(120),
+});
+
 export const statusWriteSchema = z.object({
   eventStatus: eventStatusSchema.optional(),
   registrationStatus: registrationStatusSchema.optional(),
@@ -137,3 +186,8 @@ export const staffPermissionGrantSchema = z.object({
 
 export type SignUpInput = z.infer<typeof signUpSchema>;
 export type RegistrationIntentInput = z.infer<typeof registrationIntentSchema>;
+export type OrganizationCreateInput = z.infer<typeof organizationCreateSchema>;
+export type OrganizationJoinInput = z.infer<typeof organizationJoinSchema>;
+export type FreeEventCreateInput = z.infer<typeof freeEventCreateSchema>;
+export type OrganizerApplicationDecisionInput = z.infer<typeof organizerApplicationDecisionSchema>;
+export type FreeRegistrationInput = z.infer<typeof freeRegistrationSchema>;
