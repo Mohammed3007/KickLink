@@ -64,19 +64,24 @@ export async function listClubGames(userId: string) {
   return games.map((g) => decorate(g, userId));
 }
 
-function decorate(
-  g: {
+function decorate<
+  T extends {
     capacity: number;
     registrations: { userId: string; status: string }[];
-  } & Record<string, unknown>,
-  userId: string
-) {
+  }
+>(g: T, userId: string) {
   const taken = g.registrations.filter((r) =>
     OCCUPYING.includes(r.status as (typeof OCCUPYING)[number])
   ).length;
   const spotsLeft = Math.max(0, g.capacity - taken);
   const myReg = g.registrations.find((r) => r.userId === userId) ?? null;
-  return { ...g, taken, spotsLeft, isFull: spotsLeft <= 0, myStatus: myReg?.status ?? null };
+  return {
+    ...g,
+    taken,
+    spotsLeft,
+    isFull: spotsLeft <= 0,
+    myStatus: myReg?.status ?? null,
+  };
 }
 
 /** Home dashboard: things needing attention + upcoming + open games. */

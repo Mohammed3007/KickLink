@@ -24,11 +24,12 @@ const sizes: Record<Size, string> = {
   lg: "h-13 px-6 text-base rounded-2xl gap-2",
 };
 
-export interface ButtonProps extends HTMLMotionProps<"button"> {
+export interface ButtonProps extends Omit<HTMLMotionProps<"button">, "children"> {
   variant?: Variant;
   size?: Size;
   loading?: boolean;
   full?: boolean;
+  children?: React.ReactNode;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
