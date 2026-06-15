@@ -68,11 +68,16 @@ export const organizerApplicationSchema = z.object({
   expectedPlayers: z.coerce.number().int().min(4).max(500),
 });
 
-export const organizerDecisionSchema = z.object({
-  applicationId: z.string().min(1),
-  decision: z.enum(["APPROVED", "REJECTED"]),
-  adminNote: z.string().max(500).optional().default(""),
-});
+export const organizerDecisionSchema = z
+  .object({
+    applicationId: z.string().min(1),
+    decision: z.enum(["APPROVED", "REJECTED"]),
+    adminNote: z.string().trim().max(500).optional().default(""),
+  })
+  .refine((value) => value.decision !== "REJECTED" || value.adminNote.length >= 5, {
+    message: "Add a short reason when rejecting an application.",
+    path: ["adminNote"],
+  });
 
 export type SignInInput = z.infer<typeof signInSchema>;
 export type SignUpInput = z.infer<typeof signUpSchema>;

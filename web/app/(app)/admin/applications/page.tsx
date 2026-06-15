@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { isPlatformAdminUser } from "@/lib/admin";
@@ -24,12 +25,19 @@ export default async function AdminApplicationsPage() {
     <div className="mx-auto max-w-4xl pb-10">
       <BackHeader title="Admin" />
       <div className="px-5 pt-5">
-        <h1 className="text-2xl font-bold tracking-[-0.02em] text-ink">
-          Organizer applications
-        </h1>
-        <p className="mt-1 text-ink-2">
-          Review organizer access before users can create clubs or collect payments.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold tracking-[-0.02em] text-ink">
+              Organizer applications
+            </h1>
+            <p className="mt-1 text-ink-2">
+              Review organizer access before users can create clubs or collect payments.
+            </p>
+          </div>
+          <Link href="/admin/audit">
+            <Button variant="secondary">Audit history</Button>
+          </Link>
+        </div>
 
         <div className="mt-6 space-y-3">
           {applications.length === 0 && (
@@ -117,6 +125,7 @@ function DecisionForm({
         className="h-11 w-full rounded-xl bg-surface px-3.5 text-[15px] text-ink ring-1 ring-line placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-brand-500"
         name="adminNote"
         placeholder={decision === "APPROVED" ? "Approval note" : "Reason for rejection"}
+        required={decision === "REJECTED"}
       />
       <Button full type="submit" variant={decision === "APPROVED" ? "primary" : "danger"}>
         {label}

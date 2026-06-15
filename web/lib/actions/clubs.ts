@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { joinClubSchema, createClubSchema } from "@/lib/validators";
+import { writeAuditLog } from "@/lib/audit";
 
 const PALETTE = ["#6E3BD8", "#2666D6", "#12915A", "#D85A18", "#C2185B", "#0E8A86"];
 
@@ -87,21 +88,41 @@ export async function createClub(
 
   const color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
 
-  await db.organization.create({
-    data: {
-      name,
-      handle,
-      city,
-      venue: venue ?? "",
-      blurb: blurb ?? "",
-      color,
-      inviteCode,
-      ownerId: user.id,
-      memberships: { create: { userId: user.id, role: "ORGANIZER" } },
-    },
+  await db.$transaction(async (tx) => {
+    const org = await tx.organization.create({
+      data: {
+        name,
+        handle,
+        city,
+        venue: venue ?? "",
+        blurb: blurb ?? "",
+        color,
+        inviteCode,
+        ownerId: user.id,
+        memberships: { create: { userId: user.id, role: "ORGANIZER" } },
+      },
+      select: { id: true, name: true, handle: true, city: true },
+    });
+
+    await writeAuditLog(
+      {
+        action: "ORGANIZATION_CREATED",
+        actorId: user.id,
+        targetType: "Organization",
+        targetId: org.id,
+        organizationId: org.id,
+        metadata: {
+          name: org.name,
+          handle: org.handle,
+          city: org.city,
+        },
+      },
+      tx
+    );
   });
 
   revalidatePath("/clubs");
   revalidatePath("/manage");
+  revalidatePath("/admin/audit");
   redirect(`/clubs/${handle}`);
 }

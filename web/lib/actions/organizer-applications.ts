@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { requirePlatformAdminUser } from "@/lib/admin";
 import { organizerApplicationSchema, organizerDecisionSchema } from "@/lib/validators";
+import { writeAuditLog } from "@/lib/audit";
 
 export type OrganizerApplicationState = { error?: string; ok?: boolean } | undefined;
 
@@ -64,7 +65,7 @@ export async function decideOrganizerApplication(formData: FormData) {
         reviewedAt: new Date(),
         reviewedById: user.id,
       },
-      select: { userId: true },
+      select: { id: true, userId: true, clubName: true, city: true, expectedPlayers: true },
     });
 
     if (parsed.data.decision === "APPROVED") {
@@ -73,8 +74,29 @@ export async function decideOrganizerApplication(formData: FormData) {
         data: { organizerApproved: true },
       });
     }
+
+    await writeAuditLog(
+      {
+        action:
+          parsed.data.decision === "APPROVED"
+            ? "ORGANIZER_APPLICATION_APPROVED"
+            : "ORGANIZER_APPLICATION_REJECTED",
+        actorId: user.id,
+        targetType: "OrganizerApplication",
+        targetId: application.id,
+        reason: parsed.data.adminNote || undefined,
+        metadata: {
+          applicantUserId: application.userId,
+          clubName: application.clubName,
+          city: application.city,
+          expectedPlayers: application.expectedPlayers,
+        },
+      },
+      tx
+    );
   });
 
   revalidatePath("/admin/applications");
+  revalidatePath("/admin/audit");
   redirect("/admin/applications");
 }
