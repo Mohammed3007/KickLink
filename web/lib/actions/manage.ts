@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { createGameSchema, announcementSchema } from "@/lib/validators";
 import { promoteWaitlist } from "@/lib/waitlist";
+import { writeAuditLog } from "@/lib/audit";
 
 async function assertOrganizer(userId: string, orgId: string) {
   const m = await db.membership.findUnique({
@@ -31,6 +32,9 @@ export async function createGame(
     return { error: parsed.error.issues[0]?.message ?? "Check the form." };
   }
   const data = parsed.data;
+  if (data.startsAt <= new Date()) {
+    return { error: "Choose a future start time." };
+  }
 
   try {
     await assertOrganizer(user.id, data.orgId);
@@ -38,24 +42,47 @@ export async function createGame(
     return { error: e instanceof Error ? e.message : "Not authorized." };
   }
 
-  const game = await db.game.create({
-    data: {
-      orgId: data.orgId,
-      title: data.title,
-      venue: data.venue,
-      address: data.address ?? "",
-      startsAt: data.startsAt,
-      durationMins: data.durationMins,
-      format: data.format,
-      skill: data.skill,
-      priceCents: data.priceCents,
-      capacity: data.capacity,
-      model: data.model,
-    },
+  const game = await db.$transaction(async (tx) => {
+    const created = await tx.game.create({
+      data: {
+        orgId: data.orgId,
+        title: data.title,
+        venue: data.venue,
+        address: data.address ?? "",
+        startsAt: data.startsAt,
+        durationMins: data.durationMins,
+        format: data.format,
+        skill: data.skill,
+        priceCents: data.priceCents,
+        capacity: data.capacity,
+        model: data.model,
+      },
+    });
+
+    await writeAuditLog(
+      {
+        action: "GAME_CREATED",
+        actorId: user.id,
+        targetType: "Game",
+        targetId: created.id,
+        organizationId: created.orgId,
+        metadata: {
+          title: created.title,
+          model: created.model,
+          capacity: created.capacity,
+          priceCents: created.priceCents,
+          startsAt: created.startsAt.toISOString(),
+        },
+      },
+      tx
+    );
+
+    return created;
   });
 
   revalidatePath("/manage");
   revalidatePath("/games");
+  revalidatePath("/admin/audit");
   redirect(`/games/${game.id}`);
 }
 

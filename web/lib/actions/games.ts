@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { Prisma } from "@/lib/generated/prisma/client";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { promoteWaitlist } from "@/lib/waitlist";
+import { writeAuditLog } from "@/lib/audit";
 
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"] as const;
 
@@ -15,6 +17,7 @@ function revalidateAll(gameId: string) {
   revalidatePath("/clubs");
   revalidatePath("/alerts");
   revalidatePath(`/games/${gameId}`);
+  revalidatePath("/admin/audit");
 }
 
 type Loaded =
@@ -33,19 +36,27 @@ async function loadGameForUser(gameId: string, userId: string): Promise<Loaded> 
   return { ok: true, game };
 }
 
+async function lockGameForRegistration(tx: Prisma.TransactionClient, gameId: string) {
+  await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${gameId} FOR UPDATE`;
+  const game = await tx.game.findUnique({ where: { id: gameId } });
+  if (!game) throw new Error("Game not found.");
+  if (game.startsAt <= new Date()) throw new Error("Registration is closed for this game.");
+  return game;
+}
+
 /** Reserve a spot for FREE or pay-later (LATER) games. */
 export async function reserveSpot(gameId: string): Promise<ActionResult> {
   const user = await requireUser();
   const loaded = await loadGameForUser(gameId, user.id);
   if (!loaded.ok) return { ok: false, error: loaded.error };
-  const { game } = loaded;
-
-  if (game.model === "PAY") {
-    return { ok: false, error: "This game requires payment to reserve." };
-  }
 
   try {
     await db.$transaction(async (tx) => {
+      const game = await lockGameForRegistration(tx, gameId);
+      if (game.model === "PAY") {
+        throw new Error("This game requires payment to reserve.");
+      }
+
       const existing = await tx.registration.findUnique({
         where: { userId_gameId: { userId: user.id, gameId } },
       });
@@ -63,11 +74,27 @@ export async function reserveSpot(gameId: string): Promise<ActionResult> {
         waitlistPos: null,
         offerExpiresAt: null,
       };
-      await tx.registration.upsert({
+      const registration = await tx.registration.upsert({
         where: { userId_gameId: { userId: user.id, gameId } },
         create: { userId: user.id, gameId, ...data },
         update: data,
       });
+      await writeAuditLog(
+        {
+          action: "REGISTRATION_CONFIRMED",
+          actorId: user.id,
+          targetType: "Registration",
+          targetId: registration.id,
+          organizationId: game.orgId,
+          metadata: {
+            gameId,
+            model: game.model,
+            status: data.status,
+            payStatus: data.payStatus,
+          },
+        },
+        tx
+      );
     });
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not reserve." };
@@ -85,6 +112,7 @@ export async function joinWaitlist(gameId: string): Promise<ActionResult> {
 
   try {
     await db.$transaction(async (tx) => {
+      const game = await lockGameForRegistration(tx, gameId);
       const existing = await tx.registration.findUnique({
         where: { userId_gameId: { userId: user.id, gameId } },
       });
@@ -99,11 +127,25 @@ export async function joinWaitlist(gameId: string): Promise<ActionResult> {
         payStatus: "UNPAID" as const,
         waitlistPos: count + 1,
       };
-      await tx.registration.upsert({
+      const registration = await tx.registration.upsert({
         where: { userId_gameId: { userId: user.id, gameId } },
         create: { userId: user.id, gameId, ...data },
         update: data,
       });
+      await writeAuditLog(
+        {
+          action: "WAITLIST_JOINED",
+          actorId: user.id,
+          targetType: "Registration",
+          targetId: registration.id,
+          organizationId: game.orgId,
+          metadata: {
+            gameId,
+            waitlistPos: data.waitlistPos,
+          },
+        },
+        tx
+      );
     });
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not join." };
@@ -124,6 +166,9 @@ export async function cancelRegistration(gameId: string): Promise<ActionResult> 
   const freedSpot = ["CONFIRMED", "PROVISIONAL", "OFFERED"].includes(reg.status);
 
   await db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${gameId} FOR UPDATE`;
+    const game = await tx.game.findUnique({ where: { id: gameId } });
+    if (!game) throw new Error("Game not found.");
     const refunding = reg.payStatus === "PAID";
     await tx.registration.update({
       where: { id: reg.id },
@@ -141,6 +186,22 @@ export async function cancelRegistration(gameId: string): Promise<ActionResult> 
       });
     }
     if (freedSpot) await promoteWaitlist(tx, gameId);
+    await writeAuditLog(
+      {
+        action: "REGISTRATION_CANCELLED",
+        actorId: user.id,
+        targetType: "Registration",
+        targetId: reg.id,
+        organizationId: game.orgId,
+        metadata: {
+          gameId,
+          previousStatus: reg.status,
+          previousPayStatus: reg.payStatus,
+          freedSpot,
+        },
+      },
+      tx
+    );
   });
 
   revalidateAll(gameId);
