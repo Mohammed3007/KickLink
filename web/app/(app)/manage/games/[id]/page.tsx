@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge, PayBadge } from "@/components/ui/badge";
 import { RosterActions } from "@/components/app/roster-actions";
+import { WaitlistActions } from "@/components/app/waitlist-actions";
 import { formatPrice, formatGameDate, formatTime } from "@/lib/utils";
 
 export default async function ManageGamePage({
@@ -26,6 +27,13 @@ export default async function ManageGamePage({
   const unpaid = game.confirmed.filter((r) => r.status === "PROVISIONAL");
   const presentCount = game.confirmed.filter((r) => r.attendance?.status === "PRESENT").length;
   const noShowCount = game.confirmed.filter((r) => r.attendance?.status === "NO_SHOW").length;
+  const offers = game.registrations.filter((r) => r.status === "OFFERED");
+  const cancelled = game.registrations
+    .filter((r) => r.status === "CANCELLED")
+    .slice()
+    .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+    .slice(0, 6);
+  const canOfferWaitlist = game.taken < game.capacity;
 
   return (
     <div className="mx-auto max-w-2xl pb-10">
@@ -80,6 +88,33 @@ export default async function ManageGamePage({
           </Card>
         </section>
 
+        {offers.length > 0 && (
+          <section>
+            <h2 className="mb-2 px-1 text-sm font-semibold uppercase tracking-wide text-ink-3">
+              Spot offers · {offers.length}
+            </h2>
+            <Card className="divide-y divide-line-2">
+              {offers.map((r) => (
+                <div key={r.id} className="flex items-center gap-3 p-3.5">
+                  <Avatar name={r.user.name} color={r.user.avatarColor} size={36} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-ink">{r.user.name}</p>
+                    <p className="text-xs text-ink-3">
+                      Expires {r.offerExpiresAt ? r.offerExpiresAt.toLocaleTimeString() : "soon"}
+                    </p>
+                  </div>
+                  <Badge tone="alert">Offered</Badge>
+                  <RosterActions
+                    registrationId={r.id}
+                    showMarkPaid={false}
+                    attendanceStatus={r.attendance?.status ?? null}
+                  />
+                </div>
+              ))}
+            </Card>
+          </section>
+        )}
+
         {game.waitlist.length > 0 && (
           <section>
             <h2 className="mb-2 px-1 text-sm font-semibold uppercase tracking-wide text-ink-3">
@@ -94,6 +129,34 @@ export default async function ManageGamePage({
                   <Avatar name={r.user.name} color={r.user.avatarColor} size={36} />
                   <span className="flex-1 font-medium text-ink">{r.user.name}</span>
                   <Badge tone="info">Waiting</Badge>
+                  <WaitlistActions registrationId={r.id} canOffer={canOfferWaitlist} />
+                </div>
+              ))}
+            </Card>
+            {!canOfferWaitlist && (
+              <p className="mt-2 px-1 text-xs text-ink-3">
+                A spot must open before a waitlisted player can be offered a place.
+              </p>
+            )}
+          </section>
+        )}
+
+        {cancelled.length > 0 && (
+          <section>
+            <h2 className="mb-2 px-1 text-sm font-semibold uppercase tracking-wide text-ink-3">
+              Recently cancelled · {cancelled.length}
+            </h2>
+            <Card className="divide-y divide-line-2">
+              {cancelled.map((r) => (
+                <div key={r.id} className="flex items-center gap-3 p-3.5 opacity-80">
+                  <Avatar name={r.user.name} color={r.user.avatarColor} size={36} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-ink">{r.user.name}</p>
+                    <p className="text-xs text-ink-3">
+                      Cancelled {r.updatedAt.toLocaleString()}
+                    </p>
+                  </div>
+                  <Badge tone="bad">Cancelled</Badge>
                 </div>
               ))}
             </Card>

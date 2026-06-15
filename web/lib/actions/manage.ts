@@ -2,17 +2,36 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { AttendanceStatus } from "@/lib/generated/prisma/client";
+import type { AttendanceStatus, Prisma } from "@/lib/generated/prisma/client";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { createGameSchema, announcementSchema } from "@/lib/validators";
 import { promoteWaitlist } from "@/lib/waitlist";
+
+const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"] as const;
 
 async function assertOrganizer(userId: string, orgId: string) {
   const m = await db.membership.findUnique({
     where: { userId_orgId: { userId, orgId } },
   });
   if (m?.role !== "ORGANIZER") throw new Error("Not authorized for this club.");
+}
+
+async function compactWaitlist(gameId: string, tx: Prisma.TransactionClient) {
+  const waitlist = await tx.registration.findMany({
+    where: { gameId, status: "WAITLISTED" },
+    orderBy: [{ waitlistPos: "asc" }, { createdAt: "asc" }],
+    select: { id: true },
+  });
+
+  await Promise.all(
+    waitlist.map((entry, index) =>
+      tx.registration.update({
+        where: { id: entry.id },
+        data: { waitlistPos: index + 1 },
+      })
+    )
+  );
 }
 
 export type FormState = { error?: string } | undefined;
@@ -146,11 +165,60 @@ export async function removePlayer(registrationId: string) {
       where: { id: registrationId },
       data: { status: "CANCELLED", waitlistPos: null, offerExpiresAt: null },
     });
+    if (reg.status === "WAITLISTED") await compactWaitlist(reg.gameId, tx);
     if (freedSpot) await promoteWaitlist(tx, reg.gameId);
   });
 
   revalidatePath(`/manage/games/${reg.gameId}`);
   revalidatePath(`/games/${reg.gameId}`);
+  revalidatePath(`/games/${reg.gameId}/participants`);
+}
+
+export async function offerWaitlistedSpot(registrationId: string) {
+  const user = await requireUser();
+  const reg = await db.registration.findUnique({
+    where: { id: registrationId },
+    include: { game: true },
+  });
+  if (!reg || reg.status !== "WAITLISTED") return;
+  await assertOrganizer(user.id, reg.game.orgId);
+
+  await db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${reg.gameId} FOR UPDATE`;
+    const game = await tx.game.findUnique({
+      where: { id: reg.gameId },
+      select: { id: true, title: true, capacity: true },
+    });
+    if (!game) return;
+
+    const taken = await tx.registration.count({
+      where: { gameId: reg.gameId, status: { in: [...OCCUPYING] } },
+    });
+    if (taken >= game.capacity) return;
+
+    await tx.registration.update({
+      where: { id: registrationId },
+      data: {
+        status: "OFFERED",
+        waitlistPos: null,
+        offerExpiresAt: new Date(Date.now() + 15 * 60_000),
+      },
+    });
+    await compactWaitlist(reg.gameId, tx);
+    await tx.notification.create({
+      data: {
+        userId: reg.userId,
+        kind: "OFFER",
+        title: `A spot opened up - ${game.title}`,
+        body: "You're next in line. Accept within the window to claim it.",
+        href: `/games/${reg.gameId}`,
+      },
+    });
+  });
+
+  revalidatePath(`/manage/games/${reg.gameId}`);
+  revalidatePath(`/games/${reg.gameId}`);
+  revalidatePath(`/games/${reg.gameId}/participants`);
 }
 
 export async function recordAttendance(
