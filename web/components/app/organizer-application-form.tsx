@@ -1,12 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
-import {
-  submitOrganizerApplication,
-  type OrganizerApplicationState,
-} from "@/lib/actions/organizer-applications";
+import { AlertCircle } from "lucide-react";
+import { submitOrganizerApplication } from "@/lib/actions/organizer-applications";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/input";
 
@@ -19,32 +15,13 @@ function Submit() {
   );
 }
 
-export function OrganizerApplicationForm() {
-  const [state, action] = useActionState<OrganizerApplicationState, FormData>(
-    submitOrganizerApplication,
-    undefined
-  );
-
-  if (state?.ok) {
-    return (
-      <div className="rounded-2xl bg-good-bg p-5 text-good ring-1 ring-good/20">
-        <div className="flex items-center gap-2 font-bold">
-          <CheckCircle2 className="size-5" />
-          Application received
-        </div>
-        <p className="mt-2 text-sm leading-6">
-          A platform admin can now review this from the admin workspace.
-        </p>
-      </div>
-    );
-  }
-
+export function OrganizerApplicationForm({ error }: { error?: string }) {
   return (
-    <form action={action} className="space-y-4">
-      {state?.error && (
+    <form action={submitOrganizerApplication} className="space-y-4">
+      {error && (
         <div className="flex items-center gap-2 rounded-xl bg-bad-bg px-3.5 py-3 text-sm font-medium text-bad">
           <AlertCircle className="size-4 shrink-0" />
-          {state.error}
+          {error}
         </div>
       )}
 

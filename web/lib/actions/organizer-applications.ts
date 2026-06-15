@@ -10,9 +10,8 @@ import { organizerApplicationSchema, organizerDecisionSchema } from "@/lib/valid
 export type OrganizerApplicationState = { error?: string; ok?: boolean } | undefined;
 
 export async function submitOrganizerApplication(
-  _prev: OrganizerApplicationState,
   formData: FormData
-): Promise<OrganizerApplicationState> {
+) {
   const user = await requireUser();
   if (user.organizerApproved) {
     redirect("/manage/clubs/new");
@@ -20,7 +19,7 @@ export async function submitOrganizerApplication(
 
   const parsed = organizerApplicationSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Check the application." };
+    redirect("/manage/apply?error=invalid");
   }
 
   const active = await db.organizerApplication.findFirst({
@@ -29,7 +28,7 @@ export async function submitOrganizerApplication(
   });
   if (active?.status === "APPROVED") redirect("/manage/clubs/new");
   if (active?.status === "PENDING") {
-    return { ok: true };
+    redirect("/manage/apply");
   }
 
   await db.organizerApplication.create({
@@ -44,7 +43,7 @@ export async function submitOrganizerApplication(
 
   revalidatePath("/manage/apply");
   revalidatePath("/admin/applications");
-  return { ok: true };
+  redirect("/manage/apply?submitted=1");
 }
 
 export async function decideOrganizerApplication(formData: FormData) {

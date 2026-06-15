@@ -7,8 +7,15 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-export default async function OrganizerApplyPage() {
+export default async function OrganizerApplyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; submitted?: string }>;
+}) {
   const user = await requireUser();
+  const params = await searchParams;
+  const formError =
+    params.error === "invalid" ? "Check the application details and try again." : undefined;
   const applications = await db.organizerApplication.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },
@@ -50,6 +57,11 @@ export default async function OrganizerApplyPage() {
 
         {latest ? (
           <Card className="mt-6 p-5">
+            {params.submitted === "1" && (
+              <div className="mb-4 rounded-xl bg-good-bg px-3.5 py-3 text-sm font-semibold text-good">
+                Application received. A platform admin can now review it.
+              </div>
+            )}
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="font-bold text-ink">{latest.clubName}</h2>
@@ -67,13 +79,13 @@ export default async function OrganizerApplyPage() {
           </Card>
         ) : (
           <div className="mt-6">
-            <OrganizerApplicationForm />
+            <OrganizerApplicationForm error={formError} />
           </div>
         )}
 
         {latest?.status === "REJECTED" && (
           <div className="mt-6">
-            <OrganizerApplicationForm />
+            <OrganizerApplicationForm error={formError} />
           </div>
         )}
       </div>
