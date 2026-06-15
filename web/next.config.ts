@@ -15,15 +15,19 @@ const securityHeaders = [
   },
 ];
 
+// Vercel handles its own build output, so only emit a standalone bundle
+// (for Docker / VPS self-hosting) when NOT building on Vercel.
+const isVercel = !!process.env.VERCEL;
+
 const nextConfig: NextConfig = {
-  // Self-contained server bundle for Docker / VPS hosting.
-  output: "standalone",
   // Repo has lockfiles at both root and web/ — pin the workspace root.
   turbopack: { root: path.join(__dirname) },
-  outputFileTracingRoot: path.join(__dirname),
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  ...(isVercel
+    ? {}
+    : { output: "standalone", outputFileTracingRoot: path.join(__dirname) }),
 };
 
 export default nextConfig;
