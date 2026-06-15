@@ -2,11 +2,17 @@ import { PrismaClient } from "@/lib/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 
 // Route Neon pool queries over HTTP fetch — the correct, robust setup for
 // serverless (Vercel). Avoids TCP/WebSocket pooling + prepared-statement
 // issues that break the plain pg driver on Neon's pooled endpoint.
 neonConfig.poolQueryViaFetch = true;
+// Transactions still use a WebSocket; provide one for Node runtimes that
+// don't expose a global WebSocket (Node < 21).
+if (typeof globalThis.WebSocket === "undefined") {
+  neonConfig.webSocketConstructor = ws;
+}
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
