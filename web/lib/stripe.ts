@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { publicAppUrl } from "@/lib/runtime";
 
 let cached: Stripe | null = null;
 
@@ -17,5 +18,5 @@ export function platformFeeBps(): number {
 }
 
 export function appUrl() {
-  return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  return publicAppUrl();
 }

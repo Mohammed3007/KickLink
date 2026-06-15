@@ -3,11 +3,23 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 
+export class DatabaseUnavailableError extends Error {
+  constructor(cause: unknown) {
+    super("KickLink could not reach the database.");
+    this.name = "DatabaseUnavailableError";
+    this.cause = cause;
+  }
+}
+
 /** The authenticated user record, or null. Cached per request. */
 export const getCurrentUser = cache(async () => {
   const session = await auth();
   if (!session?.user?.id) return null;
-  return db.user.findUnique({ where: { id: session.user.id } });
+  try {
+    return await db.user.findUnique({ where: { id: session.user.id } });
+  } catch (error) {
+    throw new DatabaseUnavailableError(error);
+  }
 });
 
 /** Require a signed-in user or redirect to login. */

@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { AlertCircle } from "lucide-react";
 import { createGame, type FormState } from "@/lib/actions/manage";
-import { Input, Textarea, Select, Field } from "@/components/ui/input";
+import { Input, Select, Field } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 function Submit() {

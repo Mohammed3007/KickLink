@@ -31,7 +31,7 @@ export default async function ResetPage({
       <h1 className="text-3xl font-bold tracking-[-0.02em] text-ink">
         Set a new password
       </h1>
-      <p className="mt-2 text-ink-2">Choose a strong password you'll remember.</p>
+      <p className="mt-2 text-ink-2">Choose a strong password you&apos;ll remember.</p>
       <div className="mt-8">
         <ResetForm token={token} />
       </div>

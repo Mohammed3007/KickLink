@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Zap, Clock, CalendarDays, Megaphone } from "lucide-react";
+import { ChevronRight, Zap, Clock } from "lucide-react";
 import { requireUser } from "@/lib/session";
 import { getDashboard } from "@/lib/queries";
 import { PageHeader, SectionLabel } from "@/components/app/page-header";
@@ -13,7 +13,13 @@ import { formatPrice, timeAgo } from "@/lib/utils";
 
 export default async function HomePage() {
   const user = await requireUser();
-  const { mine, open, offers, unpaid, announcements } = await getDashboard(user.id);
+  const { mine, open, offers, unpaid, announcements } = await getDashboard(user.id).catch(() => ({
+    mine: [],
+    open: [],
+    offers: [],
+    unpaid: [],
+    announcements: [],
+  }));
 
   const activeOffer = offers.find(
     (o) => o.status === "OFFERED" && o.offerExpiresAt && o.offerExpiresAt > new Date()

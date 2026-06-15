@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Plus, Users, Wallet, CalendarDays, ArrowRight } from "lucide-react";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
-import { PageHeader, SectionLabel } from "@/components/app/page-header";
+import { PageHeader } from "@/components/app/page-header";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,10 @@ import { formatPrice, formatGameDate, formatTime } from "@/lib/utils";
 
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"];
 
+function oneHourAgo() {
+  return new Date(Date.now() - 3600_000);
+}
+
 export default async function ManagePage({
   searchParams,
 }: {
@@ -23,6 +27,7 @@ export default async function ManagePage({
   const user = await requireUser();
   const { connect } = await searchParams;
   const stripeEnabled = isStripeEnabled();
+  const upcomingCutoff = oneHourAgo();
 
   // Returning from Stripe onboarding — refresh this club's payout status.
   if (connect && stripeEnabled) {
@@ -34,7 +39,7 @@ export default async function ManagePage({
     include: {
       _count: { select: { memberships: true } },
       games: {
-        where: { startsAt: { gte: new Date(Date.now() - 3600_000) } },
+        where: { startsAt: { gte: upcomingCutoff } },
         include: {
           registrations: { select: { status: true, payStatus: true } },
         },
