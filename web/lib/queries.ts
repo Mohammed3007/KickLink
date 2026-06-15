@@ -89,6 +89,36 @@ export async function listClubGames(userId: string) {
   return games.map((g) => decorate(g, userId));
 }
 
+/** Player registration history, including past and cancelled registrations. */
+export async function listPlayerGameHistory(userId: string) {
+  const registrations = await db.registration.findMany({
+    where: { userId },
+    include: {
+      game: {
+        include: {
+          org: { select: { name: true, handle: true, color: true } },
+          registrations: { select: { userId: true, status: true } },
+        },
+      },
+    },
+    orderBy: [{ game: { startsAt: "desc" } }, { updatedAt: "desc" }],
+    take: 40,
+  });
+
+  return registrations.map((registration) => {
+    const decorated = decorate(registration.game, userId);
+    return {
+      ...decorated,
+      myStatus: registration.status,
+      payStatus: registration.payStatus,
+      waitlistPos: registration.waitlistPos,
+      registeredAt: registration.createdAt,
+      updatedAt: registration.updatedAt,
+      isPast: registration.game.startsAt < new Date(),
+    };
+  });
+}
+
 function decorate<
   T extends {
     capacity: number;
