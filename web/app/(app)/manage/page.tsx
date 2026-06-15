@@ -57,16 +57,18 @@ export default async function ManagePage({
           <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
             <Users className="size-6" />
           </span>
-          <p className="mt-4 font-semibold text-ink">
-            Run your own pickup games
-          </p>
+          <p className="mt-4 font-semibold text-ink">Run your own pickup games</p>
           <p className="mx-auto mt-1 max-w-xs text-sm text-ink-2">
-            Create a club, invite your crew with a code, and start collecting
-            payments in minutes.
+            {user.organizerApproved
+              ? "Create a club, invite your crew with a code, and start collecting payments in minutes."
+              : "Apply to become an organizer. Once approved, you can create clubs and collect payments."}
           </p>
-          <Link href="/manage/clubs/new" className="mt-5 inline-block">
+          <Link
+            href={user.organizerApproved ? "/manage/clubs/new" : "/manage/apply"}
+            className="mt-5 inline-block"
+          >
             <Button size="lg">
-              <Plus className="size-4" /> Create a club
+              <Plus className="size-4" /> {user.organizerApproved ? "Create a club" : "Apply to organize"}
             </Button>
           </Link>
         </div>

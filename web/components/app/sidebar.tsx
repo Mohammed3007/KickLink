@@ -6,7 +6,7 @@ import { motion } from "motion/react";
 import { LogOut } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Avatar } from "@/components/ui/avatar";
-import { NAV_ITEMS, ORGANIZER_ITEM } from "./nav-items";
+import { ADMIN_ITEM, NAV_ITEMS, ORGANIZER_ITEM } from "./nav-items";
 import { logout } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
 
@@ -14,13 +14,19 @@ export function Sidebar({
   user,
   unread,
   isOrganizer,
+  isAdmin,
 }: {
   user: { name: string; email: string; avatarColor: string };
   unread: number;
   isOrganizer: boolean;
+  isAdmin?: boolean;
 }) {
   const pathname = usePathname();
-  const items = isOrganizer ? [...NAV_ITEMS, ORGANIZER_ITEM] : NAV_ITEMS;
+  const items = [
+    ...NAV_ITEMS,
+    ...(isOrganizer ? [ORGANIZER_ITEM] : []),
+    ...(isAdmin ? [ADMIN_ITEM] : []),
+  ];
 
   return (
     <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line bg-surface/60 px-4 py-6 lg:flex">

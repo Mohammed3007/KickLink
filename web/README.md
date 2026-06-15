@@ -59,6 +59,7 @@ npm run build && npm run start
 | `DATABASE_URL`                       | yes      | Postgres connection string                              |
 | `AUTH_SECRET`                        | yes      | `openssl rand -base64 32`                               |
 | `AUTH_TRUST_HOST`                    | prod     | set `true` when behind a proxy / on a platform          |
+| `ADMIN_EMAILS`                       | prod     | comma-separated bootstrap admin emails                  |
 | `NEXT_PUBLIC_APP_URL`                | prod     | public URL, used in verification/reset emails           |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | no    | enables "Continue with Google"                          |
 | `RESEND_API_KEY`                     | no       | sends real verification/reset emails (else logged)      |
@@ -71,6 +72,13 @@ npm run build && npm run start
 Without Google / Resend / Stripe keys the app still runs: Google button is
 hidden, emails are logged to the server console, and a local test-payment flow
 stands in for Stripe.
+
+### Organizer approval
+
+New users cannot create clubs immediately. They apply at `/manage/apply`; platform admins review
+applications at `/admin/applications`. Bootstrap production admin access by setting
+`ADMIN_EMAILS` in Vercel to one or more trusted account emails. The seed account
+`organizer@kicklink.app` is also marked as an approved organizer/admin for demo use.
 
 ### Turning on the real integrations
 

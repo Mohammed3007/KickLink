@@ -57,6 +57,22 @@ export const createClubSchema = z.object({
   blurb: z.string().max(400).optional().default(""),
 });
 
+export const organizerApplicationSchema = z.object({
+  clubName: z.string().min(3, "Give the club a working name").max(80),
+  city: z.string().min(2, "Where will games run?").max(60),
+  experience: z
+    .string()
+    .min(20, "Tell us a little more about how you organize games")
+    .max(1000),
+  expectedPlayers: z.coerce.number().int().min(4).max(500),
+});
+
+export const organizerDecisionSchema = z.object({
+  applicationId: z.string().min(1),
+  decision: z.enum(["APPROVED", "REJECTED"]),
+  adminNote: z.string().max(500).optional().default(""),
+});
+
 export type SignInInput = z.infer<typeof signInSchema>;
 export type SignUpInput = z.infer<typeof signUpSchema>;
 export type CreateGameInput = z.infer<typeof createGameSchema>;

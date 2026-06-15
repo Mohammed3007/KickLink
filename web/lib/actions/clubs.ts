@@ -58,6 +58,10 @@ export async function createClub(
   formData: FormData
 ): Promise<CreateClubState> {
   const user = await requireUser();
+  if (!user.organizerApproved) {
+    return { error: "Organizer approval is required before creating a club." };
+  }
+
   const parsed = createClubSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the form." };

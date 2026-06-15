@@ -59,6 +59,17 @@ enum NotifKind {
   RECEIPT
 }
 
+enum PlatformRole {
+  USER
+  ADMIN
+}
+
+enum OrganizerApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // ─── Models ─────────────────────────────────────────────────────
 
 model User {
@@ -72,6 +83,8 @@ model User {
   skill         String    @default("Intermediate")
   city          String    @default("Ottawa")
   createdAt     DateTime  @default(now())
+  platformRole  PlatformRole @default(USER)
+  organizerApproved Boolean @default(false)
 
   accounts      Account[]
   memberships   Membership[]
@@ -80,9 +93,31 @@ model User {
   notifications Notification[]
   announcements Announcement[] @relation("AnnouncementAuthor")
   ownedOrgs     Organization[] @relation("OrgOwner")
+  organizerApplications OrganizerApplication[]
+  reviewedOrganizerApplications OrganizerApplication[] @relation("OrganizerApplicationReviewedBy")
 
   verificationTokens EmailVerificationToken[]
   passwordResets     PasswordResetToken[]
+}
+
+model OrganizerApplication {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clubName  String
+  city      String
+  experience String
+  expectedPlayers Int
+  status    OrganizerApplicationStatus @default(PENDING)
+  adminNote String?
+  reviewedAt DateTime?
+  reviewedById String?
+  reviewedBy User? @relation("OrganizerApplicationReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }
 
 // Linked OAuth providers (e.g. Google).

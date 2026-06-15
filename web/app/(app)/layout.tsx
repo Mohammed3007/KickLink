@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/app/sidebar";
 import { BottomNav } from "@/components/app/bottom-nav";
 import { MobileHeader } from "@/components/app/mobile-header";
 import { Card } from "@/components/ui/card";
+import { isPlatformAdminUser } from "@/lib/admin";
 
 export default async function AppLayout({
   children,
@@ -32,6 +33,7 @@ export default async function AppLayout({
       .catch(() => null),
   ]);
   const isOrganizer = !!orgRole;
+  const isAdmin = isPlatformAdminUser(user);
 
   return (
     <div className="flex min-h-dvh">
@@ -39,6 +41,7 @@ export default async function AppLayout({
         user={{ name: user.name, email: user.email, avatarColor: user.avatarColor }}
         unread={unread}
         isOrganizer={isOrganizer}
+        isAdmin={isAdmin}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileHeader user={{ name: user.name, avatarColor: user.avatarColor }} />
