@@ -15,6 +15,22 @@ export function getSupabasePublishableKey(): string {
   return value;
 }
 
-export function getSiteUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3000';
+function normalizeUrl(value: string): string {
+  const withProtocol = value.startsWith('http://') || value.startsWith('https://') ? value : `https://${value}`;
+  return withProtocol.replace(/\/+$/, '');
+}
+
+export function getSiteUrl(fallbackOrigin?: string): string {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (explicit) {
+    return normalizeUrl(explicit);
+  }
+
+  const vercelUrl =
+    process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() ?? process.env.VERCEL_URL?.trim();
+  if (vercelUrl) {
+    return normalizeUrl(vercelUrl);
+  }
+
+  return fallbackOrigin ? normalizeUrl(fallbackOrigin) : 'http://127.0.0.1:3000';
 }

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createUserServerSupabaseClient } from '../supabase/server';
 import { getVerifiedIdentity } from './identity';
+import { ensureProfile } from '../profiles/ensure-profile';
 
 export async function requireUser(returnTo = '/player') {
   const identity = await getVerifiedIdentity();
@@ -13,13 +14,9 @@ export async function requireUser(returnTo = '/player') {
 export async function requireCompletedProfile(returnTo = '/player') {
   const identity = await requireUser(returnTo);
   const supabase = await createUserServerSupabaseClient();
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, display_name, city, profile_completed')
-    .eq('id', identity.userId)
-    .single();
+  const data = await ensureProfile(supabase, identity);
 
-  if (error || !data?.profile_completed) {
+  if (!data?.profile_completed) {
     redirect('/player/profile');
   }
 

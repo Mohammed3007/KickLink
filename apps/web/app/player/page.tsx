@@ -1,15 +1,12 @@
 import Link from 'next/link';
 import { createUserServerSupabaseClient } from '../../lib/supabase/server';
 import { requireUser } from '../../lib/auth/guards';
+import { ensureProfile } from '../../lib/profiles/ensure-profile';
 
 export default async function PlayerHomePage() {
   const identity = await requireUser('/player');
   const supabase = await createUserServerSupabaseClient();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('display_name, city, profile_completed')
-    .eq('id', identity.userId)
-    .single();
+  const profile = await ensureProfile(supabase, identity);
 
   if (!profile?.profile_completed) {
     return (

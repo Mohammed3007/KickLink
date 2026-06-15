@@ -960,6 +960,11 @@ on public.profiles for select
 to authenticated
 using ((select auth.uid()) = id or public.is_platform_admin());
 
+create policy "profiles_insert_own_initialization"
+on public.profiles for insert
+to authenticated
+with check ((select auth.uid()) = id);
+
 create policy "profiles_update_own_safe_fields"
 on public.profiles for update
 to authenticated
