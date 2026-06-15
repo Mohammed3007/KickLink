@@ -1,10 +1,6 @@
 import {
   ShieldCheck,
   Receipt,
-  History,
-  Bell,
-  Lock,
-  HelpCircle,
   LayoutDashboard,
   ChevronRight,
   LogOut,
@@ -17,6 +13,8 @@ import { PageHeader, SectionLabel } from "@/components/app/page-header";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { ProfileForm } from "@/components/app/profile-form";
+import { NotificationPreferences } from "@/components/app/notification-preferences";
 import { logout } from "@/lib/actions/auth";
 import { formatPrice } from "@/lib/utils";
 
@@ -55,6 +53,19 @@ export default async function ProfilePage() {
         </div>
       </Card>
 
+      <SectionLabel>Edit profile</SectionLabel>
+      <Card className="p-5">
+        <ProfileForm
+          user={{
+            name: user.name,
+            email: user.email,
+            city: user.city,
+            skill: user.skill,
+            avatarColor: user.avatarColor,
+          }}
+        />
+      </Card>
+
       {/* Recent receipts */}
       {payments.length > 0 && (
         <>
@@ -85,14 +96,8 @@ export default async function ProfilePage() {
         </>
       )}
 
-      {/* Menu */}
-      <SectionLabel>Settings</SectionLabel>
-      <Card className="divide-y divide-line-2">
-        <MenuItem icon={History} label="Game history" />
-        <MenuItem icon={Bell} label="Notification preferences" />
-        <MenuItem icon={Lock} label="Privacy & visibility" />
-        <MenuItem icon={HelpCircle} label="Help & support" />
-      </Card>
+      <SectionLabel>Notification preferences</SectionLabel>
+      <NotificationPreferences />
 
       {/* Organizer CTA */}
       <div className="mt-4">
@@ -124,23 +129,5 @@ export default async function ProfilePage() {
         </Button>
       </form>
     </div>
-  );
-}
-
-function MenuItem({
-  icon: Icon,
-  label,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-}) {
-  return (
-    <button className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-surface-2">
-      <span className="flex size-9 items-center justify-center rounded-lg bg-surface-2 text-ink-2">
-        <Icon className="size-4.5" />
-      </span>
-      <span className="flex-1 font-medium text-ink">{label}</span>
-      <ChevronRight className="size-5 text-ink-3" />
-    </button>
   );
 }

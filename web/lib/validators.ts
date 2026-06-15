@@ -58,6 +58,15 @@ export const createClubSchema = z.object({
   blurb: z.string().max(400).optional().default(""),
 });
 
+export const updateProfileSchema = z.object({
+  name: z.string().trim().min(2, "Name is too short").max(60),
+  city: z.string().trim().min(2, "City is too short").max(60),
+  skill: z.enum(["Beginner", "Intermediate", "Advanced", "Competitive"]),
+  avatarColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, "Choose a valid avatar color"),
+});
+
 export const organizerApplicationSchema = z.object({
   clubName: z.string().min(3, "Give the club a working name").max(80),
   city: z.string().min(2, "Where will games run?").max(60),
@@ -82,3 +91,4 @@ export const organizerDecisionSchema = z
 export type SignInInput = z.infer<typeof signInSchema>;
 export type SignUpInput = z.infer<typeof signUpSchema>;
 export type CreateGameInput = z.infer<typeof createGameSchema>;
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
