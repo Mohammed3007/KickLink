@@ -11,6 +11,7 @@ import { requireUser } from "@/lib/session";
 import { getGame } from "@/lib/queries";
 import { BackHeader } from "@/components/app/back-header";
 import { GameCta } from "@/components/app/game-cta";
+import { RegistrationSummary } from "@/components/app/registration-summary";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AvatarStack } from "@/components/ui/avatar";
@@ -101,6 +102,16 @@ export default async function GameDetailPage({
             )}
           </Card>
         </Link>
+
+        {/* Viewer registration state */}
+        <RegistrationSummary
+          registration={game.myReg}
+          game={{
+            model: game.model,
+            startsAt: game.startsAt,
+            priceCents: game.priceCents,
+          }}
+        />
 
         {/* Policy */}
         <Card className="p-4">
