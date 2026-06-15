@@ -31,6 +31,7 @@ export default async function ParticipantsPage({
                 name={r.user.name}
                 color={r.user.avatarColor}
                 you={r.userId === user.id}
+                attendanceStatus={r.attendance?.status ?? null}
               />
             ))}
             {game.confirmed.length === 0 && (
@@ -67,11 +68,13 @@ function PersonRow({
   color,
   you,
   pos,
+  attendanceStatus,
 }: {
   name: string;
   color: string;
   you?: boolean;
   pos?: number;
+  attendanceStatus?: "PRESENT" | "NO_SHOW" | null;
 }) {
   return (
     <div className="flex items-center gap-3 p-3.5">
@@ -82,6 +85,8 @@ function PersonRow({
       )}
       <Avatar name={name} color={color} size={36} />
       <span className="flex-1 font-medium text-ink">{name}</span>
+      {attendanceStatus === "PRESENT" && <Badge tone="ok">Present</Badge>}
+      {attendanceStatus === "NO_SHOW" && <Badge tone="bad">No-show</Badge>}
       {you && <Badge tone="brand">You</Badge>}
     </div>
   );

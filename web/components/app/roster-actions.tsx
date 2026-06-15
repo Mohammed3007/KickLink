@@ -2,15 +2,17 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, X, Loader2 } from "lucide-react";
-import { markPaid, removePlayer } from "@/lib/actions/manage";
+import { Check, X, Loader2, UserCheck, UserX } from "lucide-react";
+import { markPaid, recordAttendance, removePlayer } from "@/lib/actions/manage";
 
 export function RosterActions({
   registrationId,
   showMarkPaid,
+  attendanceStatus,
 }: {
   registrationId: string;
   showMarkPaid: boolean;
+  attendanceStatus?: "PRESENT" | "NO_SHOW" | null;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -26,7 +28,18 @@ export function RosterActions({
   }
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex flex-wrap items-center justify-end gap-1.5">
+      {attendanceStatus && (
+        <span
+          className={
+            attendanceStatus === "PRESENT"
+              ? "rounded-lg bg-ok-bg px-2.5 py-1.5 text-xs font-semibold text-ok"
+              : "rounded-lg bg-bad-bg px-2.5 py-1.5 text-xs font-semibold text-bad"
+          }
+        >
+          {attendanceStatus === "PRESENT" ? "Present" : "No-show"}
+        </span>
+      )}
       {showMarkPaid && (
         <button
           onClick={() => run(() => markPaid(registrationId))}
@@ -35,6 +48,18 @@ export function RosterActions({
           <Check className="size-3.5" /> Mark paid
         </button>
       )}
+      <button
+        onClick={() => run(() => recordAttendance(registrationId, "PRESENT"))}
+        className="flex items-center gap-1 rounded-lg bg-ok-bg px-2.5 py-1.5 text-xs font-semibold text-ok transition-opacity hover:opacity-80"
+      >
+        <UserCheck className="size-3.5" /> Present
+      </button>
+      <button
+        onClick={() => run(() => recordAttendance(registrationId, "NO_SHOW"))}
+        className="flex items-center gap-1 rounded-lg bg-bad-bg px-2.5 py-1.5 text-xs font-semibold text-bad transition-opacity hover:opacity-80"
+      >
+        <UserX className="size-3.5" /> No-show
+      </button>
       <button
         onClick={() => run(() => removePlayer(registrationId))}
         aria-label="Remove player"

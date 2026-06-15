@@ -12,7 +12,10 @@ export async function getGame(gameId: string, viewerId?: string) {
     include: {
       org: true,
       registrations: {
-        include: { user: { select: { id: true, name: true, avatarColor: true } } },
+        include: {
+          attendance: true,
+          user: { select: { id: true, name: true, avatarColor: true } },
+        },
         orderBy: { createdAt: "asc" },
       },
     },

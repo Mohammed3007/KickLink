@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import type { AttendanceStatus } from "@/lib/generated/prisma/client";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { createGameSchema, announcementSchema } from "@/lib/validators";
@@ -150,4 +151,42 @@ export async function removePlayer(registrationId: string) {
 
   revalidatePath(`/manage/games/${reg.gameId}`);
   revalidatePath(`/games/${reg.gameId}`);
+}
+
+export async function recordAttendance(
+  registrationId: string,
+  status: AttendanceStatus
+) {
+  const user = await requireUser();
+  if (!["PRESENT", "NO_SHOW"].includes(status)) return;
+
+  const reg = await db.registration.findUnique({
+    where: { id: registrationId },
+    include: { game: true },
+  });
+  if (!reg) return;
+  await assertOrganizer(user.id, reg.game.orgId);
+
+  if (!["CONFIRMED", "PROVISIONAL", "OFFERED"].includes(reg.status)) {
+    return;
+  }
+
+  await db.attendanceRecord.upsert({
+    where: { registrationId },
+    create: {
+      registrationId,
+      gameId: reg.gameId,
+      userId: reg.userId,
+      recordedById: user.id,
+      status,
+    },
+    update: {
+      status,
+      recordedById: user.id,
+      recordedAt: new Date(),
+    },
+  });
+
+  revalidatePath(`/manage/games/${reg.gameId}`);
+  revalidatePath(`/games/${reg.gameId}/participants`);
 }

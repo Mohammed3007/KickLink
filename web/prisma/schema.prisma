@@ -70,6 +70,11 @@ enum OrganizerApplicationStatus {
   REJECTED
 }
 
+enum AttendanceStatus {
+  PRESENT
+  NO_SHOW
+}
+
 enum AuditAction {
   ORGANIZER_APPLICATION_APPROVED
   ORGANIZER_APPLICATION_REJECTED
@@ -102,6 +107,8 @@ model User {
   organizerApplications OrganizerApplication[]
   reviewedOrganizerApplications OrganizerApplication[] @relation("OrganizerApplicationReviewedBy")
   auditLogEntries AuditLogEntry[] @relation("AuditActor")
+  attendanceRecords AttendanceRecord[] @relation("AttendanceUser")
+  recordedAttendanceRecords AttendanceRecord[] @relation("AttendanceRecorder")
 
   verificationTokens EmailVerificationToken[]
   passwordResets     PasswordResetToken[]
@@ -240,6 +247,7 @@ model Game {
 
   registrations Registration[]
   payments      Payment[]
+  attendanceRecords AttendanceRecord[]
 
   @@index([orgId])
   @@index([startsAt])
@@ -258,9 +266,33 @@ model Registration {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   gameId String
   game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  attendance AttendanceRecord?
 
   @@unique([userId, gameId])
   @@index([gameId])
+}
+
+model AttendanceRecord {
+  id             String           @id @default(cuid())
+  status         AttendanceStatus
+  note           String           @default("")
+  recordedAt     DateTime         @default(now())
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  registrationId String           @unique
+  registration   Registration     @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  gameId         String
+  game           Game             @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User             @relation("AttendanceUser", fields: [userId], references: [id], onDelete: Cascade)
+  recordedById   String?
+  recordedBy     User?            @relation("AttendanceRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  @@index([gameId])
+  @@index([userId])
+  @@index([recordedById])
+  @@index([status])
 }
 
 model Payment {

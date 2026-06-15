@@ -24,6 +24,8 @@ export default async function ManageGamePage({
   const paidCount = game.registrations.filter((r) => r.payStatus === "PAID").length;
   const revenue = paidCount * game.priceCents;
   const unpaid = game.confirmed.filter((r) => r.status === "PROVISIONAL");
+  const presentCount = game.confirmed.filter((r) => r.attendance?.status === "PRESENT").length;
+  const noShowCount = game.confirmed.filter((r) => r.attendance?.status === "NO_SHOW").length;
 
   return (
     <div className="mx-auto max-w-2xl pb-10">
@@ -38,10 +40,12 @@ export default async function ManageGamePage({
             {formatGameDate(game.startsAt)} · {formatTime(game.startsAt)} ·{" "}
             {game.venue}
           </p>
-          <div className="mt-4 grid grid-cols-3 gap-2.5">
+          <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-5">
             <Stat icon={<Users className="size-4" />} label="Filled" value={`${game.taken}/${game.capacity}`} />
             <Stat icon={<Clock className="size-4" />} label="Unpaid" value={String(unpaid.length)} />
             <Stat icon={<Wallet className="size-4" />} label="Collected" value={formatPrice(revenue)} />
+            <Stat icon={<Users className="size-4" />} label="Present" value={String(presentCount)} />
+            <Stat icon={<Users className="size-4" />} label="No-show" value={String(noShowCount)} />
           </div>
           <Link
             href={`/games/${game.id}`}
@@ -66,6 +70,7 @@ export default async function ManageGamePage({
                 <RosterActions
                   registrationId={r.id}
                   showMarkPaid={r.status === "PROVISIONAL"}
+                  attendanceStatus={r.attendance?.status ?? null}
                 />
               </div>
             ))}
