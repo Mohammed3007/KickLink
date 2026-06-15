@@ -171,21 +171,26 @@ export async function recordAttendance(
     return;
   }
 
-  await db.attendanceRecord.upsert({
-    where: { registrationId },
-    create: {
-      registrationId,
-      gameId: reg.gameId,
-      userId: reg.userId,
-      recordedById: user.id,
-      status,
-    },
-    update: {
-      status,
-      recordedById: user.id,
-      recordedAt: new Date(),
-    },
-  });
+  try {
+    await db.attendanceRecord.upsert({
+      where: { registrationId },
+      create: {
+        registrationId,
+        gameId: reg.gameId,
+        userId: reg.userId,
+        recordedById: user.id,
+        status,
+      },
+      update: {
+        status,
+        recordedById: user.id,
+        recordedAt: new Date(),
+      },
+    });
+  } catch (error) {
+    console.error("Attendance record failed", error);
+    return;
+  }
 
   revalidatePath(`/manage/games/${reg.gameId}`);
   revalidatePath(`/games/${reg.gameId}/participants`);

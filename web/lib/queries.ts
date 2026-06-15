@@ -13,7 +13,6 @@ export async function getGame(gameId: string, viewerId?: string) {
       org: true,
       registrations: {
         include: {
-          attendance: true,
           user: { select: { id: true, name: true, avatarColor: true } },
         },
         orderBy: { createdAt: "asc" },
@@ -22,10 +21,32 @@ export async function getGame(gameId: string, viewerId?: string) {
   });
   if (!game) return null;
 
-  const confirmed = game.registrations.filter((r) =>
+  let attendanceByRegistrationId = new Map<
+    string,
+    { status: "PRESENT" | "NO_SHOW" }
+  >();
+  try {
+    const records = await db.attendanceRecord.findMany({
+      where: { gameId },
+      select: { registrationId: true, status: true },
+    });
+    attendanceByRegistrationId = new Map(
+      records.map((record) => [record.registrationId, { status: record.status }])
+    );
+  } catch (error) {
+    // Production may briefly run new code before the attendance migration is applied.
+    console.warn("Attendance records unavailable", error);
+  }
+
+  const registrations = game.registrations.map((registration) => ({
+    ...registration,
+    attendance: attendanceByRegistrationId.get(registration.id) ?? null,
+  }));
+
+  const confirmed = registrations.filter((r) =>
     OCCUPYING.includes(r.status as (typeof OCCUPYING)[number])
   );
-  const waitlist = game.registrations
+  const waitlist = registrations
     .filter((r) => r.status === "WAITLISTED")
     .sort((a, b) => (a.waitlistPos ?? 999) - (b.waitlistPos ?? 999));
 
@@ -33,11 +54,12 @@ export async function getGame(gameId: string, viewerId?: string) {
   const spotsLeft = Math.max(0, game.capacity - taken);
   const isFull = spotsLeft <= 0;
   const myReg = viewerId
-    ? game.registrations.find((r) => r.userId === viewerId) ?? null
+    ? registrations.find((r) => r.userId === viewerId) ?? null
     : null;
 
   return {
     ...game,
+    registrations,
     confirmed,
     waitlist,
     taken,
