@@ -32,6 +32,11 @@ export type ResetState = { error?: string; ok?: boolean } | undefined;
 const setupError =
   "KickLink could not reach the production database. Check DATABASE_URL in Vercel and run the Prisma migrations.";
 
+function safeReturnPath(value: string | undefined) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/home";
+  return value;
+}
+
 function logAuthFailure(scope: string, error: unknown) {
   console.error(`${scope} failed`, error);
   return { error: setupError };
@@ -68,7 +73,7 @@ export async function authenticate(
     return logAuthFailure("Login", error);
   }
 
-  redirect("/home");
+  redirect(safeReturnPath(parsed.data.returnTo));
 }
 
 export async function register(

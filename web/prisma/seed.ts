@@ -46,6 +46,8 @@ async function main() {
       name: "Maria Santos",
       passwordHash: hash,
       emailVerified: new Date(),
+      organizerApproved: true,
+      platformRole: "ADMIN",
       avatarColor: "#12915A",
       skill: "Advanced",
     },

@@ -6,7 +6,18 @@ import { isGoogleEnabled } from "@/lib/flags";
 
 export const metadata: Metadata = { title: "Log in" };
 
-export default function LoginPage() {
+function safeReturnPath(value: string | undefined) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/home";
+  return value;
+}
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string }>;
+}) {
+  const params = await searchParams;
+  const returnTo = safeReturnPath(params.from);
   const google = isGoogleEnabled();
   return (
     <div>
@@ -22,7 +33,7 @@ export default function LoginPage() {
             <OrDivider />
           </>
         )}
-        <LoginForm />
+        <LoginForm returnTo={returnTo} />
       </div>
 
       <p className="mt-6 text-sm text-ink-2">

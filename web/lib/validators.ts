@@ -3,6 +3,7 @@ import { z } from "zod";
 export const signInSchema = z.object({
   email: z.string().email("Enter a valid email"),
   password: z.string().min(1, "Password is required"),
+  returnTo: z.string().max(300).optional(),
 });
 
 export const signUpSchema = z.object({

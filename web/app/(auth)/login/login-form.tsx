@@ -17,12 +17,14 @@ function SubmitButton() {
   );
 }
 
-export function LoginForm() {
+export function LoginForm({ returnTo = "/home" }: { returnTo?: string }) {
   const [state, formAction] = useActionState(authenticate, undefined);
   const [resent, setResent] = useState(false);
 
   return (
     <form action={formAction} className="space-y-4">
+      <input type="hidden" name="returnTo" value={returnTo} />
+
       {state?.error && (
         <div className="space-y-2 rounded-xl bg-bad-bg px-3.5 py-3 text-sm font-medium text-bad">
           <div className="flex items-center gap-2">
