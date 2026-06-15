@@ -1,6 +1,7 @@
 "use server";
 
 import { AuthError } from "next-auth";
+import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { signIn, signOut } from "@/auth";
 import { db } from "@/lib/db";
@@ -41,17 +42,24 @@ export async function authenticate(
   }
 
   try {
+    // Verify credentials without throwing a redirect from inside signIn.
     await signIn("credentials", {
       email,
       password: parsed.data.password,
-      redirectTo: "/home",
+      redirect: false,
     });
   } catch (error) {
     if (error instanceof AuthError) {
       return { error: "Invalid email or password." };
     }
-    throw error;
+    // Surface the real cause instead of a blank 500 (temporary, for debugging).
+    return {
+      error: "Login error: " + (error instanceof Error ? error.message : String(error)),
+    };
   }
+
+  // Success — redirect outside the try so NEXT_REDIRECT isn't swallowed.
+  redirect("/home");
 }
 
 // ─── Sign up ─────────────────────────────────────────────────────
