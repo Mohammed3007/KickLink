@@ -2,11 +2,10 @@ import Link from "next/link";
 import { ArrowRight, CreditCard, Receipt, Wallet } from "lucide-react";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
-import { PageHeader, SectionLabel } from "@/components/app/page-header";
 import { ConnectPayments } from "@/components/app/connect-payments";
+import { OrganizerPageShell, OrganizerPrimaryAction } from "@/components/app/organizer-shell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { isStripeEnabled } from "@/lib/flags";
 import { refreshConnectStatus } from "@/lib/actions/payments";
 import { formatGameDate, formatPrice, formatTime } from "@/lib/utils";
@@ -76,16 +75,13 @@ export default async function ManageFinancesPage({
   );
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-8">
-      <PageHeader
+    <OrganizerPageShell
         title="Finances"
         subtitle="Track player payments and payout readiness."
-        action={
-          <Link href="/manage">
-            <Button variant="secondary">Dashboard</Button>
-          </Link>
-        }
-      />
+        active="/manage/finances"
+        compact
+        action={<OrganizerPrimaryAction href="/manage/games/new">New paid game</OrganizerPrimaryAction>}
+      >
 
       <div className="mt-5 grid grid-cols-3 gap-2.5">
         <Stat icon={<Wallet className="size-4" />} label="Collected" value={formatPrice(collected)} />
@@ -149,7 +145,15 @@ export default async function ManageFinancesPage({
           <p className="p-5 text-center text-sm text-ink-3">No payments recorded yet.</p>
         )}
       </Card>
-    </div>
+    </OrganizerPageShell>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="mb-3 mt-7 text-xs font-bold uppercase tracking-[0.16em] text-ink-3">
+      {children}
+    </h2>
   );
 }
 

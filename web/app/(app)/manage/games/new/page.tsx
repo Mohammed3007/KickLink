@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
-import { BackHeader } from "@/components/app/back-header";
+import { OrganizerPageShell } from "@/components/app/organizer-shell";
 import { CreateGameForm } from "@/components/app/create-game-form";
 
 export default async function NewGamePage() {
@@ -15,19 +15,18 @@ export default async function NewGamePage() {
   if (orgs.length === 0) redirect("/manage");
 
   return (
-    <div className="mx-auto max-w-xl pb-10">
-      <BackHeader title="New game" />
-      <div className="px-5 pt-5">
-        <h1 className="text-2xl font-bold tracking-[-0.02em] text-ink">
-          Create a game
-        </h1>
-        <p className="mt-1 text-ink-2">
-          Set it up once — players can find and join in seconds.
-        </p>
-        <div className="mt-6">
+    <OrganizerPageShell
+      title="Create a game"
+      subtitle="Set up one-off or weekly pickup games with roster capacity, venue details and payment model."
+      active="/manage/games/new"
+      backHref="/manage"
+      compact
+    >
+      <div className="mx-auto max-w-xl">
+        <div className="rounded-2xl bg-surface p-5 ring-1 ring-line shadow-card">
           <CreateGameForm orgs={orgs} />
         </div>
       </div>
-    </div>
+    </OrganizerPageShell>
   );
 }

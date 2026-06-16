@@ -180,11 +180,10 @@ export default async function ManagePage({
               }
             />
             <ToolLink
-              href="/manage"
+              href="/manage/announcements"
               icon={<Megaphone className="size-5" />}
               title="Announcements"
-              body="Coming next: send field changes and reminders to club members from here."
-              muted
+              body="Send field changes, reminders and club updates to members."
             />
           </div>
         </Card>

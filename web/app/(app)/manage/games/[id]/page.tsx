@@ -1,9 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { Users, Wallet, Clock } from "lucide-react";
+import { Clock, Users, Wallet } from "lucide-react";
 import { requireUser, isOrganizer } from "@/lib/session";
 import { getGame } from "@/lib/queries";
-import { BackHeader } from "@/components/app/back-header";
+import { OrganizerPageShell } from "@/components/app/organizer-shell";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge, PayBadge } from "@/components/ui/badge";
@@ -22,63 +22,59 @@ export default async function ManageGamePage({
   if (!game) notFound();
   if (!(await isOrganizer(user.id, game.orgId))) redirect(`/games/${id}`);
 
-  const paidCount = game.registrations.filter((r) => r.payStatus === "PAID").length;
+  const paidCount = game.registrations.filter((registration) => registration.payStatus === "PAID").length;
   const revenue = paidCount * game.priceCents;
-  const unpaid = game.confirmed.filter((r) => r.status === "PROVISIONAL");
-  const presentCount = game.confirmed.filter((r) => r.attendance?.status === "PRESENT").length;
-  const noShowCount = game.confirmed.filter((r) => r.attendance?.status === "NO_SHOW").length;
-  const offers = game.registrations.filter((r) => r.status === "OFFERED");
+  const unpaid = game.confirmed.filter((registration) => registration.status === "PROVISIONAL");
+  const presentCount = game.confirmed.filter((registration) => registration.attendance?.status === "PRESENT").length;
+  const noShowCount = game.confirmed.filter((registration) => registration.attendance?.status === "NO_SHOW").length;
+  const offers = game.registrations.filter((registration) => registration.status === "OFFERED");
   const cancelled = game.registrations
-    .filter((r) => r.status === "CANCELLED")
+    .filter((registration) => registration.status === "CANCELLED")
     .slice()
     .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
     .slice(0, 6);
   const canOfferWaitlist = game.taken < game.capacity;
 
   return (
-    <div className="mx-auto max-w-2xl pb-10">
-      <BackHeader title="Manage game" />
-
-      <div className="space-y-3 px-4 pt-3">
+    <OrganizerPageShell
+      title={game.title}
+      subtitle={`${formatGameDate(game.startsAt)} · ${formatTime(game.startsAt)} · ${game.venue}`}
+      active="/manage"
+      backHref="/manage"
+      compact
+      action={
+        <Link
+          href={`/games/${game.id}`}
+          className="inline-flex h-11 items-center justify-center rounded-2xl border border-white/10 bg-white/8 px-5 text-sm font-bold text-white transition-colors hover:bg-white/14"
+        >
+          View public page
+        </Link>
+      }
+    >
+      <div className="mx-auto max-w-3xl space-y-4">
         <Card className="p-5">
-          <h1 className="text-xl font-bold tracking-[-0.01em] text-ink">
-            {game.title}
-          </h1>
-          <p className="text-sm text-ink-3">
-            {formatGameDate(game.startsAt)} · {formatTime(game.startsAt)} ·{" "}
-            {game.venue}
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
             <Stat icon={<Users className="size-4" />} label="Filled" value={`${game.taken}/${game.capacity}`} />
             <Stat icon={<Clock className="size-4" />} label="Unpaid" value={String(unpaid.length)} />
             <Stat icon={<Wallet className="size-4" />} label="Collected" value={formatPrice(revenue)} />
             <Stat icon={<Users className="size-4" />} label="Present" value={String(presentCount)} />
             <Stat icon={<Users className="size-4" />} label="No-show" value={String(noShowCount)} />
           </div>
-          <Link
-            href={`/games/${game.id}`}
-            className="mt-4 inline-block text-sm font-semibold text-brand-700"
-          >
-            View public page →
-          </Link>
         </Card>
 
-        <section>
-          <h2 className="mb-2 px-1 text-sm font-semibold uppercase tracking-wide text-ink-3">
-            Roster · {game.confirmed.length}/{game.capacity}
-          </h2>
+        <RosterSection title={`Roster · ${game.confirmed.length}/${game.capacity}`}>
           <Card className="divide-y divide-line-2">
-            {game.confirmed.map((r) => (
-              <div key={r.id} className="flex items-center gap-3 p-3.5">
-                <Avatar name={r.user.name} color={r.user.avatarColor} size={36} />
+            {game.confirmed.map((registration) => (
+              <div key={registration.id} className="flex items-center gap-3 p-3.5">
+                <Avatar name={registration.user.name} color={registration.user.avatarColor} size={36} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-ink">{r.user.name}</p>
-                  <PayBadge status={r.payStatus} />
+                  <p className="truncate font-medium text-ink">{registration.user.name}</p>
+                  <PayBadge status={registration.payStatus} />
                 </div>
                 <RosterActions
-                  registrationId={r.id}
-                  showMarkPaid={r.status === "PROVISIONAL"}
-                  attendanceStatus={r.attendance?.status ?? null}
+                  registrationId={registration.id}
+                  showMarkPaid={registration.status === "PROVISIONAL"}
+                  attendanceStatus={registration.attendance?.status ?? null}
                 />
               </div>
             ))}
@@ -86,50 +82,42 @@ export default async function ManageGamePage({
               <p className="p-4 text-sm text-ink-3">No players yet.</p>
             )}
           </Card>
-        </section>
+        </RosterSection>
 
         {offers.length > 0 && (
-          <section>
-            <h2 className="mb-2 px-1 text-sm font-semibold uppercase tracking-wide text-ink-3">
-              Spot offers · {offers.length}
-            </h2>
+          <RosterSection title={`Spot offers · ${offers.length}`}>
             <Card className="divide-y divide-line-2">
-              {offers.map((r) => (
-                <div key={r.id} className="flex items-center gap-3 p-3.5">
-                  <Avatar name={r.user.name} color={r.user.avatarColor} size={36} />
+              {offers.map((registration) => (
+                <div key={registration.id} className="flex items-center gap-3 p-3.5">
+                  <Avatar name={registration.user.name} color={registration.user.avatarColor} size={36} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-ink">{r.user.name}</p>
+                    <p className="truncate font-medium text-ink">{registration.user.name}</p>
                     <p className="text-xs text-ink-3">
-                      Expires {r.offerExpiresAt ? r.offerExpiresAt.toLocaleTimeString() : "soon"}
+                      Expires {registration.offerExpiresAt ? registration.offerExpiresAt.toLocaleTimeString() : "soon"}
                     </p>
                   </div>
                   <Badge tone="alert">Offered</Badge>
                   <RosterActions
-                    registrationId={r.id}
+                    registrationId={registration.id}
                     showMarkPaid={false}
-                    attendanceStatus={r.attendance?.status ?? null}
+                    attendanceStatus={registration.attendance?.status ?? null}
                   />
                 </div>
               ))}
             </Card>
-          </section>
+          </RosterSection>
         )}
 
         {game.waitlist.length > 0 && (
-          <section>
-            <h2 className="mb-2 px-1 text-sm font-semibold uppercase tracking-wide text-ink-3">
-              Waitlist · {game.waitlist.length}
-            </h2>
+          <RosterSection title={`Waitlist · ${game.waitlist.length}`}>
             <Card className="divide-y divide-line-2">
-              {game.waitlist.map((r, i) => (
-                <div key={r.id} className="flex items-center gap-3 p-3.5">
-                  <span className="w-5 text-center text-sm font-semibold text-ink-3">
-                    {i + 1}
-                  </span>
-                  <Avatar name={r.user.name} color={r.user.avatarColor} size={36} />
-                  <span className="flex-1 font-medium text-ink">{r.user.name}</span>
+              {game.waitlist.map((registration, index) => (
+                <div key={registration.id} className="flex items-center gap-3 p-3.5">
+                  <span className="w-5 text-center text-sm font-semibold text-ink-3">{index + 1}</span>
+                  <Avatar name={registration.user.name} color={registration.user.avatarColor} size={36} />
+                  <span className="flex-1 font-medium text-ink">{registration.user.name}</span>
                   <Badge tone="info">Waiting</Badge>
-                  <WaitlistActions registrationId={r.id} canOffer={canOfferWaitlist} />
+                  <WaitlistActions registrationId={registration.id} canOffer={canOfferWaitlist} />
                 </div>
               ))}
             </Card>
@@ -138,32 +126,42 @@ export default async function ManageGamePage({
                 A spot must open before a waitlisted player can be offered a place.
               </p>
             )}
-          </section>
+          </RosterSection>
         )}
 
         {cancelled.length > 0 && (
-          <section>
-            <h2 className="mb-2 px-1 text-sm font-semibold uppercase tracking-wide text-ink-3">
-              Recently cancelled · {cancelled.length}
-            </h2>
+          <RosterSection title={`Recently cancelled · ${cancelled.length}`}>
             <Card className="divide-y divide-line-2">
-              {cancelled.map((r) => (
-                <div key={r.id} className="flex items-center gap-3 p-3.5 opacity-80">
-                  <Avatar name={r.user.name} color={r.user.avatarColor} size={36} />
+              {cancelled.map((registration) => (
+                <div key={registration.id} className="flex items-center gap-3 p-3.5 opacity-80">
+                  <Avatar name={registration.user.name} color={registration.user.avatarColor} size={36} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-ink">{r.user.name}</p>
-                    <p className="text-xs text-ink-3">
-                      Cancelled {r.updatedAt.toLocaleString()}
-                    </p>
+                    <p className="truncate font-medium text-ink">{registration.user.name}</p>
+                    <p className="text-xs text-ink-3">Cancelled {registration.updatedAt.toLocaleString()}</p>
                   </div>
                   <Badge tone="bad">Cancelled</Badge>
                 </div>
               ))}
             </Card>
-          </section>
+          </RosterSection>
         )}
       </div>
-    </div>
+    </OrganizerPageShell>
+  );
+}
+
+function RosterSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <h2 className="mb-2 px-1 text-sm font-bold uppercase tracking-wide text-ink-3">{title}</h2>
+      {children}
+    </section>
   );
 }
 
@@ -182,7 +180,7 @@ function Stat({
         {icon}
         <span className="text-xs font-medium">{label}</span>
       </div>
-      <p className="mt-1 text-lg font-bold text-ink">{value}</p>
+      <p className="mt-1 text-lg font-black text-ink">{value}</p>
     </div>
   );
 }

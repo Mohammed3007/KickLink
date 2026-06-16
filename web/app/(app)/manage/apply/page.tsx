@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
-import { BackHeader } from "@/components/app/back-header";
+import { OrganizerPageShell } from "@/components/app/organizer-shell";
 import { OrganizerApplicationForm } from "@/components/app/organizer-application-form";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,47 +24,53 @@ export default async function OrganizerApplyPage({
 
   if (user.organizerApproved) {
     return (
-      <div className="mx-auto max-w-xl pb-10">
-        <BackHeader title="Organizer approval" />
-        <div className="px-5 pt-5">
+      <OrganizerPageShell
+        title="Organizer access approved"
+        subtitle="You can create clubs, post games and connect payout accounts for your organizations."
+        active="/manage"
+        backHref="/manage"
+        compact
+      >
+        <div className="mx-auto max-w-xl">
           <Card className="p-6">
-            <Badge tone="ok" dot>Approved</Badge>
-            <h1 className="mt-3 text-2xl font-bold tracking-[-0.02em] text-ink">
-              You can create clubs
-            </h1>
+            <Badge tone="ok" dot>
+              Approved
+            </Badge>
+            <h2 className="mt-3 text-2xl font-black tracking-[-0.02em] text-ink">
+              Ready to create your first club
+            </h2>
             <p className="mt-2 text-sm leading-6 text-ink-2">
-              Your organizer access is approved. Create a club when you are ready.
+              Create a club when you are ready. Players can join that private organization before
+              registering for games.
             </p>
             <Link href="/manage/clubs/new" className="mt-5 inline-block">
               <Button>Create club</Button>
             </Link>
           </Card>
         </div>
-      </div>
+      </OrganizerPageShell>
     );
   }
 
   return (
-    <div className="mx-auto max-w-xl pb-10">
-      <BackHeader title="Organizer application" />
-      <div className="px-5 pt-5">
-        <h1 className="text-2xl font-bold tracking-[-0.02em] text-ink">
-          Apply to organize
-        </h1>
-        <p className="mt-1 text-ink-2">
-          Tell us about the pickup group you want to run on KickLink.
-        </p>
-
+    <OrganizerPageShell
+      title="Apply to organize"
+      subtitle="Tell us about the pickup group you want to run on KickLink."
+      active="/manage"
+      backHref="/manage"
+      compact
+    >
+      <div className="mx-auto max-w-xl">
         {latest ? (
-          <Card className="mt-6 p-5">
+          <Card className="p-5">
             {params.submitted === "1" && (
-              <div className="mb-4 rounded-xl bg-good-bg px-3.5 py-3 text-sm font-semibold text-good">
+              <div className="mb-4 rounded-xl bg-ok-bg px-3.5 py-3 text-sm font-semibold text-ok">
                 Application received. A platform admin can now review it.
               </div>
             )}
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="font-bold text-ink">{latest.clubName}</h2>
+                <h2 className="font-black text-ink">{latest.clubName}</h2>
                 <p className="text-sm text-ink-2">{latest.city}</p>
               </div>
               <Badge tone={latest.status === "REJECTED" ? "bad" : "warn"} dot>
@@ -78,17 +84,17 @@ export default async function OrganizerApplyPage({
             )}
           </Card>
         ) : (
-          <div className="mt-6">
+          <Card className="p-5">
             <OrganizerApplicationForm error={formError} />
-          </div>
+          </Card>
         )}
 
         {latest?.status === "REJECTED" && (
-          <div className="mt-6">
+          <Card className="mt-5 p-5">
             <OrganizerApplicationForm error={formError} />
-          </div>
+          </Card>
         )}
       </div>
-    </div>
+    </OrganizerPageShell>
   );
 }
