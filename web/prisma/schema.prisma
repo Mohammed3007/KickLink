@@ -81,6 +81,16 @@ enum AuditAction {
   ORGANIZATION_CREATED
 }
 
+enum RecurrenceCadence {
+  WEEKLY
+}
+
+enum SeriesPaymentMode {
+  PER_GAME
+  UPFRONT
+  WEEKLY_RECURRING
+}
+
 // ─── Models ─────────────────────────────────────────────────────
 
 model User {
@@ -109,6 +119,7 @@ model User {
   auditLogEntries AuditLogEntry[] @relation("AuditActor")
   attendanceRecords AttendanceRecord[] @relation("AttendanceUser")
   recordedAttendanceRecords AttendanceRecord[] @relation("AttendanceRecorder")
+  recurringSeries RecurringEventSeries[] @relation("SeriesCreator")
 
   verificationTokens EmailVerificationToken[]
   passwordResets     PasswordResetToken[]
@@ -207,6 +218,7 @@ model Organization {
   memberships   Membership[]
   games         Game[]
   announcements Announcement[]
+  recurringSeries RecurringEventSeries[]
 }
 
 model Membership {
@@ -241,16 +253,57 @@ model Game {
   policy           String         @default("Full refund up to 24h before kickoff. No refund after.")
   rules            String         @default("")
   createdAt        DateTime       @default(now())
+  seriesId         String?
+  occurrenceIndex  Int?
 
   orgId String
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  series RecurringEventSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
 
   registrations Registration[]
   payments      Payment[]
   attendanceRecords AttendanceRecord[]
 
   @@index([orgId])
+  @@index([seriesId])
   @@index([startsAt])
+  @@unique([seriesId, occurrenceIndex])
+}
+
+model RecurringEventSeries {
+  id               String            @id @default(cuid())
+  title            String
+  cadence          RecurrenceCadence @default(WEEKLY)
+  intervalWeeks    Int               @default(1)
+  occurrenceCount  Int
+  startsAt         DateTime
+  endsAt           DateTime
+  venue            String
+  address          String            @default("")
+  durationMins     Int               @default(90)
+  format           String            @default("7-a-side")
+  skill            String            @default("Intermediate")
+  priceCents       Int               @default(0)
+  capacity         Int               @default(14)
+  model            GameModel         @default(PAY)
+  paymentMode      SeriesPaymentMode @default(PER_GAME)
+  policy           String            @default("Full refund up to 24h before kickoff. No refund after.")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  archivedAt       DateTime?
+
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User   @relation("SeriesCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  games Game[]
+
+  @@index([orgId])
+  @@index([createdById])
+  @@index([startsAt])
+  @@index([archivedAt])
 }
 
 model Registration {
