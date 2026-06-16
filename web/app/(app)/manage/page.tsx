@@ -170,7 +170,7 @@ export default async function ManagePage({
               body={`${totals.paymentReady}/${totals.clubs} clubs ready to charge players through Stripe Connect.`}
             />
             <ToolLink
-              href={nextGame ? `/manage/games/${nextGame.id}` : "/manage/games/new"}
+              href={nextGame ? `/manage/games/${nextGame.id}` : "/manage/games"}
               icon={<Users className="size-5" />}
               title="Manage a roster"
               body={
@@ -178,6 +178,12 @@ export default async function ManagePage({
                   ? `Next up: ${nextGame.title} at ${formatTime(nextGame.startsAt)}.`
                   : "Create your next game to start building a roster."
               }
+            />
+            <ToolLink
+              href="/manage/members"
+              icon={<ShieldCheck className="size-5" />}
+              title="Members and invites"
+              body="See who belongs to each club and share the invite code testers need."
             />
             <ToolLink
               href="/manage/announcements"

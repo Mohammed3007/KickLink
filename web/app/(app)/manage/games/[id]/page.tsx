@@ -39,8 +39,8 @@ export default async function ManageGamePage({
     <OrganizerPageShell
       title={game.title}
       subtitle={`${formatGameDate(game.startsAt)} · ${formatTime(game.startsAt)} · ${game.venue}`}
-      active="/manage"
-      backHref="/manage"
+      active="/manage/games"
+      backHref="/manage/games"
       compact
       action={
         <Link

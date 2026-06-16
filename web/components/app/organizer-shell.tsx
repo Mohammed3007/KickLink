@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, CreditCard, LayoutDashboard, Megaphone, Plus, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CalendarDays, CreditCard, LayoutDashboard, Megaphone, Plus, ShieldCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const ORGANIZER_TABS = [
   { href: "/manage", label: "Command", icon: LayoutDashboard },
+  { href: "/manage/games", label: "Games", icon: CalendarDays },
   { href: "/manage/games/new", label: "New game", icon: CalendarDays },
+  { href: "/manage/members", label: "Members", icon: Users },
   { href: "/manage/announcements", label: "Announcements", icon: Megaphone },
   { href: "/manage/finances", label: "Finances", icon: CreditCard },
 ];
