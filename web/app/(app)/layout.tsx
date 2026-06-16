@@ -37,7 +37,7 @@ export default async function AppLayout({
   const isAdmin = isPlatformAdminUser(user);
 
   return (
-    <div className={cn("flex min-h-dvh", isOrganizer && "bg-[#f2f1ec]")}>
+    <div className={cn("flex min-h-dvh", isOrganizer ? "bg-[#f2f1ec]" : "bg-[#f8f7f1]")}>
       <Sidebar
         user={{ name: user.name, email: user.email, avatarColor: user.avatarColor }}
         unread={unread}

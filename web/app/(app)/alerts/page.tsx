@@ -3,7 +3,6 @@ import { Bell, Zap, Clock, Megaphone, ArrowLeftRight, Receipt } from "lucide-rea
 import type { LucideIcon } from "lucide-react";
 import { hasOrganizerAccess, requireUser } from "@/lib/session";
 import { getNotifications } from "@/lib/queries";
-import { PageHeader } from "@/components/app/page-header";
 import { OrganizerModePage, PlayerModePage } from "@/components/app/organizer-mode-page";
 import { Card } from "@/components/ui/card";
 import { Empty } from "@/components/app/empty";
@@ -29,7 +28,6 @@ export default async function AlertsPage() {
   const content = (
     <>
       <MarkRead hasUnread={hasUnread} />
-      {!isOrganizer && <PageHeader title="Alerts" />}
 
       <div className="mt-6 space-y-2.5">
         {notifs.length === 0 && (
@@ -81,7 +79,10 @@ export default async function AlertsPage() {
   }
 
   return (
-    <PlayerModePage>
+    <PlayerModePage
+      title="Alerts"
+      subtitle="Spot offers, receipts, reminders and club announcements land here."
+    >
       {content}
     </PlayerModePage>
   );

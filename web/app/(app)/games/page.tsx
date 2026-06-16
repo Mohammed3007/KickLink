@@ -1,7 +1,6 @@
 import { CalendarDays } from "lucide-react";
 import { hasOrganizerAccess, requireUser } from "@/lib/session";
 import { listClubGames, listPlayerGameHistory } from "@/lib/queries";
-import { PageHeader } from "@/components/app/page-header";
 import { OrganizerModePage, PlayerModePage } from "@/components/app/organizer-mode-page";
 import { GameCard } from "@/components/app/game-card";
 import { HistoryGameCard } from "@/components/app/history-game-card";
@@ -39,8 +38,6 @@ export default async function GamesPage({
 
   const content = (
     <>
-      {!isOrganizer && <PageHeader title="Games" />}
-
       <div className="mt-5">
         <Segment
           active={tab}
@@ -76,7 +73,10 @@ export default async function GamesPage({
   }
 
   return (
-    <PlayerModePage>
+    <PlayerModePage
+      title="Games"
+      subtitle="Track your upcoming matches, open spots and game history."
+    >
       {content}
     </PlayerModePage>
   );

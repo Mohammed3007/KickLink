@@ -18,7 +18,7 @@ export function BottomNav({
     : NAV_ITEMS;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-canvas/85 backdrop-blur-xl lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-gold-400/15 bg-[#fffdf6]/92 backdrop-blur-xl lg:hidden">
       <div className="mx-auto flex max-w-md items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)] pt-1.5">
         {items.map((item) => {
           const active =
@@ -31,11 +31,7 @@ export function BottomNav({
               href={item.href}
               className={cn(
                 "relative flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10.5px] font-medium transition-colors",
-                active
-                  ? isOrganizer
-                    ? "text-gold-500"
-                    : "text-brand-600"
-                  : "text-ink-3"
+                active ? "text-gold-500" : "text-ink-3 hover:text-field-950"
               )}
             >
               <span className="relative">

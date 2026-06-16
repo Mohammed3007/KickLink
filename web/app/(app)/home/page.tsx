@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ChevronRight, Zap, Clock } from "lucide-react";
 import { hasOrganizerAccess, requireUser } from "@/lib/session";
 import { getDashboard } from "@/lib/queries";
-import { PageHeader, SectionLabel } from "@/components/app/page-header";
+import { SectionLabel } from "@/components/app/page-header";
 import { OrganizerModePage, PlayerModePage } from "@/components/app/organizer-mode-page";
 import { GameCard } from "@/components/app/game-card";
 import { Card } from "@/components/ui/card";
@@ -39,8 +39,6 @@ export default async function HomePage() {
 
   const content = (
     <>
-      {!isOrganizer && <PageHeader title={`Hi, ${user.name.split(" ")[0]}`} subtitle={today} />}
-
       {/* Needs attention */}
       {hasAttention && (
         <>
@@ -174,7 +172,10 @@ export default async function HomePage() {
   }
 
   return (
-    <PlayerModePage>
+    <PlayerModePage
+      title={`Hi, ${user.name.split(" ")[0]}`}
+      subtitle={`${today}. Find your games, receipts and club updates in one place.`}
+    >
       {content}
     </PlayerModePage>
   );

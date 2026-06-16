@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
 import { hasOrganizerAccess, requireUser } from "@/lib/session";
 import { listClubs } from "@/lib/queries";
-import { PageHeader } from "@/components/app/page-header";
 import { OrganizerModePage, PlayerModePage } from "@/components/app/organizer-mode-page";
 import { JoinClubForm } from "@/components/app/join-club-form";
 import { Card } from "@/components/ui/card";
@@ -19,8 +18,6 @@ export default async function ClubsPage() {
 
   const content = (
     <>
-      {!isOrganizer && <PageHeader title="Clubs" />}
-
       <div className="mt-5">
         <JoinClubForm />
       </div>
@@ -71,7 +68,10 @@ export default async function ClubsPage() {
   }
 
   return (
-    <PlayerModePage>
+    <PlayerModePage
+      title="Clubs"
+      subtitle="Join private organizations and keep your regular pickup groups together."
+    >
       {content}
     </PlayerModePage>
   );

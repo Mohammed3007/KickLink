@@ -16,7 +16,7 @@ export function MobileHeader({
         "sticky top-0 z-30 flex items-center justify-between border-b px-4 py-3 backdrop-blur-xl lg:hidden",
         isOrganizer
           ? "border-gold-400/15 bg-field-950/92"
-          : "border-line bg-canvas/85"
+          : "border-gold-400/15 bg-[#fffdf6]/92"
       )}
     >
       <Link href="/home">

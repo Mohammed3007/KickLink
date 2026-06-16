@@ -24,7 +24,7 @@ export function Sidebar({
   const pathname = usePathname();
 
   return (
-    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line bg-surface/60 px-4 py-6 lg:flex">
+    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-gold-400/15 bg-[#fffdf6]/80 px-4 py-6 backdrop-blur-xl lg:flex">
       <Link href="/home" className="px-2">
         <Logo size={30} />
       </Link>
@@ -37,7 +37,7 @@ export function Sidebar({
               item={item}
               pathname={pathname}
               badge={"badgeKey" in item && item.badgeKey === "alerts" ? unread : 0}
-              fieldMode={isOrganizer}
+              fieldMode
             />
           ))}
         </div>
@@ -67,11 +67,13 @@ export function Sidebar({
         )}
       </nav>
 
-      <div className={cn("mt-4 border-t pt-4", isOrganizer ? "border-gold-400/15" : "border-line")}>
+      <div className="mt-4 border-t border-gold-400/15 pt-4">
         <div
           className={cn(
             "flex items-center gap-3 px-2",
-            isOrganizer && "rounded-2xl bg-field-950 p-2 text-white"
+            isOrganizer
+              ? "rounded-2xl bg-field-950 p-2 text-white"
+              : "rounded-2xl bg-white/72 p-2 ring-1 ring-gold-400/15"
           )}
         >
           <Avatar name={user.name} color={user.avatarColor} size={36} />
@@ -126,9 +128,9 @@ function SidebarItem({
             ? "bg-gold-400/14 text-gold-600"
             : fieldMode
               ? "text-ink-2 hover:bg-gold-400/10 hover:text-field-950"
-          : active
-            ? "text-brand-700"
-            : "text-ink-2 hover:bg-surface-2 hover:text-ink"
+              : active
+                ? "text-brand-700"
+                : "text-ink-2 hover:bg-surface-2 hover:text-ink"
       )}
     >
       {active && !organizer && !fieldMode && (

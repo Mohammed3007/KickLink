@@ -9,7 +9,8 @@ import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { getProfileData } from "@/lib/queries";
 import { db } from "@/lib/db";
-import { PageHeader, SectionLabel } from "@/components/app/page-header";
+import { SectionLabel } from "@/components/app/page-header";
+import { PlayerModePage } from "@/components/app/organizer-mode-page";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -27,9 +28,10 @@ export default async function ProfilePage() {
   }));
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-8">
-      <PageHeader title="Profile" />
-
+    <PlayerModePage
+      title="Profile"
+      subtitle="Your player identity, receipts, notification preferences and account tools."
+    >
       {/* Identity */}
       <Card className="mt-5 p-5">
         <div className="flex items-center gap-4">
@@ -72,7 +74,7 @@ export default async function ProfilePage() {
           <SectionLabel>Payments &amp; receipts</SectionLabel>
           <Card className="divide-y divide-line-2">
             {payments.slice(0, 4).map((p) => (
-              <div key={p.id} className="flex items-center gap-3 p-4">
+              <Link key={p.id} href={`/games/${p.gameId}`} className="flex items-center gap-3 p-4 transition-colors hover:bg-surface-2">
                 <span className="flex size-9 items-center justify-center rounded-lg bg-surface-2 text-ink-3">
                   <Receipt className="size-4.5" />
                 </span>
@@ -90,7 +92,7 @@ export default async function ProfilePage() {
                 >
                   {formatPrice(p.amountCents)}
                 </span>
-              </div>
+              </Link>
             ))}
           </Card>
         </>
@@ -128,6 +130,6 @@ export default async function ProfilePage() {
           <LogOut className="size-5" /> Sign out
         </Button>
       </form>
-    </div>
+    </PlayerModePage>
   );
 }

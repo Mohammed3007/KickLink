@@ -51,9 +51,9 @@ export async function confirmPaidRegistration(opts: {
       data: {
         userId,
         kind: "RECEIPT",
-        title: `Receipt — ${game?.title ?? "Game"}`,
-        body: `$${(amountCents / 100).toFixed(2)} paid · ${method}`,
-        href: "/profile",
+        title: `Receipt - ${game?.title ?? "Game"}`,
+        body: `$${(amountCents / 100).toFixed(2)} paid - ${method}`,
+        href: `/games/${gameId}/join?success=1`,
       },
     });
   });
