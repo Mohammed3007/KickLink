@@ -32,7 +32,7 @@ export function BottomNav({
               className={cn(
                 "relative flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10.5px] font-medium transition-colors",
                 active
-                  ? isOrganizer && item.href === "/manage"
+                  ? isOrganizer
                     ? "text-gold-500"
                     : "text-brand-600"
                   : "text-ink-3"

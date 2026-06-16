@@ -37,6 +37,7 @@ export function Sidebar({
               item={item}
               pathname={pathname}
               badge={"badgeKey" in item && item.badgeKey === "alerts" ? unread : 0}
+              fieldMode={isOrganizer}
             />
           ))}
         </div>
@@ -103,11 +104,13 @@ function SidebarItem({
   pathname,
   badge,
   organizer,
+  fieldMode,
 }: {
   item: (typeof NAV_ITEMS)[number] | typeof ORGANIZER_ITEM | typeof ADMIN_ITEM;
   pathname: string;
   badge: number;
   organizer?: boolean;
+  fieldMode?: boolean;
 }) {
   const active = pathname === item.href || pathname.startsWith(item.href + "/");
   return (
@@ -119,12 +122,16 @@ function SidebarItem({
           ? active
             ? "bg-gold-400 text-field-950"
             : "text-white/75 hover:bg-white/8 hover:text-white"
+          : fieldMode && active
+            ? "bg-gold-400/14 text-gold-600"
+            : fieldMode
+              ? "text-ink-2 hover:bg-gold-400/10 hover:text-field-950"
           : active
             ? "text-brand-700"
             : "text-ink-2 hover:bg-surface-2 hover:text-ink"
       )}
     >
-      {active && !organizer && (
+      {active && !organizer && !fieldMode && (
         <motion.span
           layoutId="sidebar-active"
           className="absolute inset-0 -z-10 rounded-xl bg-brand-50"
