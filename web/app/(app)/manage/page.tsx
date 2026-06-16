@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Users, Wallet, CalendarDays, ArrowRight } from "lucide-react";
+import { Plus, Users, Wallet, CalendarDays, ArrowRight, Repeat2 } from "lucide-react";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/app/page-header";
@@ -44,6 +44,11 @@ export default async function ManagePage({
           registrations: { select: { status: true, payStatus: true } },
         },
         orderBy: { startsAt: "asc" },
+      },
+      recurringSeries: {
+        where: { archivedAt: null },
+        orderBy: { startsAt: "asc" },
+        take: 6,
       },
     },
     orderBy: { name: "asc" },
@@ -135,6 +140,35 @@ export default async function ManagePage({
               />
             </div>
 
+            {org.recurringSeries.length > 0 && (
+              <div className="mt-3 space-y-2.5">
+                {org.recurringSeries.map((series) => (
+                  <Card key={series.id} className="p-3.5">
+                    <div className="flex items-start gap-3">
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-700">
+                        <Repeat2 className="size-5" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate font-bold text-ink">{series.title}</p>
+                            <p className="text-sm text-ink-3">
+                              Weekly · {series.occurrenceCount} games · starts{" "}
+                              {formatGameDate(series.startsAt)}
+                            </p>
+                          </div>
+                          <Badge tone="info">{seriesPaymentLabel(series.paymentMode)}</Badge>
+                        </div>
+                        <p className="mt-2 text-sm text-ink-2">
+                          {formatPrice(series.priceCents)} · {series.capacity} spots · {series.venue}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+
             <div className="mt-3 space-y-2.5">
               {org.games.length === 0 && (
                 <Card className="p-5 text-center text-sm text-ink-2">
@@ -202,4 +236,10 @@ function Stat({
       <p className="mt-1 text-xl font-bold text-ink">{value}</p>
     </Card>
   );
+}
+
+function seriesPaymentLabel(paymentMode: string) {
+  if (paymentMode === "UPFRONT") return "Upfront";
+  if (paymentMode === "WEEKLY_RECURRING") return "Weekly billing";
+  return "Per game";
 }

@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Repeat2 } from "lucide-react";
 import { createGame, type FormState } from "@/lib/actions/manage";
 import { Input, Select, Field } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -95,6 +95,54 @@ export function CreateGameForm({
             <option value="FREE">Free</option>
           </Select>
         </Field>
+      </div>
+
+      <div className="rounded-2xl border border-line bg-surface p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <span className="flex size-8 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+            <Repeat2 className="size-4" />
+          </span>
+          <div>
+            <p className="font-semibold text-ink">Recurring pickup</p>
+            <p className="text-xs text-ink-3">
+              Generate weekly game occurrences from this setup.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Repeat" htmlFor="recurrenceMode">
+            <Select id="recurrenceMode" name="recurrenceMode" defaultValue="SINGLE" required>
+              <option value="SINGLE">One game</option>
+              <option value="WEEKLY">Weekly series</option>
+            </Select>
+          </Field>
+          <Field label="Occurrences" htmlFor="occurrenceCount" hint="Used for weekly series.">
+            <Input
+              id="occurrenceCount"
+              name="occurrenceCount"
+              type="number"
+              defaultValue={6}
+              min={2}
+              max={26}
+              required
+            />
+          </Field>
+        </div>
+
+        <div className="mt-3">
+          <Field
+            label="Series billing"
+            htmlFor="seriesPaymentMode"
+            hint="Per-game charging is active now. Upfront and weekly recurring are stored for the series; checkout enforcement is next."
+          >
+            <Select id="seriesPaymentMode" name="seriesPaymentMode" defaultValue="PER_GAME" required>
+              <option value="PER_GAME">Charge each game separately</option>
+              <option value="UPFRONT">Upfront series pass</option>
+              <option value="WEEKLY_RECURRING">Weekly recurring billing</option>
+            </Select>
+          </Field>
+        </div>
       </div>
 
       <Submit />

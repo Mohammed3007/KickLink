@@ -10,6 +10,12 @@ import { promoteWaitlist } from "@/lib/waitlist";
 
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"] as const;
 
+function addWeeks(date: Date, weeks: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + weeks * 7);
+  return next;
+}
+
 async function assertOrganizer(userId: string, orgId: string) {
   const m = await db.membership.findUnique({
     where: { userId_orgId: { userId, orgId } },
@@ -61,25 +67,75 @@ export async function createGame(
     return { error: e instanceof Error ? e.message : "Not authorized." };
   }
 
-  const game = await db.game.create({
-    data: {
-      orgId: data.orgId,
-      title: data.title,
-      venue: data.venue,
-      address: data.address ?? "",
-      startsAt: data.startsAt,
-      durationMins: data.durationMins,
-      format: data.format,
-      skill: data.skill,
-      priceCents: data.priceCents,
-      capacity: data.capacity,
-      model: data.model,
-    },
+  const firstGame = await db.$transaction(async (tx) => {
+    if (data.recurrenceMode === "WEEKLY") {
+      const endsAt = addWeeks(data.startsAt, data.occurrenceCount - 1);
+      const series = await tx.recurringEventSeries.create({
+        data: {
+          orgId: data.orgId,
+          createdById: user.id,
+          title: data.title,
+          cadence: "WEEKLY",
+          intervalWeeks: 1,
+          occurrenceCount: data.occurrenceCount,
+          startsAt: data.startsAt,
+          endsAt,
+          venue: data.venue,
+          address: data.address ?? "",
+          durationMins: data.durationMins,
+          format: data.format,
+          skill: data.skill,
+          priceCents: data.priceCents,
+          capacity: data.capacity,
+          model: data.model,
+          paymentMode: data.seriesPaymentMode,
+        },
+      });
+
+      const games = await Promise.all(
+        Array.from({ length: data.occurrenceCount }, (_, index) =>
+          tx.game.create({
+            data: {
+              orgId: data.orgId,
+              seriesId: series.id,
+              occurrenceIndex: index + 1,
+              title: data.title,
+              venue: data.venue,
+              address: data.address ?? "",
+              startsAt: addWeeks(data.startsAt, index),
+              durationMins: data.durationMins,
+              format: data.format,
+              skill: data.skill,
+              priceCents: data.priceCents,
+              capacity: data.capacity,
+              model: data.model,
+            },
+          })
+        )
+      );
+      return games[0];
+    }
+
+    return tx.game.create({
+      data: {
+        orgId: data.orgId,
+        title: data.title,
+        venue: data.venue,
+        address: data.address ?? "",
+        startsAt: data.startsAt,
+        durationMins: data.durationMins,
+        format: data.format,
+        skill: data.skill,
+        priceCents: data.priceCents,
+        capacity: data.capacity,
+        model: data.model,
+      },
+    });
   });
 
   revalidatePath("/manage");
   revalidatePath("/games");
-  redirect(`/games/${game.id}`);
+  redirect(`/games/${firstGame.id}`);
 }
 
 export async function postAnnouncement(

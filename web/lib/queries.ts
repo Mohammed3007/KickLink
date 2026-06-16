@@ -11,6 +11,15 @@ export async function getGame(gameId: string, viewerId?: string) {
     where: { id: gameId },
     include: {
       org: true,
+      series: {
+        select: {
+          id: true,
+          title: true,
+          occurrenceCount: true,
+          paymentMode: true,
+          cadence: true,
+        },
+      },
       registrations: {
         include: {
           user: { select: { id: true, name: true, avatarColor: true } },

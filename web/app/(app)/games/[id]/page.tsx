@@ -4,6 +4,7 @@ import {
   CalendarDays,
   Clock,
   MapPin,
+  Repeat2,
   ShieldCheck,
   ChevronRight,
 } from "lucide-react";
@@ -29,6 +30,12 @@ export default async function GameDetailPage({
 
   const priceLabel = formatPrice(game.priceCents);
   const filledPct = Math.min(100, Math.round((game.taken / game.capacity) * 100));
+  const seriesPayment =
+    game.series?.paymentMode === "UPFRONT"
+      ? "Upfront series pass"
+      : game.series?.paymentMode === "WEEKLY_RECURRING"
+        ? "Weekly recurring billing"
+        : "Pay per game";
 
   return (
     <div className="mx-auto max-w-2xl pb-10">
@@ -73,6 +80,27 @@ export default async function GameDetailPage({
           <Detail icon={<Clock className="size-5" />} label="Kickoff" value={`${formatTime(game.startsAt)} · ${game.durationMins} min`} />
           <Detail icon={<MapPin className="size-5" />} label="Venue" value={game.venue} sub={game.address} />
         </Card>
+
+        {game.series && (
+          <Card className="p-4">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 text-brand-600">
+                <Repeat2 className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-ink">Weekly recurring pickup</p>
+                <p className="mt-1 text-sm leading-relaxed text-ink-2">
+                  Occurrence {game.occurrenceIndex ?? "-"} of {game.series.occurrenceCount} in{" "}
+                  {game.series.title}.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Badge tone="info">Weekly</Badge>
+                  <Badge tone="neutral">{seriesPayment}</Badge>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* Roster */}
         <Link href={`/games/${game.id}/participants`}>
