@@ -1,16 +1,26 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { Avatar } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 export function MobileHeader({
   user,
+  isOrganizer,
 }: {
   user: { name: string; avatarColor: string };
+  isOrganizer?: boolean;
 }) {
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-canvas/85 px-4 py-3 backdrop-blur-xl lg:hidden">
+    <header
+      className={cn(
+        "sticky top-0 z-30 flex items-center justify-between border-b px-4 py-3 backdrop-blur-xl lg:hidden",
+        isOrganizer
+          ? "border-gold-400/15 bg-field-950/92"
+          : "border-line bg-canvas/85"
+      )}
+    >
       <Link href="/home">
-        <Logo size={28} />
+        <Logo size={28} light={isOrganizer} />
       </Link>
       <Link href="/profile">
         <Avatar name={user.name} color={user.avatarColor} size={32} />

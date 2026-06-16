@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Bell, Zap, Clock, Megaphone, ArrowLeftRight, Receipt } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { requireUser } from "@/lib/session";
+import { hasOrganizerAccess, requireUser } from "@/lib/session";
 import { getNotifications } from "@/lib/queries";
 import { PageHeader } from "@/components/app/page-header";
+import { OrganizerModePage, PlayerModePage } from "@/components/app/organizer-mode-page";
 import { Card } from "@/components/ui/card";
 import { Empty } from "@/components/app/empty";
 import { MarkRead } from "@/components/app/mark-read";
@@ -19,20 +20,26 @@ const ICONS: Record<string, { icon: LucideIcon; tone: string; bg: string }> = {
 
 export default async function AlertsPage() {
   const user = await requireUser();
-  const notifs = await getNotifications(user.id);
+  const [isOrganizer, notifs] = await Promise.all([
+    hasOrganizerAccess(user.id).catch(() => false),
+    getNotifications(user.id),
+  ]);
   const hasUnread = notifs.some((n) => !n.read);
 
-  return (
-    <div className="mx-auto max-w-2xl px-5 py-8">
+  const content = (
+    <>
       <MarkRead hasUnread={hasUnread} />
-      <PageHeader title="Alerts" />
+      {!isOrganizer && <PageHeader title="Alerts" />}
 
       <div className="mt-6 space-y-2.5">
         {notifs.length === 0 && (
           <Empty icon={Bell} title="You're all caught up" body="Notifications about your games will show up here." />
         )}
         {notifs.map((n) => {
-          const meta = ICONS[n.kind] ?? ICONS.ANNOUNCE;
+          const meta =
+            isOrganizer && n.kind === "ANNOUNCE"
+              ? { icon: Megaphone, tone: "text-gold-300", bg: "bg-field-800" }
+              : ICONS[n.kind] ?? ICONS.ANNOUNCE;
           const Inner = (
             <Card className="flex gap-3.5 p-4">
               <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${meta.bg} ${meta.tone}`}>
@@ -59,6 +66,23 @@ export default async function AlertsPage() {
           );
         })}
       </div>
-    </div>
+    </>
+  );
+
+  if (isOrganizer) {
+    return (
+      <OrganizerModePage
+        title="Alerts"
+        subtitle="Track spot offers, payments, waitlist movement and club announcements."
+      >
+        {content}
+      </OrganizerModePage>
+    );
+  }
+
+  return (
+    <PlayerModePage>
+      {content}
+    </PlayerModePage>
   );
 }

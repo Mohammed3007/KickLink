@@ -1,7 +1,8 @@
 import { CalendarDays } from "lucide-react";
-import { requireUser } from "@/lib/session";
+import { hasOrganizerAccess, requireUser } from "@/lib/session";
 import { listClubGames, listPlayerGameHistory } from "@/lib/queries";
 import { PageHeader } from "@/components/app/page-header";
+import { OrganizerModePage, PlayerModePage } from "@/components/app/organizer-mode-page";
 import { GameCard } from "@/components/app/game-card";
 import { HistoryGameCard } from "@/components/app/history-game-card";
 import { Segment } from "@/components/ui/segment";
@@ -14,7 +15,8 @@ export default async function GamesPage({
 }) {
   const { tab = "upcoming" } = await searchParams;
   const user = await requireUser();
-  const [games, history] = await Promise.all([
+  const [isOrganizer, games, history] = await Promise.all([
+    hasOrganizerAccess(user.id).catch(() => false),
     listClubGames(user.id),
     tab === "history" ? listPlayerGameHistory(user.id) : Promise.resolve([]),
   ]);
@@ -35,9 +37,9 @@ export default async function GamesPage({
         ? "Check back soon - organizers post new games regularly."
         : "Join an open game in one of your clubs.";
 
-  return (
-    <div className="mx-auto max-w-2xl px-5 py-8">
-      <PageHeader title="Games" />
+  const content = (
+    <>
+      {!isOrganizer && <PageHeader title="Games" />}
 
       <div className="mt-5">
         <Segment
@@ -59,6 +61,23 @@ export default async function GamesPage({
           <Empty icon={CalendarDays} title={emptyTitle} body={emptyBody} />
         )}
       </div>
-    </div>
+    </>
+  );
+
+  if (isOrganizer) {
+    return (
+      <OrganizerModePage
+        title="Games"
+        subtitle="Browse the games you are playing in, plus open games across your clubs."
+      >
+        {content}
+      </OrganizerModePage>
+    );
+  }
+
+  return (
+    <PlayerModePage>
+      {content}
+    </PlayerModePage>
   );
 }

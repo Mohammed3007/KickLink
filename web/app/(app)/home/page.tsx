@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ChevronRight, Zap, Clock } from "lucide-react";
-import { requireUser } from "@/lib/session";
+import { hasOrganizerAccess, requireUser } from "@/lib/session";
 import { getDashboard } from "@/lib/queries";
 import { PageHeader, SectionLabel } from "@/components/app/page-header";
+import { OrganizerModePage, PlayerModePage } from "@/components/app/organizer-mode-page";
 import { GameCard } from "@/components/app/game-card";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,13 +14,17 @@ import { formatPrice, timeAgo } from "@/lib/utils";
 
 export default async function HomePage() {
   const user = await requireUser();
-  const { mine, open, offers, unpaid, announcements } = await getDashboard(user.id).catch(() => ({
+  const [isOrganizer, dashboard] = await Promise.all([
+    hasOrganizerAccess(user.id).catch(() => false),
+    getDashboard(user.id).catch(() => ({
     mine: [],
     open: [],
     offers: [],
     unpaid: [],
     announcements: [],
-  }));
+    })),
+  ]);
+  const { mine, open, offers, unpaid, announcements } = dashboard;
 
   const activeOffer = offers.find(
     (o) => o.status === "OFFERED" && o.offerExpiresAt && o.offerExpiresAt > new Date()
@@ -32,9 +37,9 @@ export default async function HomePage() {
 
   const hasAttention = !!activeOffer || unpaid.length > 0;
 
-  return (
-    <div className="mx-auto max-w-2xl px-5 py-8">
-      <PageHeader title={`Hi, ${user.name.split(" ")[0]}`} subtitle={today} />
+  const content = (
+    <>
+      {!isOrganizer && <PageHeader title={`Hi, ${user.name.split(" ")[0]}`} subtitle={today} />}
 
       {/* Needs attention */}
       {hasAttention && (
@@ -95,12 +100,12 @@ export default async function HomePage() {
       )}
 
       {/* Upcoming */}
-      <SectionLabel
-        action={
-          <Link href="/games" className="text-sm font-semibold text-brand-700">
-            See all
-          </Link>
-        }
+          <SectionLabel
+            action={
+              <Link href="/games" className={isOrganizer ? "text-sm font-bold text-gold-500" : "text-sm font-semibold text-brand-700"}>
+                See all
+              </Link>
+            }
       >
         Your upcoming games
       </SectionLabel>
@@ -121,7 +126,7 @@ export default async function HomePage() {
         <>
           <SectionLabel
             action={
-              <Link href="/clubs" className="text-sm font-semibold text-brand-700">
+              <Link href="/clubs" className={isOrganizer ? "text-sm font-bold text-gold-500" : "text-sm font-semibold text-brand-700"}>
                 Clubs
               </Link>
             }
@@ -157,6 +162,20 @@ export default async function HomePage() {
           </div>
         </>
       )}
-    </div>
+    </>
+  );
+
+  if (isOrganizer) {
+    return (
+      <OrganizerModePage title={`Hi, ${user.name.split(" ")[0]}`} subtitle={`${today}. Keep an eye on your games, payments and member updates.`}>
+        {content}
+      </OrganizerModePage>
+    );
+  }
+
+  return (
+    <PlayerModePage>
+      {content}
+    </PlayerModePage>
   );
 }

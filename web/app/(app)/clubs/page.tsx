@@ -1,20 +1,25 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
-import { requireUser } from "@/lib/session";
+import { ChevronRight, Plus } from "lucide-react";
+import { hasOrganizerAccess, requireUser } from "@/lib/session";
 import { listClubs } from "@/lib/queries";
 import { PageHeader } from "@/components/app/page-header";
+import { OrganizerModePage, PlayerModePage } from "@/components/app/organizer-mode-page";
 import { JoinClubForm } from "@/components/app/join-club-form";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export default async function ClubsPage() {
   const user = await requireUser();
-  const clubs = await listClubs(user.id);
+  const [isOrganizer, clubs] = await Promise.all([
+    hasOrganizerAccess(user.id).catch(() => false),
+    listClubs(user.id),
+  ]);
 
-  return (
-    <div className="mx-auto max-w-2xl px-5 py-8">
-      <PageHeader title="Clubs" />
+  const content = (
+    <>
+      {!isOrganizer && <PageHeader title="Clubs" />}
 
       <div className="mt-5">
         <JoinClubForm />
@@ -32,7 +37,7 @@ export default async function ClubsPage() {
                 <div className="flex items-center gap-2">
                   <p className="truncate font-bold text-ink">{club.name}</p>
                   {club.memberships[0]?.role === "ORGANIZER" && (
-                    <Badge tone="brand">Organizer</Badge>
+                    <Badge tone={isOrganizer ? "warn" : "brand"}>Organizer</Badge>
                   )}
                 </div>
                 <p className="truncate text-sm text-ink-3">
@@ -44,6 +49,30 @@ export default async function ClubsPage() {
           </Link>
         ))}
       </div>
-    </div>
+    </>
+  );
+
+  if (isOrganizer) {
+    return (
+      <OrganizerModePage
+        title="Clubs"
+        subtitle="Review the private organizations you play in and manage the clubs you organize."
+        action={
+          <Link href="/manage/clubs/new">
+            <Button className="bg-gradient-to-r from-gold-300 to-gold-500 text-[#1a1408] shadow-none hover:brightness-105">
+              <Plus className="size-4" /> New club
+            </Button>
+          </Link>
+        }
+      >
+        {content}
+      </OrganizerModePage>
+    );
+  }
+
+  return (
+    <PlayerModePage>
+      {content}
+    </PlayerModePage>
   );
 }

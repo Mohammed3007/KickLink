@@ -7,6 +7,7 @@ import { BottomNav } from "@/components/app/bottom-nav";
 import { MobileHeader } from "@/components/app/mobile-header";
 import { Card } from "@/components/ui/card";
 import { isPlatformAdminUser } from "@/lib/admin";
+import { cn } from "@/lib/utils";
 
 export default async function AppLayout({
   children,
@@ -36,7 +37,7 @@ export default async function AppLayout({
   const isAdmin = isPlatformAdminUser(user);
 
   return (
-    <div className="flex min-h-dvh">
+    <div className={cn("flex min-h-dvh", isOrganizer && "bg-[#f2f1ec]")}>
       <Sidebar
         user={{ name: user.name, email: user.email, avatarColor: user.avatarColor }}
         unread={unread}
@@ -44,7 +45,10 @@ export default async function AppLayout({
         isAdmin={isAdmin}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <MobileHeader user={{ name: user.name, avatarColor: user.avatarColor }} />
+        <MobileHeader
+          user={{ name: user.name, avatarColor: user.avatarColor }}
+          isOrganizer={isOrganizer}
+        />
         <main className="flex-1 pb-24 lg:pb-0">{children}</main>
         <BottomNav unread={unread} isOrganizer={isOrganizer} />
       </div>

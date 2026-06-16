@@ -66,18 +66,28 @@ export function Sidebar({
         )}
       </nav>
 
-      <div className="mt-4 border-t border-line pt-4">
-        <div className="flex items-center gap-3 px-2">
+      <div className={cn("mt-4 border-t pt-4", isOrganizer ? "border-gold-400/15" : "border-line")}>
+        <div
+          className={cn(
+            "flex items-center gap-3 px-2",
+            isOrganizer && "rounded-2xl bg-field-950 p-2 text-white"
+          )}
+        >
           <Avatar name={user.name} color={user.avatarColor} size={36} />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-ink">{user.name}</p>
-            <p className="truncate text-xs text-ink-3">{user.email}</p>
+            <p className={cn("truncate text-sm font-semibold", isOrganizer ? "text-white" : "text-ink")}>{user.name}</p>
+            <p className={cn("truncate text-xs", isOrganizer ? "text-white/45" : "text-ink-3")}>{user.email}</p>
           </div>
           <form action={logout}>
             <button
               type="submit"
               aria-label="Sign out"
-              className="rounded-lg p-2 text-ink-3 transition-colors hover:bg-surface-2 hover:text-bad"
+              className={cn(
+                "rounded-lg p-2 transition-colors",
+                isOrganizer
+                  ? "text-white/42 hover:bg-white/8 hover:text-white"
+                  : "text-ink-3 hover:bg-surface-2 hover:text-bad"
+              )}
             >
               <LogOut className="size-4.5" />
             </button>

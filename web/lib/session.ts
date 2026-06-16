@@ -37,6 +37,15 @@ export async function isOrganizer(userId: string, orgId: string) {
   return m?.role === "ORGANIZER";
 }
 
+/** True if the user organizes at least one club. */
+export async function hasOrganizerAccess(userId: string) {
+  const membership = await db.membership.findFirst({
+    where: { userId, role: "ORGANIZER" },
+    select: { id: true },
+  });
+  return Boolean(membership);
+}
+
 /** Require organizer access to an org, or redirect. */
 export async function requireOrganizer(orgId: string) {
   const user = await requireUser();
