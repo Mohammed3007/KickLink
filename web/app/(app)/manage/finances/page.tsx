@@ -8,11 +8,21 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { isStripeEnabled } from "@/lib/flags";
+import { refreshConnectStatus } from "@/lib/actions/payments";
 import { formatGameDate, formatPrice, formatTime } from "@/lib/utils";
 
-export default async function ManageFinancesPage() {
+export default async function ManageFinancesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ connect?: string }>;
+}) {
   const user = await requireUser();
   const stripeEnabled = isStripeEnabled();
+  const { connect } = await searchParams;
+
+  if (connect && stripeEnabled) {
+    await refreshConnectStatus(connect);
+  }
 
   const orgs = await db.organization.findMany({
     where: { memberships: { some: { userId: user.id, role: "ORGANIZER" } } },

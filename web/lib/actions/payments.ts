@@ -156,26 +156,38 @@ export async function connectStripe(orgId: string): Promise<CheckoutResult> {
   const org = await db.organization.findUnique({ where: { id: orgId } });
   if (!org) return { error: "Club not found." };
 
-  let accountId = org.stripeAccountId;
-  if (!accountId) {
-    const account = await stripe.accounts.create({
-      type: "express",
-      metadata: { orgId },
-    });
-    accountId = account.id;
-    await db.organization.update({
-      where: { id: orgId },
-      data: { stripeAccountId: accountId },
-    });
-  }
+  try {
+    let accountId = org.stripeAccountId;
+    if (!accountId) {
+      const account = await stripe.accounts.create({
+        type: "express",
+        country: "CA",
+        email: user.email,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        metadata: { orgId },
+      });
+      accountId = account.id;
+      await db.organization.update({
+        where: { id: orgId },
+        data: { stripeAccountId: accountId },
+      });
+    }
 
-  const link = await stripe.accountLinks.create({
-    account: accountId,
-    refresh_url: `${appUrl()}/manage?connect=${orgId}`,
-    return_url: `${appUrl()}/manage?connect=${orgId}`,
-    type: "account_onboarding",
-  });
-  return { url: link.url };
+    const link = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${appUrl()}/manage/finances?connect=${orgId}`,
+      return_url: `${appUrl()}/manage/finances?connect=${orgId}`,
+      type: "account_onboarding",
+    });
+    return { url: link.url };
+  } catch (error) {
+    console.error("Stripe Connect onboarding failed", error);
+    const message = error instanceof Error ? error.message : "Stripe onboarding failed.";
+    return { error: `Stripe setup error: ${message}` };
+  }
 }
 
 /** Refresh a club's payout status from Stripe (called on return from onboarding). */
@@ -184,10 +196,15 @@ export async function refreshConnectStatus(orgId: string) {
   if (!stripe) return;
   const org = await db.organization.findUnique({ where: { id: orgId } });
   if (!org?.stripeAccountId) return;
-  const account = await stripe.accounts.retrieve(org.stripeAccountId);
-  await db.organization.update({
-    where: { id: orgId },
-    data: { chargesEnabled: !!account.charges_enabled },
-  });
-  revalidatePath("/manage");
+  try {
+    const account = await stripe.accounts.retrieve(org.stripeAccountId);
+    await db.organization.update({
+      where: { id: orgId },
+      data: { chargesEnabled: !!account.charges_enabled },
+    });
+    revalidatePath("/manage");
+    revalidatePath("/manage/finances");
+  } catch (error) {
+    console.error("Stripe Connect status refresh failed", error);
+  }
 }
