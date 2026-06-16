@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   reserveSpot,
   joinWaitlist,
+  acceptOffer,
   declineOffer,
   cancelRegistration,
   type ActionResult,
@@ -35,15 +36,28 @@ export function GameCta({ gameId, model, priceLabel, isFull, myStatus }: Props) 
 
   // Already registered states
   if (myStatus === "OFFERED") {
+    const isCheckoutOffer = model === "PAY";
     return (
       <Bar error={error}>
-        <Button
-          full
-          size="lg"
-          onClick={() => router.push(`/games/${gameId}/join?mode=accept`)}
-        >
-          Accept & pay {priceLabel}
-        </Button>
+        {isCheckoutOffer ? (
+          <Button
+            full
+            size="lg"
+            onClick={() => router.push(`/games/${gameId}/join?mode=accept`)}
+          >
+            Accept & pay {priceLabel}
+          </Button>
+        ) : (
+          <Button
+            full
+            size="lg"
+            loading={pending}
+            onClick={() => run(() => acceptOffer(gameId))}
+          >
+            <Check className="size-4" />
+            {model === "FREE" ? "Accept free spot" : "Accept spot"}
+          </Button>
+        )}
         <Button
           full
           size="lg"

@@ -12,7 +12,7 @@ type Tx = Parameters<Parameters<typeof db.$transaction>[0]>[0];
 export async function promoteWaitlist(tx: Tx, gameId: string) {
   const game = await tx.game.findUnique({
     where: { id: gameId },
-    select: { capacity: true, title: true },
+    select: { capacity: true, title: true, model: true },
   });
   if (!game) return;
 
@@ -31,6 +31,7 @@ export async function promoteWaitlist(tx: Tx, gameId: string) {
     where: { id: next.id },
     data: {
       status: "OFFERED",
+      payStatus: game.model === "FREE" ? "FREE" : "UNPAID",
       waitlistPos: null,
       offerExpiresAt: new Date(Date.now() + 15 * 60_000),
     },

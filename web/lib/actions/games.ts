@@ -180,3 +180,47 @@ export async function declineOffer(gameId: string): Promise<ActionResult> {
   revalidateAll(gameId);
   return { ok: true };
 }
+
+/** Accept a free or pay-later spot offer without going through checkout. */
+export async function acceptOffer(gameId: string): Promise<ActionResult> {
+  const user = await requireUser();
+
+  try {
+    await db.$transaction(async (tx) => {
+      const game = await lockGameForRegistration(tx, gameId);
+      if (game.model === "PAY") {
+        throw new Error("Checkout is required for this spot.");
+      }
+
+      const reg = await tx.registration.findUnique({
+        where: { userId_gameId: { userId: user.id, gameId } },
+      });
+      if (!reg || reg.status !== "OFFERED") {
+        throw new Error("No active offer.");
+      }
+      if (reg.offerExpiresAt && reg.offerExpiresAt <= new Date()) {
+        await tx.registration.update({
+          where: { id: reg.id },
+          data: { status: "CANCELLED", offerExpiresAt: null },
+        });
+        await promoteWaitlist(tx, gameId);
+        throw new Error("This offer expired.");
+      }
+
+      await tx.registration.update({
+        where: { id: reg.id },
+        data: {
+          status: game.model === "FREE" ? "CONFIRMED" : "PROVISIONAL",
+          payStatus: game.model === "FREE" ? "FREE" : "UNPAID",
+          waitlistPos: null,
+          offerExpiresAt: null,
+        },
+      });
+    });
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not accept offer." };
+  }
+
+  revalidateAll(gameId);
+  return { ok: true };
+}

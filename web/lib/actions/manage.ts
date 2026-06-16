@@ -187,7 +187,7 @@ export async function offerWaitlistedSpot(registrationId: string) {
     await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${reg.gameId} FOR UPDATE`;
     const game = await tx.game.findUnique({
       where: { id: reg.gameId },
-      select: { id: true, title: true, capacity: true },
+      select: { id: true, title: true, capacity: true, model: true },
     });
     if (!game) return;
 
@@ -200,6 +200,7 @@ export async function offerWaitlistedSpot(registrationId: string) {
       where: { id: registrationId },
       data: {
         status: "OFFERED",
+        payStatus: game.model === "FREE" ? "FREE" : "UNPAID",
         waitlistPos: null,
         offerExpiresAt: new Date(Date.now() + 15 * 60_000),
       },
