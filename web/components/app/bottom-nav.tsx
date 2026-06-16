@@ -2,16 +2,25 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV_ITEMS } from "./nav-items";
+import { NAV_ITEMS, ORGANIZER_ITEM } from "./nav-items";
 import { cn } from "@/lib/utils";
 
-export function BottomNav({ unread }: { unread: number }) {
+export function BottomNav({
+  unread,
+  isOrganizer,
+}: {
+  unread: number;
+  isOrganizer?: boolean;
+}) {
   const pathname = usePathname();
+  const items = isOrganizer
+    ? [...NAV_ITEMS.filter((item) => item.href !== "/profile"), ORGANIZER_ITEM]
+    : NAV_ITEMS;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-canvas/85 backdrop-blur-xl lg:hidden">
       <div className="mx-auto flex max-w-md items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)] pt-1.5">
-        {NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(item.href + "/");
           const badge =

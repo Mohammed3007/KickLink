@@ -10,7 +10,7 @@ export const NAV_ITEMS = [
 
 export const ORGANIZER_ITEM = {
   href: "/manage",
-  label: "Manage",
+  label: "Organize",
   icon: LayoutDashboard,
 };
 

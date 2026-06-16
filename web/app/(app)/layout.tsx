@@ -46,7 +46,7 @@ export default async function AppLayout({
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileHeader user={{ name: user.name, avatarColor: user.avatarColor }} />
         <main className="flex-1 pb-24 lg:pb-0">{children}</main>
-        <BottomNav unread={unread} />
+        <BottomNav unread={unread} isOrganizer={isOrganizer} />
       </div>
     </div>
   );
