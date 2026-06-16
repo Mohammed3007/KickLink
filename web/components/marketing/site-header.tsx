@@ -31,12 +31,12 @@ export function SiteHeader() {
         "fixed inset-x-0 top-0 z-50 transition-all duration-300",
         scrolled
           ? "border-b border-line bg-canvas/80 backdrop-blur-xl"
-          : "border-b border-transparent"
+          : "border-b border-white/10 bg-field-950/35 backdrop-blur-sm"
       )}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
         <Link href="/" aria-label="KickLink home">
-          <Logo size={32} />
+          <Logo size={32} light={!scrolled} />
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
@@ -44,7 +44,10 @@ export function SiteHeader() {
             <a
               key={n.href}
               href={n.href}
-              className="text-sm font-medium text-ink-2 transition-colors hover:text-ink"
+              className={cn(
+                "text-sm font-medium transition-colors",
+                scrolled ? "text-ink-2 hover:text-ink" : "text-white/72 hover:text-white"
+              )}
             >
               {n.label}
             </a>
@@ -53,7 +56,13 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2">
           <Link href="/login">
-            <Button variant="ghost" size="sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                !scrolled && "text-white hover:bg-white/10 active:bg-white/15"
+              )}
+            >
               Log in
             </Button>
           </Link>

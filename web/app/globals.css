@@ -18,6 +18,16 @@
   --color-brand-800: #4a2399;
   --color-brand-900: #3c1f7a;
 
+  --color-field-950: #080a09;
+  --color-field-900: #0b100d;
+  --color-field-800: #102318;
+  --color-field-700: #16402c;
+  --color-grass-500: #54e0a0;
+  --color-grass-600: #2bb47c;
+  --color-gold-300: #f6d788;
+  --color-gold-400: #e9be5a;
+  --color-gold-500: #e0a93c;
+
   /* Ink / text */
   --color-ink: #15131c;
   --color-ink-2: #5c5a66;
@@ -61,6 +71,9 @@
   --animate-pop: pop 0.4s var(--ease-spring) both;
   --animate-shimmer: shimmer 2.2s linear infinite;
   --animate-float: float 7s ease-in-out infinite;
+  --animate-field-ball: field-ball 2.4s ease-in-out infinite;
+  --animate-ring-pulse: ring-pulse 1.8s ease-out infinite;
+  --animate-soft-ping: soft-ping 1.9s ease-out infinite;
 }
 
 @keyframes fade-up {
@@ -81,6 +94,18 @@
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-14px); }
+}
+@keyframes field-ball {
+  0%, 100% { transform: translate(-50%, -50%) translate(0, 0); }
+  35% { transform: translate(-50%, -50%) translate(20px, -14px); }
+  70% { transform: translate(-50%, -50%) translate(-18px, 16px); }
+}
+@keyframes ring-pulse {
+  from { transform: translate(-50%, -50%) scale(0.82); opacity: 0.9; }
+  to { transform: translate(-50%, -50%) scale(1.55); opacity: 0; }
+}
+@keyframes soft-ping {
+  75%, 100% { transform: scale(2.2); opacity: 0; }
 }
 
 @layer base {
@@ -126,6 +151,23 @@
         var(--color-brand-600) 45%,
         var(--color-brand-800) 100%
       );
+  }
+  .bg-match-field {
+    background:
+      radial-gradient(circle at 50% 0%, rgba(233, 190, 90, 0.2), transparent 38%),
+      linear-gradient(170deg, var(--color-field-700) 0%, #0f2c1e 55%, var(--color-field-900) 100%);
+  }
+  .bg-landing-field {
+    background:
+      radial-gradient(circle at 50% 18%, rgba(233, 190, 90, 0.2), transparent 28%),
+      radial-gradient(circle at 82% 18%, rgba(84, 224, 160, 0.12), transparent 24%),
+      linear-gradient(180deg, var(--color-field-950) 0%, var(--color-field-900) 62%, #11110d 100%);
+  }
+  .bg-field-lines {
+    background-image:
+      linear-gradient(to right, rgba(244, 239, 227, 0.035) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(244, 239, 227, 0.035) 1px, transparent 1px);
+    background-size: 54px 54px;
   }
   .bg-grid {
     background-image:
