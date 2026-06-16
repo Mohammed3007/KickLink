@@ -88,6 +88,9 @@ export default async function ManagePage({
         subtitle="Manage your clubs, games and rosters."
         action={
           <div className="flex gap-2">
+            <Link href="/manage/finances">
+              <Button variant="secondary">Finances</Button>
+            </Link>
             <Link href="/manage/clubs/new">
               <Button variant="secondary">New club</Button>
             </Link>

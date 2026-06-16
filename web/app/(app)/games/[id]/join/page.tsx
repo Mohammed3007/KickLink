@@ -25,7 +25,12 @@ export default async function CheckoutPage({
   if (success) {
     return (
       <div className="mx-auto max-w-2xl pb-10">
-        <PaymentSuccess gameId={game.id} title={game.title} />
+        <PaymentSuccess
+          gameId={game.id}
+          title={game.title}
+          registrationStatus={game.myReg?.status ?? null}
+          paymentStatus={game.myReg?.payStatus ?? null}
+        />
       </div>
     );
   }

@@ -14,30 +14,38 @@ export type PayResult = { ok: true } | { ok: false; error: string };
 /** Hold a capacity-checked spot for the user unless they already have one. */
 async function ensureProvisionalHold(
   userId: string,
-  gameId: string,
-  capacity: number
+  gameId: string
 ): Promise<string | null> {
-  const existing = await db.registration.findUnique({
-    where: { userId_gameId: { userId, gameId } },
-  });
-  if (existing?.status === "CONFIRMED") return "You're already confirmed.";
-  const holds =
-    existing && ["PROVISIONAL", "OFFERED"].includes(existing.status);
-  if (holds) return null;
-
   try {
     await db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${gameId} FOR UPDATE`;
+      const game = await tx.game.findUnique({ where: { id: gameId } });
+      if (!game) throw new Error("missing");
+      if (game.startsAt <= new Date()) throw new Error("closed");
+
+      const existing = await tx.registration.findUnique({
+        where: { userId_gameId: { userId, gameId } },
+      });
+      if (existing?.status === "CONFIRMED") throw new Error("confirmed");
+      if (existing && ["PROVISIONAL", "OFFERED"].includes(existing.status)) return;
+
       const taken = await tx.registration.count({
         where: { gameId, status: { in: [...OCCUPYING] } },
       });
-      if (taken >= capacity) throw new Error("full");
+      if (taken >= game.capacity) throw new Error("full");
       await tx.registration.upsert({
         where: { userId_gameId: { userId, gameId } },
         create: { userId, gameId, status: "PROVISIONAL", payStatus: "UNPAID" },
         update: { status: "PROVISIONAL", payStatus: "UNPAID" },
       });
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "confirmed") {
+      return "You're already confirmed.";
+    }
+    if (error instanceof Error && error.message === "closed") {
+      return "Registration is closed for this game.";
+    }
     return "This game just filled up.";
   }
   return null;
@@ -54,6 +62,10 @@ export async function createCheckout(gameId: string): Promise<CheckoutResult> {
     include: { org: true },
   });
   if (!game) return { error: "Game not found." };
+  if (game.startsAt <= new Date()) return { error: "Registration is closed for this game." };
+  if (game.priceCents <= 0 || game.model === "FREE") {
+    return { error: "This game does not require checkout." };
+  }
 
   const membership = await db.membership.findUnique({
     where: { userId_orgId: { userId: user.id, orgId: game.orgId } },
@@ -64,7 +76,7 @@ export async function createCheckout(gameId: string): Promise<CheckoutResult> {
     return { error: "This club hasn't finished setting up payments yet." };
   }
 
-  const hold = await ensureProvisionalHold(user.id, gameId, game.capacity);
+  const hold = await ensureProvisionalHold(user.id, gameId);
   if (hold) return { error: hold };
 
   const fee = Math.round((game.priceCents * platformFeeBps()) / 10000);
@@ -85,7 +97,13 @@ export async function createCheckout(gameId: string): Promise<CheckoutResult> {
       transfer_data: { destination: game.org.stripeAccountId },
       ...(fee > 0 ? { application_fee_amount: fee } : {}),
     },
-    metadata: { userId: user.id, gameId },
+    metadata: {
+      userId: user.id,
+      gameId,
+      orgId: game.orgId,
+      amountCents: String(game.priceCents),
+      platformFeeCents: String(fee),
+    },
     customer_email: user.email,
     success_url: `${appUrl()}/games/${gameId}/join?success=1`,
     cancel_url: `${appUrl()}/games/${gameId}`,
@@ -102,8 +120,12 @@ export async function devCompletePayment(gameId: string): Promise<PayResult> {
   const user = await requireUser();
   const game = await db.game.findUnique({ where: { id: gameId } });
   if (!game) return { ok: false, error: "Game not found." };
+  if (game.startsAt <= new Date()) return { ok: false, error: "Registration is closed for this game." };
+  if (game.priceCents <= 0 || game.model === "FREE") {
+    return { ok: false, error: "This game does not require payment." };
+  }
 
-  const hold = await ensureProvisionalHold(user.id, gameId, game.capacity);
+  const hold = await ensureProvisionalHold(user.id, gameId);
   if (hold) return { ok: false, error: hold };
 
   await confirmPaidRegistration({

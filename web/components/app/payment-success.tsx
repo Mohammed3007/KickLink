@@ -2,26 +2,41 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { Check, CalendarPlus, MapPin, Share2 } from "lucide-react";
+import { Check, CalendarPlus, MapPin, Share2, Clock3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 export function PaymentSuccess({
   gameId,
   title,
+  registrationStatus,
+  paymentStatus,
 }: {
   gameId: string;
   title: string;
+  registrationStatus: string | null;
+  paymentStatus: string | null;
 }) {
+  const isPaid = registrationStatus === "CONFIRMED" && paymentStatus === "PAID";
+
   return (
     <div className="mx-auto flex min-h-[70dvh] max-w-md flex-col items-center justify-center px-6 text-center">
       <motion.span
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 18 }}
-        className="flex size-20 items-center justify-center rounded-full bg-ok text-white shadow-[0_10px_40px_rgba(18,145,90,0.4)]"
+        className={
+          "flex size-20 items-center justify-center rounded-full text-white " +
+          (isPaid
+            ? "bg-ok shadow-[0_10px_40px_rgba(18,145,90,0.4)]"
+            : "bg-warn shadow-[0_10px_40px_rgba(183,121,14,0.3)]")
+        }
       >
-        <Check className="size-11" strokeWidth={3} />
+        {isPaid ? (
+          <Check className="size-11" strokeWidth={3} />
+        ) : (
+          <Clock3 className="size-10" strokeWidth={3} />
+        )}
       </motion.span>
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -29,15 +44,29 @@ export function PaymentSuccess({
         transition={{ delay: 0.15 }}
       >
         <h1 className="mt-6 text-3xl font-bold tracking-[-0.02em] text-ink">
-          You&apos;re in!
+          {isPaid ? "You're in!" : "Payment processing"}
         </h1>
         <p className="mt-2 text-ink-2">
-          Your spot for <span className="font-semibold text-ink">{title}</span> is
-          confirmed and paid.
+          {isPaid ? (
+            <>
+              Your spot for <span className="font-semibold text-ink">{title}</span> is
+              confirmed and paid.
+            </>
+          ) : (
+            <>
+              Stripe is confirming your payment for{" "}
+              <span className="font-semibold text-ink">{title}</span>. Your registration
+              will update automatically when the webhook completes.
+            </>
+          )}
         </p>
         <div className="mt-4 flex justify-center gap-2">
-          <Badge tone="ok" dot>Confirmed</Badge>
-          <Badge tone="ok" dot>Paid</Badge>
+          <Badge tone={isPaid ? "ok" : "warn"} dot>
+            {isPaid ? "Confirmed" : registrationStatus ?? "Pending"}
+          </Badge>
+          <Badge tone={isPaid ? "ok" : "warn"} dot>
+            {isPaid ? "Paid" : paymentStatus ?? "Processing"}
+          </Badge>
         </div>
       </motion.div>
 

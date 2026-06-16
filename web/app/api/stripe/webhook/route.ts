@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
       const session = event.data.object as Stripe.Checkout.Session;
       const userId = session.metadata?.userId;
       const gameId = session.metadata?.gameId;
-      if (userId && gameId) {
+      if (userId && gameId && session.payment_status === "paid") {
         await confirmPaidRegistration({
           userId,
           gameId,
@@ -38,6 +39,32 @@ export async function POST(req: Request) {
               : undefined,
           stripeSessionId: session.id,
         });
+        revalidatePath("/home");
+        revalidatePath("/games");
+        revalidatePath("/profile");
+        revalidatePath(`/games/${gameId}`);
+      }
+      break;
+    }
+    case "checkout.session.expired": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const userId = session.metadata?.userId;
+      const gameId = session.metadata?.gameId;
+      if (userId && gameId) {
+        await db.registration.updateMany({
+          where: {
+            userId,
+            gameId,
+            status: "PROVISIONAL",
+            payStatus: "UNPAID",
+          },
+          data: {
+            status: "CANCELLED",
+            waitlistPos: null,
+            offerExpiresAt: null,
+          },
+        });
+        revalidatePath(`/games/${gameId}`);
       }
       break;
     }
