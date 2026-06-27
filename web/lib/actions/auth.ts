@@ -18,7 +18,12 @@ import {
   createPasswordResetToken,
 } from "@/lib/tokens";
 import { sendPasswordResetEmail, sendVerificationEmail } from "@/lib/email";
-import { checkRateLimit, clearRateLimit, rateLimitMessage } from "@/lib/rate-limit";
+import {
+  AUTH_RATE_LIMIT,
+  checkRateLimit,
+  clearRateLimit,
+  rateLimitMessage,
+} from "@/lib/rate-limit";
 import { safeInternalPath } from "@/lib/auth-routes";
 
 export type AuthState =
@@ -52,9 +57,7 @@ export async function authenticate(
     const limit = await checkRateLimit({
       scope: "login_form",
       identifier: email,
-      maxAttempts: 8,
-      windowMs: 10 * 60 * 1000,
-      blockMs: 15 * 60 * 1000,
+      ...AUTH_RATE_LIMIT,
     });
     if (!limit.ok) return { error: rateLimitMessage(limit) };
 
@@ -99,9 +102,7 @@ export async function register(
     const limit = await checkRateLimit({
       scope: "signup",
       identifier: normalized,
-      maxAttempts: 5,
-      windowMs: 60 * 60 * 1000,
-      blockMs: 60 * 60 * 1000,
+      ...AUTH_RATE_LIMIT,
     });
     if (!limit.ok) return { error: rateLimitMessage(limit) };
 
@@ -139,9 +140,7 @@ export async function resendVerification(email: string) {
     const limit = await checkRateLimit({
       scope: "resend_verification",
       identifier: normalized,
-      maxAttempts: 3,
-      windowMs: 30 * 60 * 1000,
-      blockMs: 30 * 60 * 1000,
+      ...AUTH_RATE_LIMIT,
     });
     if (!limit.ok) return { ok: true };
 
@@ -168,9 +167,7 @@ export async function requestPasswordReset(
     const limit = await checkRateLimit({
       scope: "password_reset_request",
       identifier: email,
-      maxAttempts: 4,
-      windowMs: 60 * 60 * 1000,
-      blockMs: 60 * 60 * 1000,
+      ...AUTH_RATE_LIMIT,
     });
     if (!limit.ok) return { ok: true };
 
@@ -201,9 +198,7 @@ export async function resetPassword(
     const limit = await checkRateLimit({
       scope: "password_reset_consume",
       identifier: parsed.data.token,
-      maxAttempts: 6,
-      windowMs: 30 * 60 * 1000,
-      blockMs: 30 * 60 * 1000,
+      ...AUTH_RATE_LIMIT,
     });
     if (!limit.ok) return { error: rateLimitMessage(limit) };
 

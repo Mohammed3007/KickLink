@@ -1,9 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  API_RATE_LIMIT,
+  AUTH_RATE_LIMIT,
   nextRateLimitState,
   normalizeRateLimitIdentifier,
   rateLimitMessage,
+  requestRateLimitIdentifier,
 } from "../lib/rate-limit";
 
 const now = new Date("2026-06-27T12:00:00.000Z");
@@ -16,6 +19,19 @@ const config = {
 test("normalizeRateLimitIdentifier trims, lowercases and caps identifiers", () => {
   assert.equal(normalizeRateLimitIdentifier("  USER@Example.COM  "), "user@example.com");
   assert.equal(normalizeRateLimitIdentifier("x".repeat(300)).length, 240);
+});
+
+test("auth rate limit policy is five attempts per fifteen minutes", () => {
+  assert.deepEqual(AUTH_RATE_LIMIT, {
+    maxAttempts: 5,
+    windowMs: 15 * 60 * 1000,
+    blockMs: 15 * 60 * 1000,
+  });
+});
+
+test("api rate limit policy exists for non-auth endpoints", () => {
+  assert.equal(API_RATE_LIMIT.maxAttempts > AUTH_RATE_LIMIT.maxAttempts, true);
+  assert.equal(API_RATE_LIMIT.windowMs, 60 * 1000);
 });
 
 test("nextRateLimitState starts a new window on first attempt", () => {
@@ -69,4 +85,15 @@ test("rateLimitMessage returns a generic wait message", () => {
     rateLimitMessage({ ok: false, retryAfterSeconds: 61 }),
     "Too many attempts. Try again in about 2 minutes."
   );
+});
+
+test("requestRateLimitIdentifier prefers forwarded IP headers", () => {
+  const req = new Request("https://kick-link.vercel.app/api/health", {
+    headers: {
+      "x-forwarded-for": "203.0.113.10, 198.51.100.1",
+      "x-real-ip": "198.51.100.2",
+    },
+  });
+
+  assert.equal(requestRateLimitIdentifier(req), "ip:203.0.113.10");
 });

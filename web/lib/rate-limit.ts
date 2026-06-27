@@ -1,5 +1,17 @@
 import { db } from "@/lib/db";
 
+export const AUTH_RATE_LIMIT = {
+  maxAttempts: 5,
+  windowMs: 15 * 60 * 1000,
+  blockMs: 15 * 60 * 1000,
+} as const;
+
+export const API_RATE_LIMIT = {
+  maxAttempts: 60,
+  windowMs: 60 * 1000,
+  blockMs: 5 * 60 * 1000,
+} as const;
+
 type LimitConfig = {
   scope: string;
   identifier: string;
@@ -122,4 +134,11 @@ export async function clearRateLimit(scope: string, identifier: string) {
 export function rateLimitMessage(result: Extract<RateLimitResult, { ok: false }>) {
   const minutes = Math.max(1, Math.ceil(result.retryAfterSeconds / 60));
   return `Too many attempts. Try again in about ${minutes} minute${minutes === 1 ? "" : "s"}.`;
+}
+
+export function requestRateLimitIdentifier(req: Request, prefix = "ip") {
+  const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const realIp = req.headers.get("x-real-ip")?.trim();
+  const cfIp = req.headers.get("cf-connecting-ip")?.trim();
+  return `${prefix}:${forwarded || realIp || cfIp || "unknown"}`;
 }

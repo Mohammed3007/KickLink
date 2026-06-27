@@ -6,7 +6,7 @@ import { authConfig } from "@/auth.config";
 import { signInSchema } from "@/lib/validators";
 import { db } from "@/lib/db";
 import { avatarColor } from "@/lib/utils";
-import { checkRateLimit, clearRateLimit } from "@/lib/rate-limit";
+import { AUTH_RATE_LIMIT, checkRateLimit, clearRateLimit } from "@/lib/rate-limit";
 import { googleClientId, googleClientSecret } from "@/lib/flags";
 
 // Google is only enabled when credentials are configured.
@@ -28,9 +28,7 @@ const credentials = Credentials({
     const limit = await checkRateLimit({
       scope: "credentials_login",
       identifier: normalizedEmail,
-      maxAttempts: 6,
-      windowMs: 10 * 60 * 1000,
-      blockMs: 15 * 60 * 1000,
+      ...AUTH_RATE_LIMIT,
     });
     if (!limit.ok) return null;
 

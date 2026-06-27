@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
+import { endpointRateLimit } from "@/lib/api-rate-limit";
 
 // Diagnostic endpoint — exercises the same queries the app uses and reports
 // which step fails. Everything is guarded so it always returns JSON.
-export async function GET() {
+export async function GET(req: Request) {
+  const limited = await endpointRateLimit({ scope: "api_health", req });
+  if (limited) return limited;
+
   const url = process.env.DATABASE_URL || "";
   const host = url.match(/@([^/?]+)/)?.[1] ?? "(no DATABASE_URL set)";
   const driver = url.includes("neon.tech") ? "neon-serverless" : "pg";

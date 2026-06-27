@@ -4,8 +4,12 @@ import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { confirmPaidRegistration } from "@/lib/payment-confirm";
+import { endpointRateLimit } from "@/lib/api-rate-limit";
 
 export async function POST(req: Request) {
+  const limited = await endpointRateLimit({ scope: "api_stripe_webhook", req });
+  if (limited) return limited;
+
   const stripe = getStripe();
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!stripe || !secret) {
