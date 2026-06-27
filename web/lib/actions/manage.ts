@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { createGameSchema, announcementSchema } from "@/lib/validators";
 import { promoteWaitlist } from "@/lib/waitlist";
+import { formDataToSafeObject } from "@/lib/input";
 
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"] as const;
 
@@ -48,7 +49,9 @@ export async function createGame(
 ): Promise<FormState> {
   const user = await requireUser();
 
-  const raw = Object.fromEntries(formData);
+  const safe = formDataToSafeObject(formData);
+  if (!safe.ok) return { error: safe.error };
+  const raw = safe.data;
   // price comes in as dollars from the form
   const priceCents = Math.round(parseFloat(String(raw.price || "0")) * 100);
 
@@ -146,7 +149,9 @@ export async function postAnnouncement(
   formData: FormData
 ): Promise<FormState> {
   const user = await requireUser();
-  const parsed = announcementSchema.safeParse(Object.fromEntries(formData));
+  const safe = formDataToSafeObject(formData);
+  if (!safe.ok) return { error: safe.error };
+  const parsed = announcementSchema.safeParse(safe.data);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the form." };
   }

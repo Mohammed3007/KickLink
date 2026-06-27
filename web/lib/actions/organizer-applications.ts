@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { requirePlatformAdminUser } from "@/lib/admin";
 import { organizerApplicationSchema, organizerDecisionSchema } from "@/lib/validators";
 import { writeAuditLog } from "@/lib/audit";
+import { formDataToSafeObject } from "@/lib/input";
 
 export type OrganizerApplicationState = { error?: string; ok?: boolean } | undefined;
 
@@ -18,7 +19,11 @@ export async function submitOrganizerApplication(
     redirect("/manage/clubs/new");
   }
 
-  const parsed = organizerApplicationSchema.safeParse(Object.fromEntries(formData));
+  const safe = formDataToSafeObject(formData);
+  if (!safe.ok) {
+    redirect("/manage/apply?error=invalid");
+  }
+  const parsed = organizerApplicationSchema.safeParse(safe.data);
   if (!parsed.success) {
     redirect("/manage/apply?error=invalid");
   }
@@ -51,7 +56,11 @@ export async function decideOrganizerApplication(formData: FormData) {
   const user = await requireUser();
   await requirePlatformAdminUser(user);
 
-  const parsed = organizerDecisionSchema.safeParse(Object.fromEntries(formData));
+  const safe = formDataToSafeObject(formData);
+  if (!safe.ok) {
+    redirect("/admin/applications");
+  }
+  const parsed = organizerDecisionSchema.safeParse(safe.data);
   if (!parsed.success) {
     redirect("/admin/applications");
   }

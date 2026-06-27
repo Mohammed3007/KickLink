@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { joinClubSchema, createClubSchema } from "@/lib/validators";
 import { writeAuditLog } from "@/lib/audit";
+import { formDataToSafeObject } from "@/lib/input";
 
 const PALETTE = ["#6E3BD8", "#2666D6", "#12915A", "#D85A18", "#C2185B", "#0E8A86"];
 
@@ -29,7 +30,9 @@ export async function joinClub(
   formData: FormData
 ): Promise<JoinClubState> {
   const user = await requireUser();
-  const parsed = joinClubSchema.safeParse(Object.fromEntries(formData));
+  const safe = formDataToSafeObject(formData);
+  if (!safe.ok) return { error: safe.error };
+  const parsed = joinClubSchema.safeParse(safe.data);
   if (!parsed.success) return { error: "Enter a valid invite code." };
 
   const code = parsed.data.code.trim().toUpperCase();
@@ -63,7 +66,9 @@ export async function createClub(
     return { error: "Organizer approval is required before creating a club." };
   }
 
-  const parsed = createClubSchema.safeParse(Object.fromEntries(formData));
+  const safe = formDataToSafeObject(formData);
+  if (!safe.ok) return { error: safe.error };
+  const parsed = createClubSchema.safeParse(safe.data);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the form." };
   }

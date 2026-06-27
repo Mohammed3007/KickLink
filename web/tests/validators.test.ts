@@ -13,7 +13,7 @@ import { normalizeSport, sportSlug } from "../lib/sports";
 
 test("sign in and sign up schemas accept valid credentials", () => {
   assert.equal(
-    signInSchema.safeParse({ email: "player@kicklink.app", password: "password" }).success,
+    signInSchema.safeParse({ email: " Player@KickLink.App ", password: "password" }).success,
     true
   );
   assert.equal(
@@ -24,6 +24,18 @@ test("sign in and sign up schemas accept valid credentials", () => {
     }).success,
     true
   );
+});
+
+test("schemas sanitize ordinary user text before persistence", () => {
+  const parsed = updateProfileSchema.parse({
+    name: "  Daniel\u0000 Profile  ",
+    city: "  Ottawa  ",
+    skill: "Intermediate",
+    avatarColor: "#14B8A6",
+  });
+
+  assert.equal(parsed.name, "Daniel Profile");
+  assert.equal(parsed.city, "Ottawa");
 });
 
 test("sign up schema rejects weak inputs", () => {

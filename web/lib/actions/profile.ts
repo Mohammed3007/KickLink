@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { updateProfileSchema } from "@/lib/validators";
+import { formDataToSafeObject } from "@/lib/input";
 
 export type ProfileState = { error?: string; ok?: boolean } | undefined;
 
@@ -12,7 +13,9 @@ export async function updateProfile(
   formData: FormData
 ): Promise<ProfileState> {
   const user = await requireUser();
-  const parsed = updateProfileSchema.safeParse(Object.fromEntries(formData));
+  const safe = formDataToSafeObject(formData);
+  if (!safe.ok) return { error: safe.error };
+  const parsed = updateProfileSchema.safeParse(safe.data);
 
   if (!parsed.success) {
     return {

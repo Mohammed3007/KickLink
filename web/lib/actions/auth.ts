@@ -25,6 +25,7 @@ import {
   rateLimitMessage,
 } from "@/lib/rate-limit";
 import { safeInternalPath } from "@/lib/auth-routes";
+import { formDataToSafeObject } from "@/lib/input";
 
 export type AuthState =
   | { error?: string; needsVerification?: boolean; email?: string }
@@ -48,7 +49,9 @@ export async function authenticate(
   _prev: AuthState,
   formData: FormData
 ): Promise<AuthState> {
-  const parsed = signInSchema.safeParse(Object.fromEntries(formData));
+  const safe = formDataToSafeObject(formData);
+  if (!safe.ok) return { error: safe.error };
+  const parsed = signInSchema.safeParse(safe.data);
   if (!parsed.success) return { error: "Enter a valid email and password." };
 
   const email = parsed.data.email.toLowerCase();
@@ -90,7 +93,9 @@ export async function register(
   _prev: SignupState,
   formData: FormData
 ): Promise<SignupState> {
-  const parsed = signUpSchema.safeParse(Object.fromEntries(formData));
+  const safe = formDataToSafeObject(formData);
+  if (!safe.ok) return { error: safe.error };
+  const parsed = signUpSchema.safeParse(safe.data);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check your details." };
   }
@@ -159,7 +164,9 @@ export async function requestPasswordReset(
   _prev: ResetState,
   formData: FormData
 ): Promise<ResetState> {
-  const parsed = forgotPasswordSchema.safeParse(Object.fromEntries(formData));
+  const safe = formDataToSafeObject(formData);
+  if (!safe.ok) return { error: safe.error };
+  const parsed = forgotPasswordSchema.safeParse(safe.data);
   if (!parsed.success) return { error: "Enter a valid email." };
   const email = parsed.data.email.toLowerCase();
 
@@ -189,7 +196,9 @@ export async function resetPassword(
   _prev: ResetState,
   formData: FormData
 ): Promise<ResetState> {
-  const parsed = resetPasswordSchema.safeParse(Object.fromEntries(formData));
+  const safe = formDataToSafeObject(formData);
+  if (!safe.ok) return { error: safe.error };
+  const parsed = resetPasswordSchema.safeParse(safe.data);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check your password." };
   }

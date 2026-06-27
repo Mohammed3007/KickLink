@@ -1,14 +1,26 @@
 import { z } from "zod";
+import { sanitizeText } from "@/lib/input";
+
+const text = (max: number) =>
+  z
+    .string()
+    .transform(sanitizeText)
+    .pipe(z.string().max(max));
+
+const email = z
+  .string()
+  .transform((value) => sanitizeText(value).toLowerCase())
+  .pipe(z.string().email("Enter a valid email").max(254));
 
 export const signInSchema = z.object({
-  email: z.string().email("Enter a valid email"),
-  password: z.string().min(1, "Password is required"),
-  returnTo: z.string().max(300).optional(),
+  email,
+  password: z.string().max(100, "Password is too long").min(1, "Password is required"),
+  returnTo: text(300).optional(),
 });
 
 export const signUpSchema = z.object({
-  name: z.string().min(2, "Name is too short").max(60),
-  email: z.string().email("Enter a valid email"),
+  name: text(60).pipe(z.string().min(2, "Name is too short")),
+  email,
   password: z
     .string()
     .min(8, "Use at least 8 characters")
@@ -16,11 +28,11 @@ export const signUpSchema = z.object({
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email("Enter a valid email"),
+  email,
 });
 
 export const resetPasswordSchema = z.object({
-  token: z.string().min(10),
+  token: text(500).pipe(z.string().min(10)),
   password: z
     .string()
     .min(8, "Use at least 8 characters")
@@ -28,15 +40,15 @@ export const resetPasswordSchema = z.object({
 });
 
 export const createGameSchema = z.object({
-  orgId: z.string().min(1, "Choose a club"),
-  title: z.string().min(3, "Give the game a title").max(80),
-  sport: z.string().trim().min(2, "Choose a sport").max(40).default("Football"),
-  venue: z.string().min(2, "Where is it?").max(120),
-  address: z.string().max(160).optional().default(""),
+  orgId: text(120).pipe(z.string().min(1, "Choose a club")),
+  title: text(80).pipe(z.string().min(3, "Give the game a title")),
+  sport: text(40).pipe(z.string().min(2, "Choose a sport")).default("Football"),
+  venue: text(120).pipe(z.string().min(2, "Where is it?")),
+  address: text(160).optional().default(""),
   startsAt: z.coerce.date(),
   durationMins: z.coerce.number().int().min(15).max(240),
-  format: z.string().min(1).max(40),
-  skill: z.string().min(1).max(40),
+  format: text(40).pipe(z.string().min(1)),
+  skill: text(40).pipe(z.string().min(1)),
   priceCents: z.coerce.number().int().min(0).max(50000),
   capacity: z.coerce.number().int().min(2).max(1000),
   model: z.enum(["PAY", "LATER", "FREE"]),
@@ -48,26 +60,26 @@ export const createGameSchema = z.object({
 });
 
 export const announcementSchema = z.object({
-  orgId: z.string().min(1),
-  title: z.string().min(3).max(100),
-  body: z.string().min(3).max(1000),
+  orgId: text(120).pipe(z.string().min(1)),
+  title: text(100).pipe(z.string().min(3)),
+  body: text(1000).pipe(z.string().min(3)),
 });
 
 export const joinClubSchema = z.object({
-  code: z.string().min(2, "Enter an invite code").max(40),
+  code: text(40).pipe(z.string().min(2, "Enter an invite code")),
 });
 
 export const createClubSchema = z.object({
-  name: z.string().min(3, "Give your club a name").max(60),
-  sport: z.string().trim().min(2, "Choose a primary sport").max(40).default("Football"),
-  city: z.string().min(2, "Where do you play?").max(60),
-  venue: z.string().max(120).optional().default(""),
-  blurb: z.string().max(400).optional().default(""),
+  name: text(60).pipe(z.string().min(3, "Give your club a name")),
+  sport: text(40).pipe(z.string().min(2, "Choose a primary sport")).default("Football"),
+  city: text(60).pipe(z.string().min(2, "Where do you play?")),
+  venue: text(120).optional().default(""),
+  blurb: text(400).optional().default(""),
 });
 
 export const updateProfileSchema = z.object({
-  name: z.string().trim().min(2, "Name is too short").max(60),
-  city: z.string().trim().min(2, "City is too short").max(60),
+  name: text(60).pipe(z.string().min(2, "Name is too short")),
+  city: text(60).pipe(z.string().min(2, "City is too short")),
   skill: z.enum(["Beginner", "Intermediate", "Advanced", "Competitive"]),
   avatarColor: z
     .string()
@@ -75,12 +87,11 @@ export const updateProfileSchema = z.object({
 });
 
 export const organizerApplicationSchema = z.object({
-  clubName: z.string().min(3, "Give the club a working name").max(80),
-  city: z.string().min(2, "Where will games run?").max(60),
-  experience: z
-    .string()
-    .min(20, "Tell us a little more about how you organize games")
-    .max(1000),
+  clubName: text(80).pipe(z.string().min(3, "Give the club a working name")),
+  city: text(60).pipe(z.string().min(2, "Where will games run?")),
+  experience: text(1000).pipe(
+    z.string().min(20, "Tell us a little more about how you organize games")
+  ),
   expectedPlayers: z.coerce.number().int().min(4).max(500),
 });
 
@@ -88,7 +99,7 @@ export const organizerDecisionSchema = z
   .object({
     applicationId: z.string().min(1),
     decision: z.enum(["APPROVED", "REJECTED"]),
-    adminNote: z.string().trim().max(500).optional().default(""),
+    adminNote: text(500).optional().default(""),
   })
   .refine((value) => value.decision !== "REJECTED" || value.adminNote.length >= 5, {
     message: "Add a short reason when rejecting an application.",

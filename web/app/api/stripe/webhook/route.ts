@@ -5,9 +5,14 @@ import { getStripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { confirmPaidRegistration } from "@/lib/payment-confirm";
 import { endpointRateLimit } from "@/lib/api-rate-limit";
+import { readLimitedText, REQUEST_LIMITS } from "@/lib/input";
 
 export async function POST(req: Request) {
-  const limited = await endpointRateLimit({ scope: "api_stripe_webhook", req });
+  const limited = await endpointRateLimit({
+    scope: "api_stripe_webhook",
+    req,
+    maxBodyBytes: REQUEST_LIMITS.maxWebhookBytes,
+  });
   if (limited) return limited;
 
   const stripe = getStripe();
@@ -17,7 +22,11 @@ export async function POST(req: Request) {
   }
 
   const sig = req.headers.get("stripe-signature");
-  const body = await req.text();
+  const limitedBody = await readLimitedText(req, REQUEST_LIMITS.maxWebhookBytes);
+  if (!limitedBody.ok) {
+    return NextResponse.json({ error: limitedBody.error }, { status: 413 });
+  }
+  const body = limitedBody.text;
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(body, sig ?? "", secret);

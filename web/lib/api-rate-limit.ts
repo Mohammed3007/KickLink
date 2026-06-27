@@ -5,14 +5,30 @@ import {
   checkRateLimit,
   requestRateLimitIdentifier,
 } from "@/lib/rate-limit";
+import { hasOversizedBody, REQUEST_LIMITS } from "@/lib/input";
 
 type EndpointLimitOptions = {
   scope: string;
   req: Request;
   auth?: boolean;
+  maxBodyBytes?: number;
 };
 
-export async function endpointRateLimit({ scope, req, auth = false }: EndpointLimitOptions) {
+export async function endpointRateLimit({
+  scope,
+  req,
+  auth = false,
+  maxBodyBytes = REQUEST_LIMITS.maxJsonBytes,
+}: EndpointLimitOptions) {
+  if (hasOversizedBody(req, maxBodyBytes)) {
+    return NextResponse.json(
+      { error: "Payload too large." },
+      {
+        status: 413,
+      }
+    );
+  }
+
   const config = auth ? AUTH_RATE_LIMIT : API_RATE_LIMIT;
   const limit = await checkRateLimit({
     scope,
