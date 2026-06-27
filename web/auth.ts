@@ -6,11 +6,13 @@ import { authConfig } from "@/auth.config";
 import { signInSchema } from "@/lib/validators";
 import { db } from "@/lib/db";
 import { avatarColor } from "@/lib/utils";
+import { checkRateLimit, clearRateLimit } from "@/lib/rate-limit";
+import { googleClientId, googleClientSecret } from "@/lib/flags";
 
 // Google is only enabled when credentials are configured.
-const googleEnabled = !!(
-  process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
-);
+const googleId = googleClientId();
+const googleSecret = googleClientSecret();
+const googleEnabled = !!(googleId && googleSecret);
 
 const credentials = Credentials({
   credentials: {
@@ -22,8 +24,18 @@ const credentials = Credentials({
     if (!parsed.success) return null;
 
     const { email, password } = parsed.data;
+    const normalizedEmail = email.toLowerCase();
+    const limit = await checkRateLimit({
+      scope: "credentials_login",
+      identifier: normalizedEmail,
+      maxAttempts: 6,
+      windowMs: 10 * 60 * 1000,
+      blockMs: 15 * 60 * 1000,
+    });
+    if (!limit.ok) return null;
+
     const user = await db.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: normalizedEmail },
     });
     if (!user?.passwordHash) return null; // no password (OAuth-only) or no user
     if (!user.emailVerified) return null; // must verify first
@@ -31,6 +43,7 @@ const credentials = Credentials({
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) return null;
 
+    await clearRateLimit("credentials_login", normalizedEmail);
     return { id: user.id, email: user.email, name: user.name, image: user.image };
   },
 });
@@ -38,8 +51,8 @@ const credentials = Credentials({
 const providers = googleEnabled
   ? [
       Google({
-        clientId: process.env.AUTH_GOOGLE_ID,
-        clientSecret: process.env.AUTH_GOOGLE_SECRET,
+        clientId: googleId,
+        clientSecret: googleSecret,
         allowDangerousEmailAccountLinking: true,
       }),
       credentials,

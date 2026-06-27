@@ -62,6 +62,7 @@ npm run build && npm run start
 | `ADMIN_EMAILS`                       | prod     | comma-separated bootstrap admin emails                  |
 | `NEXT_PUBLIC_APP_URL`                | prod     | public URL, used in verification/reset emails           |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | no    | enables "Continue with Google"                          |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | no | alternate Google OAuth env names also supported         |
 | `RESEND_API_KEY`                     | no       | sends real verification/reset emails (else logged)      |
 | `EMAIL_FROM`                         | no       | from-address for emails                                 |
 | `STRIPE_SECRET_KEY`                  | no       | enables real Stripe Connect payments                    |

@@ -18,6 +18,7 @@ import {
   createPasswordResetToken,
 } from "@/lib/tokens";
 import { sendPasswordResetEmail, sendVerificationEmail } from "@/lib/email";
+import { checkRateLimit, clearRateLimit, rateLimitMessage } from "@/lib/rate-limit";
 
 export type AuthState =
   | { error?: string; needsVerification?: boolean; email?: string }
@@ -52,6 +53,15 @@ export async function authenticate(
   const email = parsed.data.email.toLowerCase();
 
   try {
+    const limit = await checkRateLimit({
+      scope: "login_form",
+      identifier: email,
+      maxAttempts: 8,
+      windowMs: 10 * 60 * 1000,
+      blockMs: 15 * 60 * 1000,
+    });
+    if (!limit.ok) return { error: rateLimitMessage(limit) };
+
     const user = await db.user.findUnique({ where: { email } });
     if (user && user.passwordHash && !user.emailVerified) {
       return {
@@ -66,6 +76,7 @@ export async function authenticate(
       password: parsed.data.password,
       redirect: false,
     });
+    await clearRateLimit("login_form", email);
   } catch (error) {
     if (error instanceof AuthError) {
       return { error: "Invalid email or password." };
@@ -89,6 +100,15 @@ export async function register(
   const normalized = email.toLowerCase();
 
   try {
+    const limit = await checkRateLimit({
+      scope: "signup",
+      identifier: normalized,
+      maxAttempts: 5,
+      windowMs: 60 * 60 * 1000,
+      blockMs: 60 * 60 * 1000,
+    });
+    if (!limit.ok) return { error: rateLimitMessage(limit) };
+
     const existing = await db.user.findUnique({ where: { email: normalized } });
     if (existing) {
       if (!existing.emailVerified && existing.passwordHash) {
@@ -118,8 +138,18 @@ export async function register(
 }
 
 export async function resendVerification(email: string) {
+  const normalized = email.toLowerCase();
   try {
-    const user = await db.user.findUnique({ where: { email: email.toLowerCase() } });
+    const limit = await checkRateLimit({
+      scope: "resend_verification",
+      identifier: normalized,
+      maxAttempts: 3,
+      windowMs: 30 * 60 * 1000,
+      blockMs: 30 * 60 * 1000,
+    });
+    if (!limit.ok) return { ok: true };
+
+    const user = await db.user.findUnique({ where: { email: normalized } });
     if (user && !user.emailVerified && user.passwordHash) {
       const token = await createEmailVerificationToken(user.id);
       await sendVerificationEmail(user.email, token);
@@ -136,10 +166,20 @@ export async function requestPasswordReset(
 ): Promise<ResetState> {
   const parsed = forgotPasswordSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: "Enter a valid email." };
+  const email = parsed.data.email.toLowerCase();
 
   try {
+    const limit = await checkRateLimit({
+      scope: "password_reset_request",
+      identifier: email,
+      maxAttempts: 4,
+      windowMs: 60 * 60 * 1000,
+      blockMs: 60 * 60 * 1000,
+    });
+    if (!limit.ok) return { ok: true };
+
     const user = await db.user.findUnique({
-      where: { email: parsed.data.email.toLowerCase() },
+      where: { email },
     });
     if (user?.passwordHash) {
       const token = await createPasswordResetToken(user.id);
@@ -162,6 +202,15 @@ export async function resetPassword(
   }
 
   try {
+    const limit = await checkRateLimit({
+      scope: "password_reset_consume",
+      identifier: parsed.data.token,
+      maxAttempts: 6,
+      windowMs: 30 * 60 * 1000,
+      blockMs: 30 * 60 * 1000,
+    });
+    if (!limit.ok) return { error: rateLimitMessage(limit) };
+
     const userId = await consumePasswordResetToken(parsed.data.token);
     if (!userId) {
       return { error: "This reset link is invalid or has expired." };
