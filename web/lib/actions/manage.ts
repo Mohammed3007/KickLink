@@ -75,6 +75,7 @@ export async function createGame(
           orgId: data.orgId,
           createdById: user.id,
           title: data.title,
+          sport: data.sport,
           cadence: "WEEKLY",
           intervalWeeks: 1,
           occurrenceCount: data.occurrenceCount,
@@ -100,6 +101,7 @@ export async function createGame(
               seriesId: series.id,
               occurrenceIndex: index + 1,
               title: data.title,
+              sport: data.sport,
               venue: data.venue,
               address: data.address ?? "",
               startsAt: addWeeks(data.startsAt, index),
@@ -120,6 +122,7 @@ export async function createGame(
       data: {
         orgId: data.orgId,
         title: data.title,
+        sport: data.sport,
         venue: data.venue,
         address: data.address ?? "",
         startsAt: data.startsAt,

@@ -7,6 +7,7 @@ import { formatPrice, formatTime, timeAgo } from "@/lib/utils";
 type HistoryGameCardData = {
   id: string;
   title: string;
+  sport: string;
   venue: string;
   startsAt: Date;
   priceCents: number;
@@ -31,7 +32,7 @@ export function HistoryGameCard({ game }: { game: HistoryGameCardData }) {
                 {game.title}
               </h3>
               <p className="mt-0.5 truncate text-[13px] text-ink-3">
-                {game.org.name}
+                {game.sport} - {game.org.name}
               </p>
             </div>
             {game.isPast ? (

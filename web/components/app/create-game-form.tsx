@@ -6,6 +6,7 @@ import { AlertCircle, Repeat2 } from "lucide-react";
 import { createGame, type FormState } from "@/lib/actions/manage";
 import { Input, Select, Field } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { SPORT_OPTIONS } from "@/lib/sports";
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -19,7 +20,7 @@ function Submit() {
 export function CreateGameForm({
   orgs,
 }: {
-  orgs: { id: string; name: string }[];
+  orgs: { id: string; name: string; sport?: string }[];
 }) {
   const [state, action] = useActionState<FormState, FormData>(createGame, undefined);
 
@@ -43,7 +44,16 @@ export function CreateGameForm({
       </Field>
 
       <Field label="Title" htmlFor="title">
-        <Input id="title" name="title" placeholder="Sunday Night 7s" required />
+        <Input id="title" name="title" placeholder="Sunday Night pickup" required />
+      </Field>
+
+      <Field label="Sport" htmlFor="sport" hint="Use any sport. Players can filter games by this value.">
+        <Input id="sport" name="sport" list="game-sports" defaultValue={orgs[0]?.sport ?? "Football"} required />
+        <datalist id="game-sports">
+          {SPORT_OPTIONS.map((sport) => (
+            <option key={sport} value={sport} />
+          ))}
+        </datalist>
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
@@ -74,7 +84,7 @@ export function CreateGameForm({
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Format" htmlFor="format">
-          <Input id="format" name="format" placeholder="7-a-side" defaultValue="7-a-side" required />
+          <Input id="format" name="format" placeholder="5v5, doubles, open run" defaultValue="Pickup" required />
         </Field>
         <Field label="Skill level" htmlFor="skill">
           <Input id="skill" name="skill" placeholder="Intermediate" defaultValue="Intermediate" required />
@@ -83,7 +93,7 @@ export function CreateGameForm({
 
       <div className="grid grid-cols-3 gap-3">
         <Field label="Capacity" htmlFor="capacity">
-          <Input id="capacity" name="capacity" type="number" defaultValue={14} min={2} max={60} required />
+          <Input id="capacity" name="capacity" type="number" defaultValue={14} min={2} max={1000} required />
         </Field>
         <Field label="Price ($)" htmlFor="price">
           <Input id="price" name="price" type="number" step="0.01" defaultValue={12} min={0} required />

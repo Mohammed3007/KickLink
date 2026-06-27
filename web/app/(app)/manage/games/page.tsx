@@ -95,6 +95,7 @@ export default async function ManageGamesPage({
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="truncate text-lg font-black text-ink">{game.title}</h2>
+                      <Badge tone="brand">{game.sport}</Badge>
                       {game.seriesId && (
                         <Badge tone="info">
                           <Repeat2 className="size-3.5" /> Weekly

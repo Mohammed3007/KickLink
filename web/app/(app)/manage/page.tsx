@@ -175,7 +175,7 @@ export default async function ManagePage({
               title="Manage a roster"
               body={
                 nextGame
-                  ? `Next up: ${nextGame.title} at ${formatTime(nextGame.startsAt)}.`
+                  ? `Next up: ${nextGame.sport} - ${nextGame.title} at ${formatTime(nextGame.startsAt)}.`
                   : "Create your next game to start building a roster."
               }
             />
@@ -240,7 +240,7 @@ export default async function ManagePage({
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-black text-ink">{nextGame.title}</p>
                     <p className="text-sm text-ink-3">
-                      {nextGame.org.name} · {formatGameDate(nextGame.startsAt)} · {formatTime(nextGame.startsAt)}
+                      {nextGame.sport} - {nextGame.org.name} - {formatGameDate(nextGame.startsAt)} - {formatTime(nextGame.startsAt)}
                     </p>
                   </div>
                   <ArrowRight className="size-5 text-ink-3" />
@@ -311,6 +311,7 @@ function ClubPanel({
     games: Array<{
       id: string;
       title: string;
+      sport: string;
       startsAt: Date;
       capacity: number;
       priceCents: number;
@@ -319,6 +320,7 @@ function ClubPanel({
     recurringSeries: Array<{
       id: string;
       title: string;
+      sport: string;
       startsAt: Date;
       occurrenceCount: number;
       paymentMode: string;
@@ -427,7 +429,7 @@ function ClubPanel({
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-bold text-ink">{series.title}</p>
                         <p className="mt-0.5 text-sm text-ink-3">
-                          {series.occurrenceCount} weeks · starts {formatGameDate(series.startsAt)}
+                          {series.sport} - {series.occurrenceCount} weeks - starts {formatGameDate(series.startsAt)}
                         </p>
                         <div className="mt-2 flex flex-wrap gap-2">
                           <Badge tone="info">{seriesPaymentLabel(series.paymentMode)}</Badge>
@@ -454,6 +456,7 @@ function GameRow({
   game: {
     id: string;
     title: string;
+    sport: string;
     startsAt: Date;
     capacity: number;
     registrations: Array<{ status: string; payStatus: string }>;
@@ -469,7 +472,7 @@ function GameRow({
         <div className="min-w-0 flex-1">
           <p className="truncate font-bold text-ink">{game.title}</p>
           <p className="text-sm text-ink-3">
-            {formatGameDate(game.startsAt)} · {formatTime(game.startsAt)}
+            {game.sport} - {formatGameDate(game.startsAt)} - {formatTime(game.startsAt)}
           </p>
           <div className="mt-1.5 flex flex-wrap gap-2">
             <Badge tone={taken >= game.capacity ? "info" : "neutral"}>

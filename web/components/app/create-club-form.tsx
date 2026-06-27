@@ -6,6 +6,7 @@ import { AlertCircle } from "lucide-react";
 import { createClub, type CreateClubState } from "@/lib/actions/clubs";
 import { Input, Textarea, Field } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { SPORT_OPTIONS } from "@/lib/sports";
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -33,6 +34,15 @@ export function CreateClubForm() {
 
       <Field label="Club name" htmlFor="name">
         <Input id="name" name="name" placeholder="Westside Sunday League" required />
+      </Field>
+
+      <Field label="Primary sport" htmlFor="sport" hint="You can still schedule other sports inside this club.">
+        <Input id="sport" name="sport" list="club-sports" defaultValue="Football" required />
+        <datalist id="club-sports">
+          {SPORT_OPTIONS.map((sport) => (
+            <option key={sport} value={sport} />
+          ))}
+        </datalist>
       </Field>
 
       <div className="grid grid-cols-2 gap-3">

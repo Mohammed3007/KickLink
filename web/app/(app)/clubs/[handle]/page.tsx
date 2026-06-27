@@ -43,7 +43,7 @@ export default async function ClubPage({
               </div>
               <p className="flex items-center gap-1.5 text-sm text-ink-3">
                 <Users className="size-3.5" />
-                {club._count.memberships} members · {club.city}
+                {club.sport} - {club._count.memberships} members - {club.city}
               </p>
             </div>
           </div>

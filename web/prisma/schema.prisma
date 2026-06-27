@@ -203,6 +203,7 @@ model Organization {
   handle     String   @unique
   city       String   @default("Ottawa")
   venue      String   @default("")
+  sport      String   @default("Football")
   color      String   @default("#6E3BD8")
   blurb      String   @default("")
   inviteCode String   @unique @default(cuid())
@@ -240,6 +241,7 @@ model Game {
   title            String
   venue            String
   address          String         @default("")
+  sport            String         @default("Football")
   startsAt         DateTime
   durationMins     Int            @default(90)
   format           String         @default("7-a-side")
@@ -266,6 +268,7 @@ model Game {
 
   @@index([orgId])
   @@index([seriesId])
+  @@index([sport])
   @@index([startsAt])
   @@unique([seriesId, occurrenceIndex])
 }
@@ -280,6 +283,7 @@ model RecurringEventSeries {
   endsAt           DateTime
   venue            String
   address          String            @default("")
+  sport            String            @default("Football")
   durationMins     Int               @default(90)
   format           String            @default("7-a-side")
   skill            String            @default("Intermediate")
@@ -302,6 +306,7 @@ model RecurringEventSeries {
 
   @@index([orgId])
   @@index([createdById])
+  @@index([sport])
   @@index([startsAt])
   @@index([archivedAt])
 }

@@ -38,7 +38,7 @@ export default async function ClubsPage() {
                   )}
                 </div>
                 <p className="truncate text-sm text-ink-3">
-                  {club.city} · {club.venue} · {club._count.memberships} members
+                  {club.sport} - {club.city} - {club.venue} - {club._count.memberships} members
                 </p>
               </div>
               <ChevronRight className="size-5 shrink-0 text-ink-3" />

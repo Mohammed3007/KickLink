@@ -48,6 +48,9 @@ export default async function GameDetailPage({
           <div className="relative">
             <div className="flex flex-wrap gap-2">
               <Badge tone="brand" className="bg-white/20 text-white">
+                {game.sport}
+              </Badge>
+              <Badge tone="brand" className="bg-white/20 text-white">
                 {game.format}
               </Badge>
               <Badge tone="brand" className="bg-white/20 text-white">

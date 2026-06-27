@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { sportSlug } from "@/lib/sports";
 
 // Registration statuses that occupy a spot in the game.
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"] as const;
@@ -79,15 +80,35 @@ export async function getGame(gameId: string, viewerId?: string) {
 }
 
 /** Lightweight game card data for lists. */
-export async function listClubGames(userId: string) {
+export async function listClubGames(
+  userId: string,
+  filters: { sport?: string; query?: string } = {}
+) {
   const memberships = await db.membership.findMany({
     where: { userId },
     select: { orgId: true },
   });
   const orgIds = memberships.map((m) => m.orgId);
 
+  const query = filters.query?.trim();
   const games = await db.game.findMany({
-    where: { orgId: { in: orgIds }, startsAt: { gte: new Date(Date.now() - 3600_000) } },
+    where: {
+      orgId: { in: orgIds },
+      startsAt: { gte: new Date(Date.now() - 3600_000) },
+      ...(filters.sport && filters.sport !== "all"
+        ? { sport: { equals: filters.sport, mode: "insensitive" as const } }
+        : {}),
+      ...(query
+        ? {
+            OR: [
+              { title: { contains: query, mode: "insensitive" as const } },
+              { sport: { contains: query, mode: "insensitive" as const } },
+              { venue: { contains: query, mode: "insensitive" as const } },
+              { org: { name: { contains: query, mode: "insensitive" as const } } },
+            ],
+          }
+        : {}),
+    },
     include: {
       org: { select: { name: true, handle: true, color: true } },
       registrations: { select: { userId: true, status: true } },
@@ -99,9 +120,31 @@ export async function listClubGames(userId: string) {
 }
 
 /** Player registration history, including past and cancelled registrations. */
-export async function listPlayerGameHistory(userId: string) {
+export async function listPlayerGameHistory(
+  userId: string,
+  filters: { sport?: string; query?: string } = {}
+) {
+  const query = filters.query?.trim();
+  const gameFilter = {
+    ...(filters.sport && filters.sport !== "all"
+      ? { sport: { equals: filters.sport, mode: "insensitive" as const } }
+      : {}),
+    ...(query
+      ? {
+          OR: [
+            { title: { contains: query, mode: "insensitive" as const } },
+            { sport: { contains: query, mode: "insensitive" as const } },
+            { venue: { contains: query, mode: "insensitive" as const } },
+            { org: { name: { contains: query, mode: "insensitive" as const } } },
+          ],
+        }
+      : {}),
+  };
   const registrations = await db.registration.findMany({
-    where: { userId },
+    where: {
+      userId,
+      ...(Object.keys(gameFilter).length > 0 ? { game: gameFilter } : {}),
+    },
     include: {
       game: {
         include: {
@@ -126,6 +169,34 @@ export async function listPlayerGameHistory(userId: string) {
       isPast: registration.game.startsAt < new Date(),
     };
   });
+}
+
+export async function listAvailableSports(userId: string) {
+  const memberships = await db.membership.findMany({
+    where: { userId },
+    select: { orgId: true },
+  });
+  const orgIds = memberships.map((m) => m.orgId);
+  const [gameSports, orgSports] = await Promise.all([
+    db.game.findMany({
+      where: { orgId: { in: orgIds } },
+      distinct: ["sport"],
+      select: { sport: true },
+      orderBy: { sport: "asc" },
+    }),
+    db.organization.findMany({
+      where: { id: { in: orgIds } },
+      distinct: ["sport"],
+      select: { sport: true },
+      orderBy: { sport: "asc" },
+    }),
+  ]);
+
+  const bySlug = new Map<string, string>();
+  for (const item of [...orgSports, ...gameSports]) {
+    if (item.sport) bySlug.set(sportSlug(item.sport), item.sport);
+  }
+  return [...bySlug.values()].sort((a, b) => a.localeCompare(b));
 }
 
 function decorate<

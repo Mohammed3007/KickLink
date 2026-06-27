@@ -30,6 +30,7 @@ export const resetPasswordSchema = z.object({
 export const createGameSchema = z.object({
   orgId: z.string().min(1, "Choose a club"),
   title: z.string().min(3, "Give the game a title").max(80),
+  sport: z.string().trim().min(2, "Choose a sport").max(40).default("Football"),
   venue: z.string().min(2, "Where is it?").max(120),
   address: z.string().max(160).optional().default(""),
   startsAt: z.coerce.date(),
@@ -37,7 +38,7 @@ export const createGameSchema = z.object({
   format: z.string().min(1).max(40),
   skill: z.string().min(1).max(40),
   priceCents: z.coerce.number().int().min(0).max(50000),
-  capacity: z.coerce.number().int().min(2).max(60),
+  capacity: z.coerce.number().int().min(2).max(1000),
   model: z.enum(["PAY", "LATER", "FREE"]),
   recurrenceMode: z.enum(["SINGLE", "WEEKLY"]).default("SINGLE"),
   occurrenceCount: z.coerce.number().int().min(2).max(26).default(6),
@@ -58,6 +59,7 @@ export const joinClubSchema = z.object({
 
 export const createClubSchema = z.object({
   name: z.string().min(3, "Give your club a name").max(60),
+  sport: z.string().trim().min(2, "Choose a primary sport").max(40).default("Football"),
   city: z.string().min(2, "Where do you play?").max(60),
   venue: z.string().max(120).optional().default(""),
   blurb: z.string().max(400).optional().default(""),

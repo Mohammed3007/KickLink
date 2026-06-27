@@ -8,7 +8,7 @@ export default async function NewGamePage() {
   const user = await requireUser();
   const orgs = await db.organization.findMany({
     where: { memberships: { some: { userId: user.id, role: "ORGANIZER" } } },
-    select: { id: true, name: true },
+    select: { id: true, name: true, sport: true },
     orderBy: { name: "asc" },
   });
 
@@ -17,7 +17,7 @@ export default async function NewGamePage() {
   return (
     <OrganizerPageShell
       title="Create a game"
-      subtitle="Set up one-off or weekly pickup games with roster capacity, venue details and payment model."
+      subtitle="Set up one-off or weekly games for any sport, roster size, venue and payment model."
       active="/manage/games/new"
       backHref="/manage"
       compact

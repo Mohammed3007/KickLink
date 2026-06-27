@@ -69,7 +69,7 @@ export default async function ManageMembersPage() {
                     <div className="min-w-0">
                       <h2 className="truncate text-xl font-black text-[#f4efe3]">{org.name}</h2>
                       <p className="text-sm text-white/45">
-                        {players.length} players - {organizers.length} organizers - {org._count.games} games
+                        {org.sport} - {players.length} players - {organizers.length} organizers - {org._count.games} games
                       </p>
                     </div>
                   </div>
@@ -128,7 +128,7 @@ export default async function ManageMembersPage() {
                   <div className="mt-3 space-y-2">
                     {org.games.map((game) => (
                       <Link key={game.id} href={`/manage/games/${game.id}`} className="block rounded-xl bg-white/70 p-3 ring-1 ring-line transition-colors hover:bg-white">
-                        <p className="truncate text-sm font-bold text-ink">{game.title}</p>
+                        <p className="truncate text-sm font-bold text-ink">{game.sport} - {game.title}</p>
                         <p className="mt-0.5 text-xs text-ink-3">
                           {formatGameDate(game.startsAt)} - {formatTime(game.startsAt)}
                         </p>

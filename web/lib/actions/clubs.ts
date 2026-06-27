@@ -67,7 +67,7 @@ export async function createClub(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the form." };
   }
-  const { name, city, venue, blurb } = parsed.data;
+  const { name, sport, city, venue, blurb } = parsed.data;
 
   // Unique handle.
   let handle = slugify(name);
@@ -92,6 +92,7 @@ export async function createClub(
     const org = await tx.organization.create({
       data: {
         name,
+        sport,
         handle,
         city,
         venue: venue ?? "",
@@ -115,6 +116,7 @@ export async function createClub(
           name: org.name,
           handle: org.handle,
           city: org.city,
+          sport,
         },
       },
       tx
