@@ -19,6 +19,7 @@ import {
 } from "@/lib/tokens";
 import { sendPasswordResetEmail, sendVerificationEmail } from "@/lib/email";
 import { checkRateLimit, clearRateLimit, rateLimitMessage } from "@/lib/rate-limit";
+import { safeInternalPath } from "@/lib/auth-routes";
 
 export type AuthState =
   | { error?: string; needsVerification?: boolean; email?: string }
@@ -32,11 +33,6 @@ export type ResetState = { error?: string; ok?: boolean } | undefined;
 
 const setupError =
   "KickLink could not reach the production database. Check DATABASE_URL in Vercel and run the Prisma migrations.";
-
-function safeReturnPath(value: string | undefined) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/home";
-  return value;
-}
 
 function logAuthFailure(scope: string, error: unknown) {
   console.error(`${scope} failed`, error);
@@ -84,7 +80,7 @@ export async function authenticate(
     return logAuthFailure("Login", error);
   }
 
-  redirect(safeReturnPath(parsed.data.returnTo));
+  redirect(safeInternalPath(parsed.data.returnTo ?? "/home"));
 }
 
 export async function register(

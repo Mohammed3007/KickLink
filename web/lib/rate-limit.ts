@@ -12,12 +12,53 @@ export type RateLimitResult =
   | { ok: true }
   | { ok: false; retryAfterSeconds: number };
 
-function normalizeIdentifier(identifier: string) {
+type ExistingBucket = {
+  attempts: number;
+  windowStart: Date;
+  blockedUntil: Date | null;
+};
+
+export function normalizeRateLimitIdentifier(identifier: string) {
   return identifier.trim().toLowerCase().slice(0, 240);
 }
 
+export function nextRateLimitState(
+  existing: ExistingBucket | null | undefined,
+  config: Pick<LimitConfig, "maxAttempts" | "windowMs" | "blockMs">,
+  now: Date
+) {
+  if (existing?.blockedUntil && existing.blockedUntil > now) {
+    return {
+      allowed: false,
+      attempts: existing.attempts,
+      windowStart: existing.windowStart,
+      blockedUntil: existing.blockedUntil,
+    };
+  }
+
+  if (!existing || now.getTime() - existing.windowStart.getTime() > config.windowMs) {
+    return {
+      allowed: true,
+      attempts: 1,
+      windowStart: now,
+      blockedUntil: null,
+    };
+  }
+
+  const attempts = existing.attempts + 1;
+  const blockedUntil =
+    attempts > config.maxAttempts ? new Date(now.getTime() + config.blockMs) : null;
+
+  return {
+    allowed: !blockedUntil,
+    attempts,
+    windowStart: existing.windowStart,
+    blockedUntil,
+  };
+}
+
 export async function checkRateLimit(config: LimitConfig): Promise<RateLimitResult> {
-  const identifier = normalizeIdentifier(config.identifier);
+  const identifier = normalizeRateLimitIdentifier(config.identifier);
   if (!identifier) return { ok: false, retryAfterSeconds: Math.ceil(config.blockMs / 1000) };
 
   const now = new Date();
@@ -32,35 +73,33 @@ export async function checkRateLimit(config: LimitConfig): Promise<RateLimitResu
     };
   }
 
-  if (!existing || now.getTime() - existing.windowStart.getTime() > config.windowMs) {
+  const next = nextRateLimitState(existing, config, now);
+
+  if (!existing || next.attempts === 1) {
     await db.rateLimitBucket.upsert({
       where: { scope_identifier: { scope: config.scope, identifier } },
       create: {
         scope: config.scope,
         identifier,
-        attempts: 1,
-        windowStart: now,
-        blockedUntil: null,
+        attempts: next.attempts,
+        windowStart: next.windowStart,
+        blockedUntil: next.blockedUntil,
       },
       update: {
-        attempts: 1,
-        windowStart: now,
-        blockedUntil: null,
+        attempts: next.attempts,
+        windowStart: next.windowStart,
+        blockedUntil: next.blockedUntil,
       },
     });
     return { ok: true };
   }
 
-  const attempts = existing.attempts + 1;
-  const blockedUntil =
-    attempts > config.maxAttempts ? new Date(now.getTime() + config.blockMs) : null;
-
   await db.rateLimitBucket.update({
     where: { id: existing.id },
-    data: { attempts, blockedUntil },
+    data: { attempts: next.attempts, blockedUntil: next.blockedUntil },
   });
 
-  if (blockedUntil) {
+  if (!next.allowed) {
     return { ok: false, retryAfterSeconds: Math.ceil(config.blockMs / 1000) };
   }
 
@@ -73,7 +112,7 @@ export async function clearRateLimit(scope: string, identifier: string) {
       where: {
         scope_identifier: {
           scope,
-          identifier: normalizeIdentifier(identifier),
+          identifier: normalizeRateLimitIdentifier(identifier),
         },
       },
     })
