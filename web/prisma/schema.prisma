@@ -91,6 +91,11 @@ enum SeriesPaymentMode {
   WEEKLY_RECURRING
 }
 
+enum AnalyticsEventType {
+  PAGE_VIEW
+  USER_EVENT
+}
+
 // ─── Models ─────────────────────────────────────────────────────
 
 model User {
@@ -120,6 +125,7 @@ model User {
   attendanceRecords AttendanceRecord[] @relation("AttendanceUser")
   recordedAttendanceRecords AttendanceRecord[] @relation("AttendanceRecorder")
   recurringSeries RecurringEventSeries[] @relation("SeriesCreator")
+  analyticsEvents AnalyticsEvent[]
 
   verificationTokens EmailVerificationToken[]
   passwordResets     PasswordResetToken[]
@@ -411,4 +417,29 @@ model Notification {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model AnalyticsEvent {
+  id          String             @id @default(cuid())
+  type        AnalyticsEventType
+  name        String
+  path        String
+  referrer    String             @default("")
+  title       String             @default("")
+  visitorId   String
+  sessionId   String?
+  metadata    Json               @default("{}")
+  userAgent   String             @default("")
+  ipHash      String?
+  createdAt   DateTime           @default(now())
+
+  userId String?
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([type])
+  @@index([name])
+  @@index([path])
+  @@index([visitorId])
+  @@index([userId])
+  @@index([createdAt])
 }

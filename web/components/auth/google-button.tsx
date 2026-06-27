@@ -10,6 +10,8 @@ function Inner({ label }: { label: string }) {
     <button
       type="submit"
       disabled={pending}
+      data-analytics-event="auth.google_click"
+      data-analytics-label={label}
       className="flex h-11 w-full items-center justify-center gap-2.5 rounded-2xl bg-surface text-[15px] font-semibold text-ink ring-1 ring-line transition-colors hover:bg-surface-2 disabled:opacity-60"
     >
       {pending ? (

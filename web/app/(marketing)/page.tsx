@@ -103,7 +103,11 @@ export default function LandingPage() {
             </Reveal>
             <Reveal delay={0.15}>
               <div className="mt-9 flex flex-wrap items-center gap-3">
-                <Link href="/signup">
+                <Link
+                  href="/signup"
+                  data-analytics-event="marketing.signup_cta_click"
+                  data-analytics-label="hero"
+                >
                   <Button
                     size="lg"
                     className="group bg-gradient-to-r from-gold-300 to-gold-500 text-[#1a1408] shadow-[0_18px_40px_-18px_rgba(233,190,90,.9)] hover:brightness-105"
@@ -112,7 +116,11 @@ export default function LandingPage() {
                     <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
                   </Button>
                 </Link>
-                <Link href="/login">
+                <Link
+                  href="/login"
+                  data-analytics-event="marketing.login_cta_click"
+                  data-analytics-label="hero"
+                >
                   <Button
                     size="lg"
                     variant="secondary"
@@ -225,7 +233,11 @@ export default function LandingPage() {
               attendance history in one dashboard.
             </p>
             <div className="mt-8 flex justify-center">
-              <Link href="/signup">
+              <Link
+                href="/signup"
+                data-analytics-event="marketing.signup_cta_click"
+                data-analytics-label="organizer"
+              >
                 <Button
                   size="lg"
                   className="bg-gradient-to-r from-gold-300 to-gold-500 text-[#1a1408] shadow-none hover:brightness-105"

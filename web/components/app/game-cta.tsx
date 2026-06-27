@@ -43,6 +43,8 @@ export function GameCta({ gameId, model, priceLabel, isFull, myStatus }: Props) 
           <Button
             full
             size="lg"
+            data-analytics-event="game.offer_accept_checkout_click"
+            data-analytics-label={gameId}
             onClick={() => router.push(`/games/${gameId}/join?mode=accept`)}
           >
             Accept & pay {priceLabel}
@@ -52,6 +54,8 @@ export function GameCta({ gameId, model, priceLabel, isFull, myStatus }: Props) 
             full
             size="lg"
             loading={pending}
+            data-analytics-event="game.offer_accept_click"
+            data-analytics-label={gameId}
             onClick={() => run(() => acceptOffer(gameId))}
           >
             <Check className="size-4" />
@@ -63,6 +67,8 @@ export function GameCta({ gameId, model, priceLabel, isFull, myStatus }: Props) 
           size="lg"
           variant="ghost"
           loading={pending}
+          data-analytics-event="game.offer_decline_click"
+          data-analytics-label={gameId}
           onClick={() => run(() => declineOffer(gameId))}
         >
           Decline spot
@@ -77,6 +83,8 @@ export function GameCta({ gameId, model, priceLabel, isFull, myStatus }: Props) 
         <Button
           full
           size="lg"
+          data-analytics-event="game.pay_to_confirm_click"
+          data-analytics-label={gameId}
           onClick={() => router.push(`/games/${gameId}/join?mode=pay`)}
         >
           Pay {priceLabel} to confirm
@@ -117,6 +125,8 @@ export function GameCta({ gameId, model, priceLabel, isFull, myStatus }: Props) 
           size="lg"
           variant="dark"
           loading={pending}
+          data-analytics-event="game.waitlist_click"
+          data-analytics-label={gameId}
           onClick={() => run(() => joinWaitlist(gameId))}
         >
           <ArrowLeftRight className="size-4" /> Join waitlist
@@ -132,6 +142,8 @@ export function GameCta({ gameId, model, priceLabel, isFull, myStatus }: Props) 
           full
           size="lg"
           loading={pending}
+          data-analytics-event="game.reserve_free_click"
+          data-analytics-label={gameId}
           onClick={() => run(() => reserveSpot(gameId))}
         >
           <Check className="size-4" /> Reserve free spot
@@ -147,6 +159,8 @@ export function GameCta({ gameId, model, priceLabel, isFull, myStatus }: Props) 
           full
           size="lg"
           loading={pending}
+          data-analytics-event="game.reserve_pay_later_click"
+          data-analytics-label={gameId}
           onClick={() => run(() => reserveSpot(gameId))}
         >
           Reserve spot · pay later
@@ -162,6 +176,8 @@ export function GameCta({ gameId, model, priceLabel, isFull, myStatus }: Props) 
         full
         size="lg"
         data-testid="join-btn"
+        data-analytics-event="game.join_paid_click"
+        data-analytics-label={gameId}
         onClick={() => router.push(`/games/${gameId}/join`)}
       >
         Join · {priceLabel}
@@ -187,6 +203,8 @@ function CancelButton({
       size="lg"
       variant="ghost"
       loading={pending}
+      data-analytics-event="game.cancel_registration_click"
+      data-analytics-label={gameId}
       onClick={() => run(() => cancelRegistration(gameId))}
       className="text-bad hover:bg-bad-bg"
     >
