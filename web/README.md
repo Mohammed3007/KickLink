@@ -92,6 +92,7 @@ Override with `PLAYWRIGHT_PORT` or point at an existing deployment with
 | `STRIPE_WEBHOOK_SECRET`             | no       | for the `/api/stripe/webhook` endpoint                  |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | no       | Stripe publishable key                                  |
 | `PLATFORM_FEE_BPS`                   | no       | platform fee in basis points (e.g. `500` = 5%)          |
+| `NEXT_PUBLIC_APP_TIME_ZONE`          | no       | game display timezone, default `America/Toronto`        |
 
 Without Google / Resend / Stripe keys the app still runs: Google button is
 hidden, emails are logged to the server console, and a local test-payment flow

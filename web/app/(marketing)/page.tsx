@@ -89,7 +89,10 @@ export default function LandingPage() {
               </span>
             </Reveal>
             <Reveal delay={0.05}>
-              <h1 className="mt-6 max-w-3xl text-[clamp(2.85rem,12vw,4.5rem)] font-black uppercase leading-[0.95] tracking-[-0.035em] text-[#f4efe3] sm:text-7xl sm:tracking-[-0.045em]">
+              <h1
+                aria-label="Lock the lineup before kickoff."
+                className="mt-6 max-w-3xl text-[clamp(2.85rem,12vw,4.5rem)] font-black uppercase leading-[0.95] tracking-[-0.035em] text-[#f4efe3] sm:text-7xl sm:tracking-[-0.045em]"
+              >
                 <span className="block">Lock the</span>
                 <span className="block">lineup before</span>
                 <span className="block">kickoff.</span>

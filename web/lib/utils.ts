@@ -10,6 +10,9 @@ export function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+export const APP_TIME_ZONE =
+  process.env.NEXT_PUBLIC_APP_TIME_ZONE || "America/Toronto";
+
 const COLORS = [
   "#6E3BD8", "#2666D6", "#12915A", "#D85A18", "#CF3A40",
   "#B7790E", "#0E8A86", "#8E44AD", "#C2185B", "#00796B",
@@ -33,6 +36,7 @@ export function formatGameDate(d: Date): string {
     weekday: "short",
     month: "short",
     day: "numeric",
+    timeZone: APP_TIME_ZONE,
   }).format(d);
 }
 
@@ -41,7 +45,29 @@ export function formatTime(d: Date): string {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
+    timeZone: APP_TIME_ZONE,
   }).format(d);
+}
+
+export function formatDateChipParts(d: Date) {
+  const weekday = new Intl.DateTimeFormat("en-CA", {
+    weekday: "short",
+    timeZone: APP_TIME_ZONE,
+  })
+    .format(d)
+    .toUpperCase();
+  const day = new Intl.DateTimeFormat("en-CA", {
+    day: "numeric",
+    timeZone: APP_TIME_ZONE,
+  }).format(d);
+  const month = new Intl.DateTimeFormat("en-CA", {
+    month: "short",
+    timeZone: APP_TIME_ZONE,
+  })
+    .format(d)
+    .toUpperCase();
+
+  return { weekday, day, month };
 }
 
 /** Compact relative time, e.g. "2h ago", "3d ago" */
@@ -54,5 +80,9 @@ export function timeAgo(d: Date): string {
   if (h < 24) return `${h}h ago`;
   const days = Math.floor(h / 24);
   if (days < 7) return `${days}d ago`;
-  return new Intl.DateTimeFormat("en-CA", { month: "short", day: "numeric" }).format(d);
+  return new Intl.DateTimeFormat("en-CA", {
+    month: "short",
+    day: "numeric",
+    timeZone: APP_TIME_ZONE,
+  }).format(d);
 }
