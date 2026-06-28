@@ -59,7 +59,8 @@ npm run build && npm run start
 | `DATABASE_URL`                       | yes      | Postgres connection string                              |
 | `AUTH_SECRET`                        | yes      | `openssl rand -base64 32`                               |
 | `AUTH_TRUST_HOST`                    | prod     | set `true` when behind a proxy / on a platform          |
-| `ADMIN_EMAILS`                       | prod     | comma-separated bootstrap admin emails                  |
+| `ADMIN_EMAILS`                       | bootstrap | comma-separated break-glass admin emails              |
+| `ALLOW_ADMIN_EMAIL_BOOTSTRAP`        | no       | set `true` only while assigning the first DB admin      |
 | `NEXT_PUBLIC_APP_URL`                | prod     | public URL, used in verification/reset emails           |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | no    | enables "Continue with Google"                          |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | no | alternate Google OAuth env names also supported         |
@@ -77,9 +78,11 @@ stands in for Stripe.
 ### Organizer approval
 
 New users cannot create clubs immediately. They apply at `/manage/apply`; platform admins review
-applications at `/admin/applications`. Bootstrap production admin access by setting
-`ADMIN_EMAILS` in Vercel to one or more trusted account emails. The seed account
-`organizer@kicklink.app` is also marked as an approved organizer/admin for demo use.
+applications at `/admin/applications`. Platform admin access should come from the
+database-backed `User.platformRole = ADMIN`. For first-admin bootstrap only, set
+`ALLOW_ADMIN_EMAIL_BOOTSTRAP=true` with `ADMIN_EMAILS`, sign in, assign the DB
+role, then turn `ALLOW_ADMIN_EMAIL_BOOTSTRAP` back off. The seed account
+`organizer@kicklink.app` is marked as an approved organizer/admin for demo use.
 
 ### Turning on the real integrations
 
@@ -174,3 +177,5 @@ proxy.ts          auth route gate (Next 16 middleware)
 - Payments go through a Stripe-shaped service (`lib/payments.ts`) — set
   `STRIPE_SECRET_KEY` to enable real charges; otherwise a local test flow runs.
 - Security headers set in `next.config.ts`.
+- Audit log entries include an application-level hash chain for tamper evidence
+  on newly created sensitive actions.

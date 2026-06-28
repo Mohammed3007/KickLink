@@ -161,10 +161,13 @@ model AuditLogEntry {
   actor          User?       @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
   reason         String?
   metadata       Json        @default("{}")
+  previousHash   String?
+  hash           String?
   createdAt      DateTime    @default(now())
 
   @@index([actorId])
   @@index([action])
+  @@index([hash])
   @@index([organizationId])
   @@index([targetType, targetId])
   @@index([createdAt])

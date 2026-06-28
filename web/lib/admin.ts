@@ -13,8 +13,15 @@ export function adminEmails() {
     .filter(Boolean);
 }
 
+export function allowAdminEmailBootstrap() {
+  return process.env.ALLOW_ADMIN_EMAIL_BOOTSTRAP === "true";
+}
+
 export function isPlatformAdminUser(user: UserLike) {
-  return user.platformRole === "ADMIN" || adminEmails().includes(user.email.toLowerCase());
+  return (
+    user.platformRole === "ADMIN" ||
+    (allowAdminEmailBootstrap() && adminEmails().includes(user.email.toLowerCase()))
+  );
 }
 
 export async function requirePlatformAdminUser(user: UserLike) {
