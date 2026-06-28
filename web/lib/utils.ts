@@ -11,7 +11,7 @@ export function formatPrice(cents: number): string {
 }
 
 export const APP_TIME_ZONE =
-  process.env.NEXT_PUBLIC_APP_TIME_ZONE || "America/Toronto";
+  process.env.NEXT_PUBLIC_APP_TIME_ZONE || "UTC";
 
 const COLORS = [
   "#6E3BD8", "#2666D6", "#12915A", "#D85A18", "#CF3A40",
