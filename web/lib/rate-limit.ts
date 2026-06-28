@@ -34,6 +34,13 @@ export function normalizeRateLimitIdentifier(identifier: string) {
   return identifier.trim().toLowerCase().slice(0, 240);
 }
 
+export function rateLimitBypassEnabled() {
+  return (
+    process.env.PLAYWRIGHT_TEST === "true" &&
+    process.env.DISABLE_RATE_LIMITS === "true"
+  );
+}
+
 export function nextRateLimitState(
   existing: ExistingBucket | null | undefined,
   config: Pick<LimitConfig, "maxAttempts" | "windowMs" | "blockMs">,
@@ -70,6 +77,8 @@ export function nextRateLimitState(
 }
 
 export async function checkRateLimit(config: LimitConfig): Promise<RateLimitResult> {
+  if (rateLimitBypassEnabled()) return { ok: true };
+
   const identifier = normalizeRateLimitIdentifier(config.identifier);
   if (!identifier) return { ok: false, retryAfterSeconds: Math.ceil(config.blockMs / 1000) };
 

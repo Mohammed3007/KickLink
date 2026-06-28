@@ -5,6 +5,7 @@ import {
   AUTH_RATE_LIMIT,
   nextRateLimitState,
   normalizeRateLimitIdentifier,
+  rateLimitBypassEnabled,
   rateLimitMessage,
   requestRateLimitIdentifier,
 } from "../lib/rate-limit";
@@ -27,6 +28,27 @@ test("auth rate limit policy is five attempts per fifteen minutes", () => {
     windowMs: 15 * 60 * 1000,
     blockMs: 15 * 60 * 1000,
   });
+});
+
+test("rate limit bypass is only available for explicit Playwright smoke runs", () => {
+  const previousPlaywright = process.env.PLAYWRIGHT_TEST;
+  const previousDisable = process.env.DISABLE_RATE_LIMITS;
+
+  try {
+    delete process.env.PLAYWRIGHT_TEST;
+    process.env.DISABLE_RATE_LIMITS = "true";
+    assert.equal(rateLimitBypassEnabled(), false);
+
+    process.env.PLAYWRIGHT_TEST = "true";
+    process.env.DISABLE_RATE_LIMITS = "true";
+    assert.equal(rateLimitBypassEnabled(), true);
+  } finally {
+    if (previousPlaywright === undefined) delete process.env.PLAYWRIGHT_TEST;
+    else process.env.PLAYWRIGHT_TEST = previousPlaywright;
+
+    if (previousDisable === undefined) delete process.env.DISABLE_RATE_LIMITS;
+    else process.env.DISABLE_RATE_LIMITS = previousDisable;
+  }
 });
 
 test("api rate limit policy exists for non-auth endpoints", () => {

@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 type EventType = "PAGE_VIEW" | "USER_EVENT";
 type Metadata = Record<string, string | number | boolean | null>;
 
+const analyticsDisabled = process.env.NEXT_PUBLIC_DISABLE_ANALYTICS === "true";
+
 declare global {
   interface Window {
     kicklinkTrack?: (name: string, metadata?: Metadata) => void;
@@ -25,6 +27,8 @@ function idFromStorage(key: string) {
 }
 
 function sendAnalytics(type: EventType, name: string, metadata: Metadata = {}) {
+  if (analyticsDisabled) return;
+
   const path = `${window.location.pathname}${window.location.search}`;
   const payload = JSON.stringify({
     type,
@@ -54,10 +58,13 @@ export function AnalyticsTracker() {
   const pathname = usePathname();
 
   useEffect(() => {
+    if (analyticsDisabled) return;
     sendAnalytics("PAGE_VIEW", "page_view");
   }, [pathname]);
 
   useEffect(() => {
+    if (analyticsDisabled) return;
+
     window.kicklinkTrack = (name, metadata) => sendAnalytics("USER_EVENT", name, metadata);
 
     const onClick = (event: MouseEvent) => {

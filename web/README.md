@@ -30,7 +30,7 @@ To stop: `docker compose down` (add `-v` to also wipe the database).
 
 ## Run locally with Node (no Docker)
 
-Requires **Node 20.9+** and a **Postgres 14+** database.
+Requires **Node 22.13+** and a **Postgres 14+** database.
 
 1. Install dependencies:
    ```bash
@@ -51,6 +51,28 @@ For production-style serving instead of dev:
 ```bash
 npm run build && npm run start
 ```
+
+### Test and verify
+
+Run the fast checks before pushing:
+
+```bash
+npm run lint
+npm test
+npm run build
+```
+
+Run browser smoke tests for the public/auth/protected-route flows:
+
+```bash
+npx playwright install chromium
+npm run build
+npm run test:e2e
+```
+
+The E2E suite starts its own local production server on port `3100` by default.
+Override with `PLAYWRIGHT_PORT` or point at an existing deployment with
+`PLAYWRIGHT_BASE_URL`.
 
 ### Environment variables
 
@@ -166,6 +188,7 @@ app/(app)         authenticated player app + /manage organizer dashboard
 components/        UI kit + app components
 lib/              db, auth/session, queries, server actions, payments, waitlist
 prisma/           schema, migrations, seed
+e2e/              Playwright browser smoke tests
 proxy.ts          auth route gate (Next 16 middleware)
 ```
 

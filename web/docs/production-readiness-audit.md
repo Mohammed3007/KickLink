@@ -42,7 +42,7 @@ privacy policy/data-retention decisions and deeper authorization/integration tes
 | CI | Fully Implemented | GitHub Actions runs install, Prisma generate, lint, tests and build. | Add deploy previews and required branch checks. |
 | Unit tests | Partially Implemented | Core validation, rate limit, auth route, analytics and audit helpers covered. | Add server action tests with database fixtures. |
 | Integration tests | Missing | No isolated Postgres test suite yet. | Add local test DB and cover auth, permissions, registration, payments. |
-| E2E tests | Missing | Browser smoke checks have been manual/agent-run. | Add Playwright happy paths for signup/login/join game/organizer flow. |
+| E2E tests | Partially Implemented | Playwright smoke checks cover landing, auth forms and protected-route redirects. | Add staging-backed happy paths for signup/login/join game/organizer flow. |
 | Monitoring | Missing | No Sentry/OpenTelemetry/uptime provider configured. | Add Sentry or equivalent and uptime checks for `/api/health`. |
 | Structured logging | Partially Implemented | Console logging exists; audit and analytics are structured. | Add request IDs and structured logger for server errors. |
 | Backup strategy | Missing | Managed DB likely supports backups, but policy is not codified. | Configure daily backups, PITR if available, and quarterly restore drills. |
@@ -85,7 +85,7 @@ privacy policy/data-retention decisions and deeper authorization/integration tes
 - Production monitoring and alerting are not connected.
 - Backups and restore drills are not verified in code.
 - Multi-tenant isolation relies on server-side checks and Prisma queries, not database RLS.
-- Integration/E2E tests are still thin for organizer/admin/payment flows.
+- Integration/E2E tests are still thin for logged-in organizer/admin/payment flows.
 - Privacy policy, data retention, export and deletion processes are not yet automated.
 - Audit hash chain is application-level tamper evidence, not immutable external anchoring.
 
@@ -96,5 +96,5 @@ privacy policy/data-retention decisions and deeper authorization/integration tes
 3. Enable GitHub branch protection, Dependabot and security alerts.
 4. Configure Sentry/Logtail or equivalent plus uptime checks for `/api/health`.
 5. Add database integration tests for registration capacity, organizer isolation and admin actions.
-6. Add Playwright E2E tests for player signup/login/join-game and organizer create-game flows.
+6. Extend Playwright E2E tests to staging-backed player join-game and organizer create-game flows.
 7. Publish privacy policy, terms, retention policy and support contact before onboarding real users.
