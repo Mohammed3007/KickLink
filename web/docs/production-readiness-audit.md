@@ -1,100 +1,80 @@
 # KickLink Production-Readiness Audit
 
-Date: 2026-06-28
+Date: 2026-10-22 (supersedes the 2026-06-28 audit)
 
 Status definitions:
 
-- Fully Implemented: present in code/docs and validated enough for MVP production use.
-- Partially Implemented: useful foundation exists but gaps remain.
-- Missing: not yet present and should be added before or soon after production.
-- Not Applicable: not relevant to KickLink's current MVP scope.
+- Done: implemented and verified (tests and/or a browser run against Postgres).
+- Partial: useful foundation exists but gaps remain.
+- Missing: not present yet.
+- Owner action: can't be done in code; needs an account, setting or decision.
 
-## Executive Summary
+## Summary
 
-KickLink is close to a production-quality MVP, but it is not yet "fully production mature."
-The current codebase has strong foundations: server-side mutations, transaction-based
-capacity checks, input sanitization, rate limiting, email verification, OAuth, Stripe
-Connect, security headers, audit records, first-party analytics and an automated test
-suite. The main remaining production blockers are operational rather than UI-oriented:
-backup/restore verification, external monitoring/alerting, dependency scanning in CI,
-privacy policy/data-retention decisions and deeper authorization/integration tests.
+The October review found launch blockers the June audit had marked complete:
+vulnerable dependencies, a free-payment path, refunds that were recorded but
+never sent, guessable invite codes, members-only data visible to any user,
+game times stored 4-5 hours off, and spots held indefinitely. These are now
+fixed and covered by tests. What remains is mostly owner configuration
+(accounts, secrets, backups, monitoring, legal review) plus some deeper test
+coverage.
 
-## P0 Before Production
+## Launch Blockers
 
-| Item | Status | Why | Action |
-| --- | --- | --- | --- |
-| Production DB migrations | Fully Implemented | Prisma migrations exist and user confirmed migrations have run. | Continue running `npm run db:deploy` before each deploy that changes schema. |
-| Authentication | Fully Implemented | Email/password, Google OAuth, verification, reset, Auth.js sessions. | Keep OAuth redirect URIs exact per deployed domain. |
-| Input sanitization | Fully Implemented | `lib/input.ts` and Zod schemas sanitize/reject malformed and oversized input. | Keep all new actions using `formDataToSafeObject`. |
-| Registration concurrency | Fully Implemented | Registration and checkout holds lock `Game` rows before capacity checks. | Add DB integration/concurrency tests before larger rollout. |
-| Platform admin authorization | Partially Implemented | DB `platformRole=ADMIN` is supported; env bootstrap now requires explicit `ALLOW_ADMIN_EMAIL_BOOTSTRAP=true`. | Assign first production admin in DB, then disable bootstrap flag. |
-| Secrets in client bundle | Fully Implemented | Secret keys are server env only; client uses only `NEXT_PUBLIC_*`. | Review Vercel env scope on each new secret. |
-| Payment secret handling | Fully Implemented | Stripe secret/webhook keys are server-side; webhooks verify signatures. | Keep Stripe dashboard webhook secret rotated if leaked. |
-| Rate limiting | Fully Implemented | Auth is 5 attempts per 15 minutes; API endpoints have request limiting. | Add WAF-level protection if traffic grows. |
-| Audit trails | Partially Implemented | Sensitive organizer/admin actions are written and now hash-chained. | Expand audit coverage as staff/permission features grow. |
-| HTTPS/TLS | Partially Implemented | Security headers and HSTS are configured; TLS/certs are handled by Vercel. | Document certificate ownership and domain renewal outside code. |
+| Item | Status | Notes |
+| --- | --- | --- |
+| Dependency vulnerabilities | Done | Next 16.4, Auth.js beta.32, Prisma 7.10; `npm audit --omit=dev` is clean and gated in CI (high+). Dev-only eslint advisories remain. |
+| Payments without Stripe | Done | Test-payment flow is off in production unless `ALLOW_DEV_PAYMENTS=true`. |
+| Refunds | Done | Real Stripe refunds (transfer and fee reversed) 24h+ before kickoff and on organizer removal; cancel button states the outcome. |
+| Overfilled games | Done | Payment confirmation and "Mark paid" check capacity under a row lock; late payments are refunded (`refundDue`, retried by the sweep). Integration test covers concurrent payments. |
+| Abandoned holds / offers | Done | Checkout sessions expire at 31 min, holds at 36; offers at 15. Released on page view, by the 10-minute GitHub sweep, and by a daily Vercel cron. |
+| Club privacy | Done | Games, rosters and announcements are members-only; outsiders see a join card. |
+| Invite codes | Done | 8 random characters (CSPRNG), joins rate limited, organizers can rotate codes. Codes created before this change are weak; rotate them (Manage → Members). |
+| Account takeover via Google | Done | Requires Google-verified email; drops the password on unverified accounts before linking. |
+| Session revocation | Done | Password reset signs out all devices (`sessionVersion`). |
+| Auth abuse | Done | Per-IP and per-(email, IP) form limits, per-account ceiling on password checks, per-mailbox email cap. |
+| Game time zone | Done | Entered and shown in `NEXT_PUBLIC_APP_TIME_ZONE` (default America/Toronto); DST-safe weekly series; existing rows migrated. |
+| Health endpoint leak | Done | Returns only ok/unreachable. |
+| Schema migrations on deploy | Done | Vercel production builds run `prisma migrate deploy` first. |
+| Config mistakes | Done | Startup check refuses placeholder secrets or Stripe without a webhook secret, warns on the rest. |
 
-## P1 Important
+## Owner Actions Before Launch
 
-| Item | Status | Why | Action |
-| --- | --- | --- | --- |
-| Dependency scanning | Partially Implemented | Added `npm run audit:deps`; CI workflow added but GitHub alerts must be enabled. | Enable Dependabot/security alerts and run `npm audit --omit=dev` in release checks. |
-| CI | Fully Implemented | GitHub Actions runs install, Prisma generate, lint, tests and build. | Add deploy previews and required branch checks. |
-| Unit tests | Partially Implemented | Core validation, rate limit, auth route, analytics and audit helpers covered. | Add server action tests with database fixtures. |
-| Integration tests | Missing | No isolated Postgres test suite yet. | Add local test DB and cover auth, permissions, registration, payments. |
-| E2E tests | Partially Implemented | Playwright smoke checks cover landing, auth forms and protected-route redirects. | Add staging-backed happy paths for signup/login/join game/organizer flow. |
-| Monitoring | Missing | No Sentry/OpenTelemetry/uptime provider configured. | Add Sentry or equivalent and uptime checks for `/api/health`. |
-| Structured logging | Partially Implemented | Console logging exists; audit and analytics are structured. | Add request IDs and structured logger for server errors. |
-| Backup strategy | Missing | Managed DB likely supports backups, but policy is not codified. | Configure daily backups, PITR if available, and quarterly restore drills. |
-| RTO/RPO | Missing | Not defined in code/docs before this audit. | Use proposed MVP targets in `docs/operations-runbook.md`. |
-| Privacy/data retention | Missing | Analytics stores pseudonymous data but retention/export/delete policy is not automated. | Define policy and add deletion/export admin tooling. |
-| Accessibility | Partially Implemented | Semantic React components exist; no automated WCAG checks. | Add axe checks in E2E and manual keyboard/screen-reader pass. |
+| Item | Status | Action |
+| --- | --- | --- |
+| Production secrets | Owner action | Set everything in the runbook's "Required Production Configuration", including `CRON_SECRET`. |
+| Sweep schedule | Owner action | GitHub repo variable `APP_URL` + secret `CRON_SECRET`. |
+| Stripe webhook | Owner action | Add `checkout.session.expired` to the endpoint's events. |
+| First admin | Owner action | Assign `platformRole=ADMIN` in the DB; keep bootstrap off. |
+| Legal pages | Owner action | Set `NEXT_PUBLIC_LEGAL_NAME` / `NEXT_PUBLIC_SUPPORT_EMAIL`; have the drafted privacy policy and terms reviewed. |
+| Backups | Owner action | Enable daily backups + PITR on the database; run one restore drill. |
+| Monitoring | Owner action | Uptime check on `/api/health`; log drain or Sentry alerting on `unhandled_server_error`. |
+| GitHub hygiene | Owner action | Branch protection requiring Web CI, Dependabot alerts. |
+| Rotate old invite codes | Owner action | Existing clubs: Manage → Members → Generate new code. |
 
-## P2 Recommended
+## Quality
 
-| Item | Status | Why | Action |
-| --- | --- | --- | --- |
-| Load/stress testing | Missing | No k6/artillery scripts yet. | Add light k6 tests for auth, games list and checkout creation. |
-| Chaos/resilience testing | Missing | Too early for full chaos engineering. | Add backup restore drills and dependency-failure runbooks first. |
-| Retry/idempotency | Partially Implemented | Stripe/webhook IDs and transactional holds exist; generalized idempotency is limited. | Add idempotency keys for future mutating APIs and retries. |
-| Circuit breakers | Missing | External calls are limited to email/Stripe; no breaker wrapper. | Add lightweight timeout/error handling if external failures affect UX. |
-| Caching strategy | Partially Implemented | Next cache revalidation is used after mutations. | Document cache boundaries as pages grow. |
-| API documentation | Partially Implemented | README documents setup; API endpoints are not formally described. | Add OpenAPI-style docs if external API expands. |
-| ADRs | Missing | No ADR directory yet. | Add ADRs for auth, payments, analytics and data model decisions. |
-| Code review standards | Partially Implemented | AGENTS/README exist; CI now helps. | Add PR checklist and branch protection. |
+| Item | Status | Notes |
+| --- | --- | --- |
+| CI | Done | Lint, unit, Postgres integration tests, prod audit, build, Playwright smoke. |
+| Unit tests | Done | Validators, rate limits, IP handling, time zones, refund policy, config checks, audit hash. |
+| Integration tests | Partial | Payments, waitlist expiry, refunds against Postgres. Server actions (auth/permission paths) still untested at this level. |
+| E2E tests | Partial | Public pages, auth forms, redirects, legal pages. No logged-in join/pay/organizer flows yet. |
+| Docker image | Partial | Compose updated; image build not verified in the October review (no Docker daemon available). |
+| Load testing | Missing | Add light k6 runs for login, games list and checkout. |
+| Accessibility | Partial | No automated axe checks yet. |
 
-## P3 Nice To Have
+## Known Limitations
 
-| Item | Status | Why | Action |
-| --- | --- | --- | --- |
-| GDPR self-service export/delete | Missing | MVP has no user self-service privacy portal. | Add after core product flows stabilize. |
-| HIPAA | Not Applicable | KickLink does not intentionally process health information. | Avoid collecting health data. |
-| Advanced tamper evidence | Partially Implemented | Audit hash chain exists, but not externally anchored. | Periodically export daily audit root hash to immutable storage. |
-| Background jobs | Not Applicable | Current app has no job queue. | Revisit for notifications, reminders and payout reconciliation. |
-
-## Checklist Reviewed
-
-- Security: input validation, injection prevention, auth, session handling, secrets, HTTPS/TLS, abuse prevention, dependency scanning, tenant isolation, PII, compliance, audit logs.
-- Quality: unit/integration/E2E/regression/load/chaos testing and CI coverage.
-- Reliability: errors, retries, idempotency, concurrency, cache behavior, graceful degradation.
-- Operations: RTO/RPO, backups, DR, monitoring, logging, metrics, alerting.
-- Architecture: accessibility, folder structure, docs, ADR/API/contribution standards.
-
-## Remaining Risks
-
-- Production monitoring and alerting are not connected.
-- Backups and restore drills are not verified in code.
-- Multi-tenant isolation relies on server-side checks and Prisma queries, not database RLS.
-- Integration/E2E tests are still thin for logged-in organizer/admin/payment flows.
-- Privacy policy, data retention, export and deletion processes are not yet automated.
-- Audit hash chain is application-level tamper evidence, not immutable external anchoring.
-
-## Recommended Next Steps
-
-1. Apply the new audit hash migration: `npm run db:deploy`.
-2. Assign the first platform admin via DB `platformRole=ADMIN`, then set `ALLOW_ADMIN_EMAIL_BOOTSTRAP=false`.
-3. Enable GitHub branch protection, Dependabot and security alerts.
-4. Configure Sentry/Logtail or equivalent plus uptime checks for `/api/health`.
-5. Add database integration tests for registration capacity, organizer isolation and admin actions.
-6. Extend Playwright E2E tests to staging-backed player join-game and organizer create-game flows.
-7. Publish privacy policy, terms, retention policy and support contact before onboarding real users.
+- Single app-wide time zone. Clubs in other regions need a per-club zone.
+- Upfront series passes, recurring billing and spot transfers exist in the
+  schema but are not implemented; the UI no longer offers them.
+- Pay-later (`LATER`) games have no payment deadline; organizers mark payments
+  or remove players.
+- Rate limiting and analytics write to Postgres on each request; fine at MVP
+  scale, revisit (Redis/edge) with traffic.
+- Tenant isolation relies on application checks, not database row-level security.
+- No self-service data export/deletion; handled by email per the privacy policy.
+- Audit hash chain is application-level and not externally anchored.
+- The repo root still holds the original Vite design prototype (`src/`,
+  `index.html`, `project/`, `chats/`); it is not part of the app.

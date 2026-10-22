@@ -13,18 +13,17 @@ password `password`.
 Requires Docker Desktop (or Docker Engine + Compose). From this `web/` folder:
 
 ```bash
+cp .env.example .env
+# edit .env: set AUTH_SECRET (openssl rand -base64 32), POSTGRES_PASSWORD
+# and NEXT_PUBLIC_APP_URL
 docker compose up --build
-# in another terminal, load demo data (first run only):
-docker compose run --rm app npm run db:seed
 ```
 
-Open **http://localhost:3000**. That's it — Postgres and the app both run in
-containers; migrations apply automatically on boot.
+Open **http://localhost:3000**. Postgres and the app both run in containers;
+migrations apply automatically on boot. The app refuses to start with a
+missing or placeholder `AUTH_SECRET`.
 
 To stop: `docker compose down` (add `-v` to also wipe the database).
-
-> Before deploying for real, change `AUTH_SECRET` in `docker-compose.yml` to a
-> long random value: `openssl rand -base64 32`.
 
 ---
 
@@ -62,6 +61,15 @@ npm test
 npm run build
 ```
 
+Integration tests exercise capacity, waitlist expiry, payment confirmation and
+refunds against a real Postgres. Point them at a **disposable**, migrated
+database (they create and delete rows):
+
+```bash
+TEST_DATABASE_URL="postgresql://..." npx prisma migrate deploy   # with DATABASE_URL set to the same URL
+TEST_DATABASE_URL="postgresql://..." npm run test:integration
+```
+
 Run browser smoke tests for the public/auth/protected-route flows:
 
 ```bash
@@ -93,10 +101,20 @@ Override with `PLAYWRIGHT_PORT` or point at an existing deployment with
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | no       | Stripe publishable key                                  |
 | `PLATFORM_FEE_BPS`                   | no       | platform fee in basis points (e.g. `500` = 5%)          |
 | `NEXT_PUBLIC_APP_TIME_ZONE`          | no       | IANA zone games are entered and shown in, default `America/Toronto` |
+| `CRON_SECRET`                        | prod     | bearer token for `/api/cron/sweep` (releases lapsed holds, retries refunds) |
+| `NEXT_PUBLIC_LEGAL_NAME`             | prod     | operator name shown in the privacy policy and terms     |
+| `NEXT_PUBLIC_SUPPORT_EMAIL`          | prod     | contact address for privacy/support requests            |
+| `NEXT_PUBLIC_LEGAL_JURISDICTION`     | no       | governing law in the terms, default `Ontario, Canada`   |
+| `ALLOW_DEV_PAYMENTS`                 | no       | `true` enables the fake test-payment flow in production (demo only) |
+| `ALLOW_DEMO_SEED`                    | no       | `true` lets the seed wipe a DB that has non-demo users  |
 
-Without Google / Resend / Stripe keys the app still runs: Google button is
-hidden, emails are logged to the server console, and a local test-payment flow
-stands in for Stripe.
+Without Google / Resend / Stripe keys the app still runs: the Google button is
+hidden and emails are logged to the server console. In development a local
+test-payment flow stands in for Stripe; in production it is off (paid games
+show "payments not set up") unless `ALLOW_DEV_PAYMENTS=true`.
+
+On start, production servers check their configuration and log warnings for
+anything missing (see `lib/config-check.ts`).
 
 ### Organizer approval
 
@@ -119,8 +137,15 @@ role, then turn `ALLOW_ADMIN_EMAIL_BOOTSTRAP` back off. The seed account
   clicks **Connect Stripe** on the Manage page to onboard their club's payout
   account; player payments go to that account (minus `PLATFORM_FEE_BPS`).
   Add a webhook in the Stripe dashboard pointing at
-  `<APP_URL>/api/stripe/webhook` for events `checkout.session.completed` and
-  `account.updated`, and set `STRIPE_WEBHOOK_SECRET`.
+  `<APP_URL>/api/stripe/webhook` for events `checkout.session.completed`,
+  `checkout.session.expired` and `account.updated`, and set
+  `STRIPE_WEBHOOK_SECRET`. The app won't start with a Stripe key but no
+  webhook secret.
+- **Scheduled sweep:** set `CRON_SECRET` (`openssl rand -hex 32`). Vercel runs
+  `/api/cron/sweep` daily (`vercel.json`); for the 10-minute schedule, set the
+  GitHub repo variable `APP_URL` and secret `CRON_SECRET` to enable
+  `.github/workflows/sweep.yml`. Lapsed waitlist offers and checkout holds
+  are also released whenever someone opens the game.
 
 ---
 
@@ -139,7 +164,7 @@ The fastest way to a real public URL. ~10 minutes, free tiers.
    cd web
    npm install
    DATABASE_URL="<neon-pooled-url>" npm run db:deploy
-   DATABASE_URL="<neon-pooled-url>" npm run db:seed   # optional
+   DATABASE_URL="<neon-pooled-url>" npm run db:seed   # optional, demo DBs only
    ```
 
 ### Step 2 — Deploy (pick one)
@@ -152,6 +177,8 @@ npx vercel            # first run links/creates the project
 npx vercel env add DATABASE_URL
 npx vercel env add AUTH_SECRET          # paste: openssl rand -base64 32
 npx vercel env add AUTH_TRUST_HOST      # value: true
+npx vercel env add NEXT_PUBLIC_APP_URL  # value: https://your-domain
+npx vercel env add CRON_SECRET          # paste: openssl rand -hex 32
 npx vercel --prod     # deploy to your public URL
 ```
 
@@ -159,16 +186,20 @@ npx vercel --prod     # deploy to your public URL
 1. Push this repo to GitHub.
 2. Import it at [vercel.com/new](https://vercel.com/new) and set
    **Root Directory = `web`**.
-3. Add the same three env vars in Project → Settings → Environment Variables.
+3. Add the same env vars in Project → Settings → Environment Variables
+   (scope `DATABASE_URL` to Production, and give Preview its own database).
 4. Deploy. Every push redeploys automatically.
 
-`postinstall` runs `prisma generate` during the build — no extra config needed.
+`postinstall` runs `prisma generate` during the build. Production builds on
+Vercel also run `prisma migrate deploy` before `next build`
+(`scripts/migrate-on-deploy.mjs`), so schema changes ship with the code; set
+`SKIP_DEPLOY_MIGRATIONS=true` to manage migrations yourself.
 The app runs on Vercel's Node.js runtime (not edge), so the Postgres driver
 works as-is.
 
-> Want real payments? Add `STRIPE_SECRET_KEY` and
-> `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` as env vars; otherwise the local test
-> payment flow is used.
+> Want real payments? Add `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` and
+> `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`. Without them, paid games can't take
+> payments in production.
 
 ---
 
@@ -198,8 +229,14 @@ proxy.ts          auth route gate (Next 16 middleware)
 - Passwords hashed with bcrypt; JWT sessions via Auth.js.
 - Every mutation is a server action that re-checks auth + club membership +
   capacity, inside DB transactions. Waitlist promotion is automatic.
-- Payments go through a Stripe-shaped service (`lib/payments.ts`) — set
-  `STRIPE_SECRET_KEY` to enable real charges; otherwise a local test flow runs.
+- Payments use Stripe Checkout with Connect destination charges
+  (`lib/actions/payments.ts`). Spots are held for 36 minutes during checkout;
+  cancellations 24h+ before kickoff are refunded through Stripe
+  (`lib/refunds.ts`). Payments that arrive after a game fills are refunded
+  automatically.
+- Club pages, games and rosters are visible to club members only.
+- Game times are stored as UTC instants and entered/shown in
+  `NEXT_PUBLIC_APP_TIME_ZONE`.
 - Security headers set in `next.config.ts`.
 - Audit log entries include an application-level hash chain for tamper evidence
   on newly created sensitive actions.
