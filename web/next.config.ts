@@ -23,7 +23,7 @@ const securityHeaders = [
 const isVercel = !!process.env.VERCEL;
 
 const nextConfig: NextConfig = {
-  // Repo has lockfiles at both root and web/ — pin the workspace root.
+  // Pin the workspace root to web/ so tooling never resolves from the repo root.
   turbopack: { root: path.join(__dirname) },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

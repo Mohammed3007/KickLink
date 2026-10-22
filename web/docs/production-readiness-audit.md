@@ -76,5 +76,3 @@ coverage.
 - Tenant isolation relies on application checks, not database row-level security.
 - No self-service data export/deletion; handled by email per the privacy policy.
 - Audit hash chain is application-level and not externally anchored.
-- The repo root still holds the original Vite design prototype (`src/`,
-  `index.html`, `project/`, `chats/`); it is not part of the app.
