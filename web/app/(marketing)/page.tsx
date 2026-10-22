@@ -26,7 +26,7 @@ const FEATURES = [
   },
   {
     icon: Shuffle,
-    title: "Waitlists and transfers",
+    title: "Automatic waitlists",
     body: "When a player drops, the next person can be offered the spot without the organizer rebuilding the lineup.",
   },
   {
@@ -257,9 +257,11 @@ export default function LandingPage() {
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 py-10 sm:flex-row">
           <Logo size={28} />
-          <p className="text-sm text-ink-3">
-            (c) {new Date().getFullYear()} KickLink. Ottawa, ON.
-          </p>
+          <div className="flex items-center gap-5 text-sm text-ink-3">
+            <Link href="/privacy" className="hover:text-ink">Privacy</Link>
+            <Link href="/terms" className="hover:text-ink">Terms</Link>
+            <span>(c) {new Date().getFullYear()} KickLink. Ottawa, ON.</span>
+          </div>
         </div>
       </footer>
     </>

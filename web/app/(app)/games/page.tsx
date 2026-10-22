@@ -54,7 +54,7 @@ export default async function GamesPage({
         />
       </div>
 
-      <div className="mt-4 rounded-2xl border border-gold-400/15 bg-white/70 p-3 shadow-card">
+      <div className="mt-4 rounded-2xl border border-gold-400/15 bg-surface/70 p-3 shadow-card">
         <form action="/games" className="grid gap-2 sm:grid-cols-[1fr_auto]">
           <input type="hidden" name="tab" value={tab} />
           <input type="hidden" name="sport" value={sport} />

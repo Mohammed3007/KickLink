@@ -10,8 +10,21 @@ export function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+/**
+ * IANA zone game times are entered and shown in. Organizers type local wall
+ * times and everyone sees them the same way, wherever their device is.
+ */
 export const APP_TIME_ZONE =
-  process.env.NEXT_PUBLIC_APP_TIME_ZONE || "UTC";
+  process.env.NEXT_PUBLIC_APP_TIME_ZONE || "America/Toronto";
+
+/** Short zone label for the UI, e.g. "EDT" or "EST". */
+export function timeZoneLabel(d: Date = new Date()): string {
+  return (
+    new Intl.DateTimeFormat("en-CA", { timeZone: APP_TIME_ZONE, timeZoneName: "short" })
+      .formatToParts(d)
+      .find((part) => part.type === "timeZoneName")?.value ?? APP_TIME_ZONE
+  );
+}
 
 const COLORS = [
   "#6E3BD8", "#2666D6", "#12915A", "#D85A18", "#CF3A40",

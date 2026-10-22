@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { DateChip } from "@/components/app/date-chip";
 import { createCheckout, devCompletePayment } from "@/lib/actions/payments";
 import { formatPrice, formatGameDate, formatTime } from "@/lib/utils";
+import { DEFAULT_REFUND_POLICY } from "@/lib/refund-policy";
 
 export function Checkout({
   game,
   stripeEnabled,
+  devPaymentsEnabled,
   orgChargesEnabled,
 }: {
   game: {
@@ -22,6 +24,7 @@ export function Checkout({
     priceCents: number;
   };
   stripeEnabled: boolean;
+  devPaymentsEnabled: boolean;
   orgChargesEnabled: boolean;
 }) {
   const router = useRouter();
@@ -53,7 +56,7 @@ export function Checkout({
     });
   }
 
-  const blocked = stripeEnabled && !orgChargesEnabled;
+  const blocked = stripeEnabled ? !orgChargesEnabled : !devPaymentsEnabled;
 
   return (
     <div className="mx-auto max-w-md space-y-3 px-4 pt-3">
@@ -111,7 +114,7 @@ export function Checkout({
       )}
 
       <p className="px-1 text-center text-xs text-ink-3">
-        Full refund up to 24h before kickoff. No refund after.
+        {DEFAULT_REFUND_POLICY}
       </p>
     </div>
   );

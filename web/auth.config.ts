@@ -12,12 +12,14 @@ export const authConfig = {
       if (user) {
         token.id = user.id;
         token.picture = user.image ?? null;
+        token.sv = (user as { sessionVersion?: number }).sessionVersion ?? 0;
       }
       return token;
     },
     session({ session, token }) {
       if (token.id && session.user) {
         session.user.id = token.id as string;
+        session.user.sessionVersion = typeof token.sv === "number" ? token.sv : 0;
       }
       return session;
     },

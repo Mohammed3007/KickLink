@@ -22,7 +22,10 @@ export function JoinClubForm() {
   const [state, action] = useActionState(joinClub, undefined);
 
   useEffect(() => {
-    if (state?.ok && state.handle) router.push(`/clubs/${state.handle}`);
+    if (state?.ok && state.handle) {
+      router.push(`/clubs/${state.handle}`);
+      router.refresh();
+    }
   }, [state, router]);
 
   return (
@@ -37,7 +40,7 @@ export function JoinClubForm() {
       <form action={action} className="mt-3 flex gap-2">
         <Input
           name="code"
-          placeholder="e.g. WESTSIDE"
+          placeholder="e.g. WEST-7K2M9QXP"
           className="bg-surface uppercase"
           autoCapitalize="characters"
           required

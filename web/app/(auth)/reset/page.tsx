@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { XCircle } from "lucide-react";
 import { ResetForm } from "./reset-form";
+import { AuthHeading, AuthStatusCard, GoldLink } from "@/components/auth/auth-ui";
 
 export const metadata: Metadata = { title: "Set new password" };
 
@@ -13,28 +14,16 @@ export default async function ResetPage({
 
   if (!token) {
     return (
-      <div>
-        <h1 className="text-2xl font-bold text-ink">Invalid link</h1>
-        <p className="mt-2 text-ink-2">
-          This reset link is missing its token.{" "}
-          <Link href="/forgot" className="font-semibold text-brand-700 hover:underline">
-            Request a new one
-          </Link>
-          .
-        </p>
-      </div>
+      <AuthStatusCard tone="bad" icon={<XCircle className="size-[26px]" />} title="Invalid link">
+        This reset link is missing its token. <GoldLink href="/forgot">Request a new one</GoldLink>.
+      </AuthStatusCard>
     );
   }
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold tracking-[-0.02em] text-ink">
-        Set a new password
-      </h1>
-      <p className="mt-2 text-ink-2">Choose a strong password you&apos;ll remember.</p>
-      <div className="mt-8">
-        <ResetForm token={token} />
-      </div>
-    </div>
+    <>
+      <AuthHeading title="Set a new password" subtitle="Choose a strong password you'll remember." delay={0.05} />
+      <ResetForm token={token} />
+    </>
   );
 }

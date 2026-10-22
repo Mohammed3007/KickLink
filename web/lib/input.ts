@@ -22,7 +22,7 @@ export function sanitizeText(value: string) {
 
 export function formDataToSafeObject(
   formData: FormData,
-  limits: Partial<typeof FORM_LIMITS> = {}
+  limits: Partial<Record<keyof typeof FORM_LIMITS, number>> = {}
 ): SafeFormResult {
   const maxFields = limits.maxFields ?? FORM_LIMITS.maxFields;
   const maxFieldBytes = limits.maxFieldBytes ?? FORM_LIMITS.maxFieldBytes;

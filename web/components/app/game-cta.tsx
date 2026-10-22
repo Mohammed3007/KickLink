@@ -12,6 +12,7 @@ import {
   cancelRegistration,
   type ActionResult,
 } from "@/lib/actions/games";
+import { REFUND_CUTOFF_HOURS } from "@/lib/refund-policy";
 
 type Props = {
   gameId: string;
@@ -19,9 +20,11 @@ type Props = {
   priceLabel: string;
   isFull: boolean;
   myStatus: string | null;
+  /** For a paid spot: whether cancelling now still earns a refund. */
+  refundable?: boolean | null;
 };
 
-export function GameCta({ gameId, model, priceLabel, isFull, myStatus }: Props) {
+export function GameCta({ gameId, model, priceLabel, isFull, myStatus, refundable = null }: Props) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +103,19 @@ export function GameCta({ gameId, model, priceLabel, isFull, myStatus }: Props) 
         <div className="flex items-center justify-center gap-2 rounded-2xl bg-ok-bg py-3 font-semibold text-ok">
           <Check className="size-5" /> You&apos;re confirmed
         </div>
-        <CancelButton gameId={gameId} pending={pending} run={run} label="Cancel registration" />
+        <CancelButton
+          gameId={gameId}
+          pending={pending}
+          run={run}
+          label="Cancel registration"
+          confirmMessage={
+            refundable === true
+              ? "Cancel your spot? Your payment will be refunded to your card."
+              : refundable === false
+                ? `Cancel your spot? It's less than ${REFUND_CUTOFF_HOURS}h to kickoff, so your payment won't be refunded.`
+                : "Cancel your spot?"
+          }
+        />
       </Bar>
     );
   }
@@ -154,7 +169,7 @@ export function GameCta({ gameId, model, priceLabel, isFull, myStatus }: Props) 
 
   if (model === "LATER") {
     return (
-      <Bar error={error} note="Reserve now, pay before the deadline to keep your spot.">
+      <Bar error={error} note="Reserve now and pay online or in person before kickoff.">
         <Button
           full
           size="lg"
@@ -191,11 +206,13 @@ function CancelButton({
   pending,
   run,
   label,
+  confirmMessage,
 }: {
   gameId: string;
   pending: boolean;
   run: (fn: () => Promise<ActionResult>) => void;
   label: string;
+  confirmMessage?: string;
 }) {
   return (
     <Button
@@ -205,7 +222,10 @@ function CancelButton({
       loading={pending}
       data-analytics-event="game.cancel_registration_click"
       data-analytics-label={gameId}
-      onClick={() => run(() => cancelRegistration(gameId))}
+      onClick={() => {
+        if (confirmMessage && !window.confirm(confirmMessage)) return;
+        run(() => cancelRegistration(gameId));
+      }}
       className="text-bad hover:bg-bad-bg"
     >
       {label}

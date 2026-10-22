@@ -1,74 +1,106 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { AlertCircle, MailCheck } from "lucide-react";
+import Link from "next/link";
 import { register, resendVerification } from "@/lib/actions/auth";
-import { Button } from "@/components/ui/button";
-import { Input, Field } from "@/components/ui/input";
+import { AuthError, AuthField, GoldButton } from "@/components/auth/auth-ui";
+import { rise } from "@/components/auth/rise";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="lg" full loading={pending}>
+    <GoldButton pending={pending} pendingLabel="Creating your account…">
       Create account
-    </Button>
+    </GoldButton>
   );
 }
 
-export function SignupForm() {
-  const [state, formAction] = useActionState(register, undefined);
+/** "Check your email" card shown in place of the form after signing up. */
+function SentCard({ email, onBack }: { email: string; onBack: () => void }) {
   const [resent, setResent] = useState(false);
 
-  // Success → tell them to verify their email.
-  if (state?.ok && state.email) {
-    return (
-      <div className="rounded-2xl bg-brand-50 p-6 text-center ring-1 ring-brand-100">
-        <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-brand-600 text-white">
-          <MailCheck className="size-6" />
+  useEffect(() => {
+    if (!resent) return;
+    const timer = window.setTimeout(() => setResent(false), 2200);
+    return () => window.clearTimeout(timer);
+  }, [resent]);
+
+  return (
+    <div
+      role="status"
+      className="animate-pop rounded-[18px] border-[1.5px] border-[rgba(231,185,90,0.2)] bg-[#141418] px-[26px] py-[30px] text-center shadow-[0_18px_44px_rgba(0,0,0,0.5)]"
+    >
+      <div className="relative mx-auto mb-[18px] size-[58px]">
+        <span className="absolute inset-0 rounded-full bg-[rgba(231,185,90,0.35)]" />
+        <span className="relative flex size-[58px] items-center justify-center rounded-full bg-[linear-gradient(135deg,#f4d78b,#c9952f)]">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1A1304" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <rect x="3" y="5" width="18" height="14" rx="2.5" />
+            <path d="M4 7l8 6 8-6" />
+          </svg>
         </span>
-        <h2 className="mt-4 text-lg font-bold text-ink">Check your email</h2>
-        <p className="mt-1 text-sm text-ink-2">
-          We sent a verification link to{" "}
-          <span className="font-semibold text-ink">{state.email}</span>. Click it
-          to activate your account.
-        </p>
+      </div>
+      <h2 className="mb-2 text-[22px] font-bold text-[#f7f5f0]">Check your email</h2>
+      <p className="mb-[18px] text-[14.5px] leading-[1.55] text-[#928d82]">
+        We sent a verification link to <strong className="text-brand-600">{email}</strong>. Click
+        it to activate your account and pick your club.
+      </p>
+      <div className="flex items-center justify-center gap-[18px]">
         <button
           type="button"
           onClick={async () => {
-            await resendVerification(state.email!);
+            await resendVerification(email);
             setResent(true);
           }}
-          className="mt-4 text-sm font-semibold text-brand-700 hover:underline"
+          className="p-1.5 text-sm font-bold text-brand-600 hover:text-brand-800"
         >
-          {resent ? "Sent again ✓" : "Didn't get it? Resend"}
+          {resent ? "Link sent ✓" : "Resend link"}
+        </button>
+        <span className="h-3.5 w-px bg-white/14" />
+        <button
+          type="button"
+          onClick={onBack}
+          className="p-1.5 text-sm font-semibold text-[#7e796e] hover:text-ink-2"
+        >
+          Use a different email
         </button>
       </div>
-    );
+    </div>
+  );
+}
+
+export function SignupForm({ delay = 0.38 }: { delay?: number }) {
+  const [state, formAction] = useActionState(register, undefined);
+  // "Use a different email" hides this result's card; a new signup shows the next one.
+  const [dismissed, setDismissed] = useState<typeof state>(undefined);
+
+  if (state?.ok && state.email && state !== dismissed) {
+    return <SentCard email={state.email} onBack={() => setDismissed(state)} />;
   }
 
   return (
-    <form action={formAction} className="space-y-4">
-      {state?.error && (
-        <div className="flex items-center gap-2 rounded-xl bg-bad-bg px-3.5 py-3 text-sm font-medium text-bad">
-          <AlertCircle className="size-4 shrink-0" />
-          {state.error}
-        </div>
-      )}
+    <form action={formAction} {...rise(delay)}>
+      {state?.error && <AuthError>{state.error}</AuthError>}
 
-      <Field label="Full name" htmlFor="name">
-        <Input id="name" name="name" autoComplete="name" placeholder="Daniel Osei" required />
-      </Field>
-
-      <Field label="Email" htmlFor="email">
-        <Input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required />
-      </Field>
-
-      <Field label="Password" htmlFor="password" hint="At least 8 characters.">
-        <Input id="password" name="password" type="password" autoComplete="new-password" placeholder="••••••••" required />
-      </Field>
+      <AuthField id="name" name="name" label="Full name" autoComplete="name" placeholder="Daniel Osei" required minLength={2} />
+      <AuthField id="email" name="email" type="email" label="Email address" autoComplete="email" placeholder="you@email.com" required />
+      <AuthField
+        id="password"
+        name="password"
+        type="password"
+        label="Password"
+        autoComplete="new-password"
+        placeholder="At least 8 characters"
+        required
+        minLength={8}
+      />
 
       <SubmitButton />
+      <p className="mt-3.5 text-center text-xs leading-relaxed text-[#7e796e]">
+        By creating an account you agree to the{" "}
+        <Link href="/terms" className="font-semibold text-[#b6b0a4] hover:text-brand-600">Terms</Link> and{" "}
+        <Link href="/privacy" className="font-semibold text-[#b6b0a4] hover:text-brand-600">Privacy policy</Link>.
+      </p>
     </form>
   );
 }

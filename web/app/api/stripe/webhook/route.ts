@@ -4,17 +4,14 @@ import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { confirmPaidRegistration } from "@/lib/payment-confirm";
-import { endpointRateLimit } from "@/lib/api-rate-limit";
+import { refundPayment } from "@/lib/refunds";
+import { CHECKOUT_HOLD_MINUTES, CHECKOUT_SESSION_MINUTES, promoteWaitlist } from "@/lib/waitlist";
 import { readLimitedText, REQUEST_LIMITS } from "@/lib/input";
 
 export async function POST(req: Request) {
-  const limited = await endpointRateLimit({
-    scope: "api_stripe_webhook",
-    req,
-    maxBodyBytes: REQUEST_LIMITS.maxWebhookBytes,
-  });
-  if (limited) return limited;
-
+  // Not IP rate limited: Stripe delivers from a small set of shared IPs, and
+  // throttling them would delay payment confirmations. The signature check
+  // below rejects anything that isn't from Stripe.
   const stripe = getStripe();
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!stripe || !secret) {
@@ -41,7 +38,7 @@ export async function POST(req: Request) {
       const userId = session.metadata?.userId;
       const gameId = session.metadata?.gameId;
       if (userId && gameId && session.payment_status === "paid") {
-        await confirmPaidRegistration({
+        const result = await confirmPaidRegistration({
           userId,
           gameId,
           amountCents: session.amount_total ?? 0,
@@ -52,6 +49,12 @@ export async function POST(req: Request) {
               : undefined,
           stripeSessionId: session.id,
         });
+        if (result.paymentId) {
+          // Paid for a spot that's gone (refundDue); give the money back. A
+          // throw returns 500 so Stripe retries, and the refund is idempotent.
+          const payment = await db.payment.findUnique({ where: { id: result.paymentId } });
+          if (payment?.refundDue) await refundPayment(payment);
+        }
         revalidatePath("/home");
         revalidatePath("/games");
         revalidatePath("/profile");
@@ -64,18 +67,25 @@ export async function POST(req: Request) {
       const userId = session.metadata?.userId;
       const gameId = session.metadata?.gameId;
       if (userId && gameId) {
-        await db.registration.updateMany({
-          where: {
-            userId,
-            gameId,
-            status: "PROVISIONAL",
-            payStatus: "UNPAID",
-          },
-          data: {
-            status: "CANCELLED",
-            waitlistPos: null,
-            offerExpiresAt: null,
-          },
+        await db.$transaction(async (tx) => {
+          await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${gameId} FOR UPDATE`;
+          const released = await tx.registration.updateMany({
+            where: {
+              userId,
+              gameId,
+              status: "PROVISIONAL",
+              payStatus: "UNPAID",
+              // Only release this session's checkout hold. Pay-later
+              // reservations have no expiry, and a hold renewed by a newer
+              // checkout session still has most of its window left.
+              offerExpiresAt: {
+                not: null,
+                lte: new Date(Date.now() + (CHECKOUT_HOLD_MINUTES - CHECKOUT_SESSION_MINUTES + 1) * 60_000),
+              },
+            },
+            data: { status: "CANCELLED", waitlistPos: null, offerExpiresAt: null },
+          });
+          if (released.count > 0) await promoteWaitlist(tx, gameId);
         });
         revalidatePath(`/games/${gameId}`);
       }

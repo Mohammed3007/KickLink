@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SectionLabel } from "@/components/app/page-header";
 import { timeAgo } from "@/lib/utils";
+import { JoinClubForm } from "@/components/app/join-club-form";
 
 export default async function ClubPage({
   params,
@@ -71,9 +72,11 @@ export default async function ClubPage({
           )}
         </Card>
 
+        {!club.isMember && <JoinClubForm />}
+
         {/* Games */}
-        <SectionLabel>Upcoming games</SectionLabel>
-        {games.length > 0 ? (
+        {club.isMember && <SectionLabel>Upcoming games</SectionLabel>}
+        {!club.isMember ? null : games.length > 0 ? (
           <div className="space-y-2.5">
             {games.map((g) => (
               <GameCard

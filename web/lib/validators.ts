@@ -45,7 +45,11 @@ export const createGameSchema = z.object({
   sport: text(40).pipe(z.string().min(2, "Choose a sport")).default("Football"),
   venue: text(120).pipe(z.string().min(2, "Where is it?")),
   address: text(160).optional().default(""),
-  startsAt: z.coerce.date(),
+  // Wall time from <input type="datetime-local">; converted to an instant in
+  // APP_TIME_ZONE by the action.
+  startsAt: text(30).pipe(
+    z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/, "Choose a valid start time")
+  ),
   durationMins: z.coerce.number().int().min(15).max(240),
   format: text(40).pipe(z.string().min(1)),
   skill: text(40).pipe(z.string().min(1)),
@@ -54,9 +58,8 @@ export const createGameSchema = z.object({
   model: z.enum(["PAY", "LATER", "FREE"]),
   recurrenceMode: z.enum(["SINGLE", "WEEKLY"]).default("SINGLE"),
   occurrenceCount: z.coerce.number().int().min(2).max(26).default(6),
-  seriesPaymentMode: z
-    .enum(["PER_GAME", "UPFRONT", "WEEKLY_RECURRING"])
-    .default("PER_GAME"),
+  // UPFRONT / WEEKLY_RECURRING exist in the schema but aren't implemented.
+  seriesPaymentMode: z.enum(["PER_GAME"]).default("PER_GAME"),
 });
 
 export const announcementSchema = z.object({

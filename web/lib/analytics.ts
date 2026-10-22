@@ -68,11 +68,4 @@ export function hashIp(value: string | null, salt = process.env.AUTH_SECRET ?? "
   return createHash("sha256").update(`${salt}:${value}`).digest("hex").slice(0, 32);
 }
 
-export function clientIpFromHeaders(headers: Headers) {
-  return (
-    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    headers.get("x-real-ip")?.trim() ||
-    headers.get("cf-connecting-ip")?.trim() ||
-    null
-  );
-}
+export { clientIpFromHeaders } from "@/lib/client-ip";

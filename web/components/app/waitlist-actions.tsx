@@ -15,9 +15,10 @@ export function WaitlistActions({
   const router = useRouter();
   const [pending, start] = useTransition();
 
-  const run = (fn: () => Promise<void>) =>
+  const run = (fn: () => Promise<{ ok: boolean; error?: string } | void>) =>
     start(async () => {
-      await fn();
+      const result = await fn();
+      if (result && !result.ok && result.error) window.alert(result.error);
       router.refresh();
     });
 

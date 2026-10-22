@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { getGame } from "@/lib/queries";
-import { isStripeEnabled } from "@/lib/flags";
+import { isDevPaymentEnabled, isStripeEnabled } from "@/lib/flags";
 import { BackHeader } from "@/components/app/back-header";
 import { Checkout } from "@/components/app/checkout";
 import { PaymentSuccess } from "@/components/app/payment-success";
@@ -40,6 +40,7 @@ export default async function CheckoutPage({
       <BackHeader title="Checkout" />
       <Checkout
         stripeEnabled={isStripeEnabled()}
+        devPaymentsEnabled={isDevPaymentEnabled()}
         orgChargesEnabled={game.org.chargesEnabled}
         game={{
           id: game.id,

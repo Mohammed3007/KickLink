@@ -14,6 +14,8 @@ test("public routes stay available to signed-out users", () => {
   assert.equal(getAuthRouteRedirect("/login", false), null);
   assert.equal(getAuthRouteRedirect("/signup", false), null);
   assert.equal(getAuthRouteRedirect("/forgot", false), null);
+  assert.equal(getAuthRouteRedirect("/privacy", false), null);
+  assert.equal(getAuthRouteRedirect("/terms", false), null);
 });
 
 test("protected routes redirect signed-out users to login with a safe return path", () => {

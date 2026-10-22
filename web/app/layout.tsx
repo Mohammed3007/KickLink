@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { GeistSans } from "geist/font/sans";
+import "@fontsource-variable/plus-jakarta-sans";
+import "@fontsource-variable/space-grotesk";
 import { AnalyticsTracker } from "@/components/analytics/analytics-tracker";
 import "./globals.css";
 
@@ -9,11 +10,11 @@ export const metadata: Metadata = {
     template: "%s · KickLink",
   },
   description:
-    "Run private pickup soccer the easy way. Clubs, games, payments, waitlists and spot transfers — all in one clean app.",
+    "Run private pickup soccer the easy way. Clubs, games, payments and waitlists — all in one clean app.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#6E3BD8",
+  themeColor: "#08080A",
   width: "device-width",
   initialScale: 1,
 };
@@ -22,7 +23,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${GeistSans.variable} h-full antialiased`}>
+    <html lang="en" className="h-full antialiased">
       <body className="min-h-full">
         <AnalyticsTracker />
         {children}

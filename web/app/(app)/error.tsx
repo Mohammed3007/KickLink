@@ -28,7 +28,7 @@ export default function AppError({
         </p>
         <div className="mt-5 flex justify-center gap-3">
           <button
-            className="rounded-2xl bg-ink px-4 py-2 text-sm font-bold text-white"
+            className="rounded-2xl bg-gold px-4 py-2 text-sm font-bold text-on-brand"
             onClick={reset}
             type="button"
           >

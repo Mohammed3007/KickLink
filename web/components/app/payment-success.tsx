@@ -26,10 +26,10 @@ export function PaymentSuccess({
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 18 }}
         className={
-          "flex size-20 items-center justify-center rounded-full text-white " +
+          "flex size-20 items-center justify-center rounded-full text-on-brand " +
           (isPaid
-            ? "bg-ok shadow-[0_10px_40px_rgba(18,145,90,0.4)]"
-            : "bg-warn shadow-[0_10px_40px_rgba(183,121,14,0.3)]")
+            ? "bg-gold shadow-[0_10px_40px_rgba(231,185,90,0.4)]"
+            : "bg-warn shadow-[0_10px_40px_rgba(240,180,76,0.3)]")
         }
       >
         {isPaid ? (

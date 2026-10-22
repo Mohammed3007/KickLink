@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AvatarStack } from "@/components/ui/avatar";
 import { formatPrice, formatGameDate, formatTime } from "@/lib/utils";
+import { isRefundable } from "@/lib/refund-policy";
 
 export default async function GameDetailPage({
   params,
@@ -30,12 +31,7 @@ export default async function GameDetailPage({
 
   const priceLabel = formatPrice(game.priceCents);
   const filledPct = Math.min(100, Math.round((game.taken / game.capacity) * 100));
-  const seriesPayment =
-    game.series?.paymentMode === "UPFRONT"
-      ? "Upfront series pass"
-      : game.series?.paymentMode === "WEEKLY_RECURRING"
-        ? "Weekly recurring billing"
-        : "Pay per game";
+  const seriesPayment = "Pay per game";
 
   return (
     <div className="mx-auto max-w-2xl pb-10">
@@ -155,12 +151,6 @@ export default async function GameDetailPage({
               <p className="mt-1 text-sm leading-relaxed text-ink-2">
                 {game.policy}
               </p>
-              {game.transfers === "ALLOWED" && (
-                <p className="mt-2 text-sm text-ink-2">
-                  Spot transfers allowed
-                  {game.transferApproval ? " (organizer approval required)." : "."}
-                </p>
-              )}
             </div>
           </div>
         </Card>
@@ -173,6 +163,9 @@ export default async function GameDetailPage({
             priceLabel={priceLabel}
             isFull={game.isFull}
             myStatus={game.myReg?.status ?? null}
+            refundable={
+              game.myReg?.payStatus === "PAID" ? isRefundable(game.startsAt) : null
+            }
           />
         </div>
       </div>

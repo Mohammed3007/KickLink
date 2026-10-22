@@ -5,6 +5,8 @@ export const PUBLIC_ROUTES = new Set([
   "/verify",
   "/forgot",
   "/reset",
+  "/privacy",
+  "/terms",
 ]);
 
 export function safeInternalPath(path: string) {

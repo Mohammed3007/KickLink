@@ -54,7 +54,7 @@ test("game schema supports multi-sport games and larger capacities", () => {
     sport: "Basketball",
     venue: "Community Gym",
     address: "",
-    startsAt: "2026-07-02T20:00:00.000Z",
+    startsAt: "2026-07-02T20:00",
     durationMins: 90,
     format: "5v5",
     skill: "Intermediate",
@@ -67,6 +67,22 @@ test("game schema supports multi-sport games and larger capacities", () => {
   });
 
   assert.equal(parsed.success, true);
+});
+
+test("game schema only accepts local datetime input for startsAt", () => {
+  const base = {
+    orgId: "club_1",
+    title: "Thursday Basketball",
+    venue: "Community Gym",
+    durationMins: 90,
+    format: "5v5",
+    skill: "Intermediate",
+    priceCents: 0,
+    capacity: 10,
+    model: "FREE",
+  };
+  assert.equal(createGameSchema.safeParse({ ...base, startsAt: "2026-07-02T20:00" }).success, true);
+  assert.equal(createGameSchema.safeParse({ ...base, startsAt: "tomorrow" }).success, false);
 });
 
 test("club schema defaults primary sport to Football", () => {

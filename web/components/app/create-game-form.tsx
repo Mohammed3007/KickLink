@@ -7,6 +7,7 @@ import { createGame, type FormState } from "@/lib/actions/manage";
 import { Input, Select, Field } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SPORT_OPTIONS } from "@/lib/sports";
+import { timeZoneLabel } from "@/lib/utils";
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -66,7 +67,7 @@ export function CreateGameForm({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Date & time" htmlFor="startsAt">
+        <Field label={`Date & time (${timeZoneLabel()})`} htmlFor="startsAt">
           <Input id="startsAt" name="startsAt" type="datetime-local" required />
         </Field>
         <Field label="Duration (min)" htmlFor="durationMins">
@@ -140,19 +141,9 @@ export function CreateGameForm({
           </Field>
         </div>
 
-        <div className="mt-3">
-          <Field
-            label="Series billing"
-            htmlFor="seriesPaymentMode"
-            hint="Per-game charging is active now. Upfront and weekly recurring are stored for the series; checkout enforcement is next."
-          >
-            <Select id="seriesPaymentMode" name="seriesPaymentMode" defaultValue="PER_GAME" required>
-              <option value="PER_GAME">Charge each game separately</option>
-              <option value="UPFRONT">Upfront series pass</option>
-              <option value="WEEKLY_RECURRING">Weekly recurring billing</option>
-            </Select>
-          </Field>
-        </div>
+        {/* Upfront passes and recurring billing aren't built yet; every series bills per game. */}
+        <input type="hidden" name="seriesPaymentMode" value="PER_GAME" />
+        <p className="mt-3 text-xs text-ink-3">Each game in a series is paid for separately.</p>
       </div>
 
       <Submit />

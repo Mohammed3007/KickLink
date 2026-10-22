@@ -1,15 +1,23 @@
 import { db } from "@/lib/db";
 import { sportSlug } from "@/lib/sports";
+import { hasStaleHolds, sweepGameHolds } from "@/lib/waitlist";
 
 // Registration statuses that occupy a spot in the game.
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"] as const;
 
 export type GameMeta = Awaited<ReturnType<typeof getGame>>;
 
-/** A game with computed roster/capacity info and the viewer's registration. */
-export async function getGame(gameId: string, viewerId?: string) {
-  const game = await db.game.findUnique({
-    where: { id: gameId },
+/**
+ * A game with computed roster/capacity info and the viewer's registration.
+ * Returns null unless the viewer belongs to the game's club: clubs are
+ * private, so rosters and details are members-only.
+ */
+export async function getGame(gameId: string, viewerId: string) {
+  // Release lapsed offers/holds first so the roster and CTA are accurate even
+  // between scheduled sweeps.
+  if (await hasStaleHolds(gameId)) await sweepGameHolds(gameId);
+  const game = await db.game.findFirst({
+    where: { id: gameId, org: { memberships: { some: { userId: viewerId } } } },
     include: {
       org: true,
       series: {
@@ -63,9 +71,7 @@ export async function getGame(gameId: string, viewerId?: string) {
   const taken = confirmed.length;
   const spotsLeft = Math.max(0, game.capacity - taken);
   const isFull = spotsLeft <= 0;
-  const myReg = viewerId
-    ? registrations.find((r) => r.userId === viewerId) ?? null
-    : null;
+  const myReg = registrations.find((r) => r.userId === viewerId) ?? null;
 
   return {
     ...game,
@@ -262,19 +268,24 @@ export async function getClub(handle: string, userId: string) {
     include: {
       _count: { select: { memberships: true } },
       memberships: { where: { userId }, select: { role: true } },
-      announcements: {
-        include: { author: { select: { name: true } } },
-        orderBy: { createdAt: "desc" },
-      },
     },
   });
   if (!club) return null;
+  // Non-members only get the public card (name, sport, blurb) and a join form.
+  const isMember = club.memberships.length > 0;
+  if (!isMember) return { ...club, isMember, games: [], announcements: [] };
+
+  const announcements = await db.announcement.findMany({
+    where: { orgId: club.id },
+    include: { author: { select: { name: true } } },
+    orderBy: { createdAt: "desc" },
+  });
   const games = await db.game.findMany({
     where: { orgId: club.id, startsAt: { gte: new Date(Date.now() - 3600_000) } },
     include: { registrations: { select: { userId: true, status: true } } },
     orderBy: { startsAt: "asc" },
   });
-  return { ...club, games: games.map((g) => decorate(g, userId)) };
+  return { ...club, isMember, announcements, games: games.map((g) => decorate(g, userId)) };
 }
 
 export async function getNotifications(userId: string) {
