@@ -109,13 +109,40 @@ test("rateLimitMessage returns a generic wait message", () => {
   );
 });
 
-test("requestRateLimitIdentifier prefers forwarded IP headers", () => {
-  const req = new Request("https://kick-link.vercel.app/api/health", {
-    headers: {
-      "x-forwarded-for": "203.0.113.10, 198.51.100.1",
-      "x-real-ip": "198.51.100.2",
-    },
-  });
+test("requestRateLimitIdentifier trusts the platform-set client IP on Vercel", () => {
+  const previous = process.env.VERCEL;
+  process.env.VERCEL = "1";
+  try {
+    const req = new Request("https://kick-link.vercel.app/api/health", {
+      headers: {
+        "x-forwarded-for": "203.0.113.10, 198.51.100.1",
+        "x-real-ip": "198.51.100.2",
+      },
+    });
+    assert.equal(requestRateLimitIdentifier(req), "ip:203.0.113.10");
+  } finally {
+    if (previous === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = previous;
+  }
+});
 
-  assert.equal(requestRateLimitIdentifier(req), "ip:203.0.113.10");
+test("requestRateLimitIdentifier ignores spoofable forwarded entries off Vercel", () => {
+  const previous = process.env.VERCEL;
+  delete process.env.VERCEL;
+  try {
+    const withRealIp = new Request("https://kicklink.example/api/health", {
+      headers: {
+        "x-forwarded-for": "1.2.3.4, 198.51.100.1",
+        "x-real-ip": "198.51.100.2",
+      },
+    });
+    assert.equal(requestRateLimitIdentifier(withRealIp), "ip:198.51.100.2");
+
+    const forwardedOnly = new Request("https://kicklink.example/api/health", {
+      headers: { "x-forwarded-for": "1.2.3.4, 198.51.100.1" },
+    });
+    assert.equal(requestRateLimitIdentifier(forwardedOnly), "ip:198.51.100.1");
+  } finally {
+    if (previous !== undefined) process.env.VERCEL = previous;
+  }
 });

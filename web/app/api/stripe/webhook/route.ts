@@ -4,17 +4,12 @@ import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { confirmPaidRegistration } from "@/lib/payment-confirm";
-import { endpointRateLimit } from "@/lib/api-rate-limit";
 import { readLimitedText, REQUEST_LIMITS } from "@/lib/input";
 
 export async function POST(req: Request) {
-  const limited = await endpointRateLimit({
-    scope: "api_stripe_webhook",
-    req,
-    maxBodyBytes: REQUEST_LIMITS.maxWebhookBytes,
-  });
-  if (limited) return limited;
-
+  // Not IP rate limited: Stripe delivers from a small set of shared IPs, and
+  // throttling them would delay payment confirmations. The signature check
+  // below rejects anything that isn't from Stripe.
   const stripe = getStripe();
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!stripe || !secret) {

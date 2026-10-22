@@ -1,7 +1,32 @@
 import { db } from "@/lib/db";
+import { clientIpFromHeaders } from "@/lib/client-ip";
 
 export const AUTH_RATE_LIMIT = {
   maxAttempts: 5,
+  windowMs: 15 * 60 * 1000,
+  blockMs: 15 * 60 * 1000,
+} as const;
+
+export const JOIN_CLUB_RATE_LIMIT = {
+  maxAttempts: 10,
+  windowMs: 60 * 60 * 1000,
+  blockMs: 60 * 60 * 1000,
+} as const;
+
+/**
+ * Per-account ceiling on password checks, independent of IP. Looser than
+ * AUTH_RATE_LIMIT so a stranger can't lock a real user out with a few
+ * guesses, but still caps distributed guessing against one account.
+ */
+export const AUTH_ACCOUNT_RATE_LIMIT = {
+  maxAttempts: 20,
+  windowMs: 60 * 60 * 1000,
+  blockMs: 60 * 60 * 1000,
+} as const;
+
+/** Per-IP ceiling for auth forms, generous enough for shared networks. */
+export const AUTH_IP_RATE_LIMIT = {
+  maxAttempts: 30,
   windowMs: 15 * 60 * 1000,
   blockMs: 15 * 60 * 1000,
 } as const;
@@ -146,8 +171,5 @@ export function rateLimitMessage(result: Extract<RateLimitResult, { ok: false }>
 }
 
 export function requestRateLimitIdentifier(req: Request, prefix = "ip") {
-  const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = req.headers.get("x-real-ip")?.trim();
-  const cfIp = req.headers.get("cf-connecting-ip")?.trim();
-  return `${prefix}:${forwarded || realIp || cfIp || "unknown"}`;
+  return `${prefix}:${clientIpFromHeaders(req.headers) ?? "unknown"}`;
 }

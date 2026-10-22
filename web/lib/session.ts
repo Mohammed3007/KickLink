@@ -15,17 +15,26 @@ export class DatabaseUnavailableError extends Error {
 export const getCurrentUser = cache(async () => {
   const session = await auth();
   if (!session?.user?.id) return null;
+  let user;
   try {
-    return await db.user.findUnique({ where: { id: session.user.id } });
+    user = await db.user.findUnique({ where: { id: session.user.id } });
   } catch (error) {
     throw new DatabaseUnavailableError(error);
   }
+  // Sessions issued before the last password reset are no longer valid.
+  if (!user || user.sessionVersion !== (session.user.sessionVersion ?? 0)) return null;
+  return user;
 });
 
 /** Require a signed-in user or redirect to login. */
 export async function requireUser() {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) {
+    const session = await auth();
+    // A cookie is present but no longer valid: clear it, or the proxy would
+    // keep redirecting /login back to /home.
+    redirect(session?.user?.id ? "/api/auth/session-ended" : "/login");
+  }
   return user;
 }
 

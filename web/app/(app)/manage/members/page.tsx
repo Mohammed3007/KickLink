@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { OrganizerPageShell, OrganizerPrimaryAction } from "@/components/app/organizer-shell";
 import { CopyInvite } from "@/components/app/copy-invite";
+import { rotateInviteCode } from "@/lib/actions/clubs";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -85,11 +86,20 @@ export default async function ManageMembersPage() {
                 </div>
 
                 <div className="mt-4 rounded-2xl border border-gold-400/15 bg-gold-400/10 p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-gold-300">Tester join code</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-gold-300">Join code</p>
                   <p className="mt-1 break-all font-mono text-lg font-black text-[#f4efe3]">{org.inviteCode}</p>
                   <p className="mt-1 text-sm text-white/50">
-                    Players can paste this in Clubs to join. Treat it like a revocable invite, not a secret password.
+                    Players can paste this in Clubs to join. If it gets shared too widely, generate a new one; the old code stops working.
                   </p>
+                  <form action={rotateInviteCode} className="mt-3">
+                    <input type="hidden" name="orgId" value={org.id} />
+                    <button
+                      type="submit"
+                      className="inline-flex h-9 items-center justify-center rounded-xl border border-white/10 bg-white/8 px-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/14"
+                    >
+                      Generate new code
+                    </button>
+                  </form>
                 </div>
               </div>
 

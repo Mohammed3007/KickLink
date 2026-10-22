@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { getStripe, platformFeeBps, appUrl } from "@/lib/stripe";
 import { confirmPaidRegistration } from "@/lib/payment-confirm";
+import { isDevPaymentEnabled } from "@/lib/flags";
 
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"] as const;
 
@@ -114,8 +115,13 @@ export async function createCheckout(gameId: string): Promise<CheckoutResult> {
 
 /** Dev/test payment path used when Stripe isn't configured. */
 export async function devCompletePayment(gameId: string): Promise<PayResult> {
-  if (getStripe()) {
-    return { ok: false, error: "Use the card checkout." };
+  if (!isDevPaymentEnabled()) {
+    return {
+      ok: false,
+      error: getStripe()
+        ? "Use the card checkout."
+        : "Online payments aren't available yet. Contact the organizer.",
+    };
   }
   const user = await requireUser();
   const game = await db.game.findUnique({ where: { id: gameId } });

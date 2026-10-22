@@ -57,7 +57,7 @@ test("sanitizePath rejects external paths", () => {
 
 test("clientIpFromHeaders and hashIp avoid storing raw IP addresses", () => {
   const headers = new Headers({
-    "x-forwarded-for": "203.0.113.42, 198.51.100.1",
+    "x-forwarded-for": "198.51.100.1, 203.0.113.42",
   });
 
   const ip = clientIpFromHeaders(headers);

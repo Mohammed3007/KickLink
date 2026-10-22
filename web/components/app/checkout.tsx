@@ -12,6 +12,7 @@ import { formatPrice, formatGameDate, formatTime } from "@/lib/utils";
 export function Checkout({
   game,
   stripeEnabled,
+  devPaymentsEnabled,
   orgChargesEnabled,
 }: {
   game: {
@@ -22,6 +23,7 @@ export function Checkout({
     priceCents: number;
   };
   stripeEnabled: boolean;
+  devPaymentsEnabled: boolean;
   orgChargesEnabled: boolean;
 }) {
   const router = useRouter();
@@ -53,7 +55,7 @@ export function Checkout({
     });
   }
 
-  const blocked = stripeEnabled && !orgChargesEnabled;
+  const blocked = stripeEnabled ? !orgChargesEnabled : !devPaymentsEnabled;
 
   return (
     <div className="mx-auto max-w-md space-y-3 px-4 pt-3">

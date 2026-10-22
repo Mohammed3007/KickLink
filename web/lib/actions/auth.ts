@@ -1,6 +1,7 @@
 "use server";
 
 import { AuthError } from "next-auth";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { signIn, signOut } from "@/auth";
@@ -19,11 +20,14 @@ import {
 } from "@/lib/tokens";
 import { sendPasswordResetEmail, sendVerificationEmail } from "@/lib/email";
 import {
+  AUTH_IP_RATE_LIMIT,
   AUTH_RATE_LIMIT,
   checkRateLimit,
   clearRateLimit,
   rateLimitMessage,
+  type RateLimitResult,
 } from "@/lib/rate-limit";
+import { clientIpFromHeaders } from "@/lib/client-ip";
 import { safeInternalPath } from "@/lib/auth-routes";
 import { formDataToSafeObject } from "@/lib/input";
 
@@ -39,6 +43,42 @@ export type ResetState = { error?: string; ok?: boolean } | undefined;
 
 const setupError =
   "KickLink could not reach the production database. Check DATABASE_URL in Vercel and run the Prisma migrations.";
+
+async function requestIp() {
+  return clientIpFromHeaders(await headers()) ?? "unknown";
+}
+
+/**
+ * Limit an auth form per IP and per (email, IP) pair. Keying the tight limit
+ * on the pair means attempts from elsewhere can't lock the real user out.
+ */
+async function limitAuthForm(
+  scope: string,
+  email: string,
+  { sendsEmail = false } = {}
+): Promise<RateLimitResult> {
+  const ip = await requestIp();
+  if (sendsEmail) {
+    // Cap mail to any one address regardless of where requests come from.
+    const mailLimit = await checkRateLimit({
+      scope: `${scope}_mailbox`,
+      identifier: email,
+      ...AUTH_RATE_LIMIT,
+    });
+    if (!mailLimit.ok) return mailLimit;
+  }
+  const ipLimit = await checkRateLimit({
+    scope: `${scope}_ip`,
+    identifier: ip,
+    ...AUTH_IP_RATE_LIMIT,
+  });
+  if (!ipLimit.ok) return ipLimit;
+  return checkRateLimit({
+    scope,
+    identifier: `${email}|${ip}`,
+    ...AUTH_RATE_LIMIT,
+  });
+}
 
 function logAuthFailure(scope: string, error: unknown) {
   console.error(`${scope} failed`, error);
@@ -57,11 +97,7 @@ export async function authenticate(
   const email = parsed.data.email.toLowerCase();
 
   try {
-    const limit = await checkRateLimit({
-      scope: "login_form",
-      identifier: email,
-      ...AUTH_RATE_LIMIT,
-    });
+    const limit = await limitAuthForm("login_form", email);
     if (!limit.ok) return { error: rateLimitMessage(limit) };
 
     const user = await db.user.findUnique({ where: { email } });
@@ -78,7 +114,7 @@ export async function authenticate(
       password: parsed.data.password,
       redirect: false,
     });
-    await clearRateLimit("login_form", email);
+    await clearRateLimit("login_form", `${email}|${await requestIp()}`);
   } catch (error) {
     if (error instanceof AuthError) {
       return { error: "Invalid email or password." };
@@ -104,11 +140,7 @@ export async function register(
   const normalized = email.toLowerCase();
 
   try {
-    const limit = await checkRateLimit({
-      scope: "signup",
-      identifier: normalized,
-      ...AUTH_RATE_LIMIT,
-    });
+    const limit = await limitAuthForm("signup", normalized, { sendsEmail: true });
     if (!limit.ok) return { error: rateLimitMessage(limit) };
 
     const existing = await db.user.findUnique({ where: { email: normalized } });
@@ -142,11 +174,7 @@ export async function register(
 export async function resendVerification(email: string) {
   const normalized = email.toLowerCase();
   try {
-    const limit = await checkRateLimit({
-      scope: "resend_verification",
-      identifier: normalized,
-      ...AUTH_RATE_LIMIT,
-    });
+    const limit = await limitAuthForm("resend_verification", normalized, { sendsEmail: true });
     if (!limit.ok) return { ok: true };
 
     const user = await db.user.findUnique({ where: { email: normalized } });
@@ -171,11 +199,7 @@ export async function requestPasswordReset(
   const email = parsed.data.email.toLowerCase();
 
   try {
-    const limit = await checkRateLimit({
-      scope: "password_reset_request",
-      identifier: email,
-      ...AUTH_RATE_LIMIT,
-    });
+    const limit = await limitAuthForm("password_reset_request", email, { sendsEmail: true });
     if (!limit.ok) return { ok: true };
 
     const user = await db.user.findUnique({
@@ -219,7 +243,8 @@ export async function resetPassword(
     const passwordHash = await bcrypt.hash(parsed.data.password, 12);
     await db.user.update({
       where: { id: userId },
-      data: { passwordHash, emailVerified: new Date() },
+      // Bumping sessionVersion signs out every existing session.
+      data: { passwordHash, emailVerified: new Date(), sessionVersion: { increment: 1 } },
     });
     return { ok: true };
   } catch (error) {

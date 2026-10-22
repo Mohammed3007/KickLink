@@ -1,5 +1,6 @@
 "use server";
 
+import { randomInt } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
@@ -7,6 +8,7 @@ import { db } from "@/lib/db";
 import { joinClubSchema, createClubSchema } from "@/lib/validators";
 import { writeAuditLog } from "@/lib/audit";
 import { formDataToSafeObject } from "@/lib/input";
+import { checkRateLimit, JOIN_CLUB_RATE_LIMIT, rateLimitMessage } from "@/lib/rate-limit";
 
 const PALETTE = ["#6E3BD8", "#2666D6", "#12915A", "#D85A18", "#C2185B", "#0E8A86"];
 
@@ -18,9 +20,18 @@ function slugify(name: string) {
     .slice(0, 24);
 }
 
+// No 0/O/1/I/L so codes survive being read aloud or copied by hand.
+const INVITE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+/**
+ * Invite codes are the only gate on joining a private club, so they must not
+ * be guessable: a readable club prefix plus 8 random characters (~2^39).
+ */
 function inviteCodeFrom(name: string) {
-  const base = name.replace(/[^A-Za-z0-9]/g, "").slice(0, 6).toUpperCase() || "CLUB";
-  return base + Math.floor(100 + Math.random() * 900);
+  const base = name.replace(/[^A-Za-z0-9]/g, "").slice(0, 4).toUpperCase() || "CLUB";
+  let suffix = "";
+  for (let i = 0; i < 8; i++) suffix += INVITE_ALPHABET[randomInt(INVITE_ALPHABET.length)];
+  return `${base}-${suffix}`;
 }
 
 export type JoinClubState = { error?: string; ok?: boolean; handle?: string } | undefined;
@@ -34,6 +45,14 @@ export async function joinClub(
   if (!safe.ok) return { error: safe.error };
   const parsed = joinClubSchema.safeParse(safe.data);
   if (!parsed.success) return { error: "Enter a valid invite code." };
+
+  // Throttle guessing: invite codes are the only thing keeping clubs private.
+  const limit = await checkRateLimit({
+    scope: "join_club",
+    identifier: user.id,
+    ...JOIN_CLUB_RATE_LIMIT,
+  });
+  if (!limit.ok) return { error: rateLimitMessage(limit) };
 
   const code = parsed.data.code.trim().toUpperCase();
   const org = await db.organization.findFirst({
@@ -132,4 +151,24 @@ export async function createClub(
   revalidatePath("/manage");
   revalidatePath("/admin/audit");
   redirect(`/clubs/${handle}`);
+}
+
+/** Organizer replaces the club's invite code; the old code stops working. */
+export async function rotateInviteCode(formData: FormData) {
+  const user = await requireUser();
+  const orgId = String(formData.get("orgId") ?? "");
+  const membership = await db.membership.findUnique({
+    where: { userId_orgId: { userId: user.id, orgId } },
+    include: { org: { select: { name: true, handle: true } } },
+  });
+  if (membership?.role !== "ORGANIZER") return;
+
+  let inviteCode = inviteCodeFrom(membership.org.name);
+  while (await db.organization.findUnique({ where: { inviteCode } })) {
+    inviteCode = inviteCodeFrom(membership.org.name);
+  }
+  await db.organization.update({ where: { id: orgId }, data: { inviteCode } });
+
+  revalidatePath("/manage/members");
+  revalidatePath(`/clubs/${membership.org.handle}`);
 }

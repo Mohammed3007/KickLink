@@ -111,6 +111,8 @@ model User {
   createdAt     DateTime  @default(now())
   platformRole  PlatformRole @default(USER)
   organizerApproved Boolean @default(false)
+  // Bumped to revoke every outstanding session (e.g. after a password reset).
+  sessionVersion Int @default(0)
 
   accounts      Account[]
   memberships   Membership[]

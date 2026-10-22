@@ -6,7 +6,7 @@ KickLink primarily uses Next.js server actions. Public route handlers are intent
 
 Captures first-party analytics events.
 
-- Rate limited.
+- Not IP rate limited (Stripe sends from shared IPs); the signature check gates it.
 - Rejects oversized bodies.
 - Sanitizes metadata.
 - Links to the logged-in user server-side when available.
@@ -29,13 +29,15 @@ Payload:
 
 ## `GET /api/health`
 
-Diagnostic endpoint for uptime and database health checks. Rate limited.
+Uptime probe. Returns `200 {"ok":true,"db":"ok"}` when the database is
+reachable, otherwise `503 {"ok":false,"db":"unreachable"}`. No configuration
+or error details are exposed. Rate limited per IP.
 
 ## `POST /api/stripe/webhook`
 
 Stripe webhook endpoint.
 
-- Rate limited.
+- Not IP rate limited (Stripe sends from shared IPs); the signature check gates it.
 - Rejects oversized bodies.
 - Requires Stripe signature verification.
 - Handles `checkout.session.completed`, `checkout.session.expired` and `account.updated`.
