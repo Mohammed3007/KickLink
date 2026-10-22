@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     template: "%s · KickLink",
   },
   description:
-    "Run private pickup soccer the easy way. Clubs, games, payments, waitlists and spot transfers — all in one clean app.",
+    "Run private pickup soccer the easy way. Clubs, games, payments and waitlists — all in one clean app.",
 };
 
 export const viewport: Viewport = {

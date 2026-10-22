@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { publicAppUrl } from "@/lib/runtime";
 
 const FROM = process.env.EMAIL_FROM || "KickLink <onboarding@resend.dev>";
 const resend = process.env.RESEND_API_KEY
@@ -6,7 +7,7 @@ const resend = process.env.RESEND_API_KEY
   : null;
 
 export function appUrl() {
-  return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  return publicAppUrl();
 }
 
 type Mail = { to: string; subject: string; html: string; text: string };
@@ -19,7 +20,12 @@ async function send({ to, subject, html, text }: Mail) {
     );
     return;
   }
-  await resend.emails.send({ from: FROM, to, subject, html, text });
+  // Resend reports failures in the result rather than throwing.
+  const { error } = await resend.emails.send({ from: FROM, to, subject, html, text });
+  if (error) {
+    console.error(JSON.stringify({ level: "error", msg: "email_send_failed", subject, error }));
+    throw new Error(`Email send failed: ${error.message}`);
+  }
 }
 
 function shell(title: string, body: string, cta: { href: string; label: string }) {

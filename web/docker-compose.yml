@@ -1,16 +1,17 @@
 # One-command hosting: Postgres + the KickLink web app.
 #
-#   docker compose up --build        # build & start
-#   docker compose run --rm app npm run db:seed   # (optional) demo data
+#   cp .env.example .env   # then set AUTH_SECRET, POSTGRES_PASSWORD, NEXT_PUBLIC_APP_URL
+#   docker compose up --build
 #
-# Then open http://localhost:3000
+# Then open http://localhost:3000. Put a reverse proxy (Caddy/Nginx) in front
+# for HTTPS; it must set X-Real-IP so rate limits see real client addresses.
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: kicklink
-      POSTGRES_PASSWORD: kicklink
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: kicklink
     volumes:
       - kicklink-db:/var/lib/postgresql/data
@@ -26,14 +27,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # Secrets and integrations (AUTH_SECRET, Stripe, Resend, ...) come from .env.
+    env_file: .env
     environment:
-      DATABASE_URL: "postgresql://kicklink:kicklink@db:5432/kicklink?schema=public"
-      # CHANGE THIS in production: `openssl rand -base64 32`
-      AUTH_SECRET: "change-me-to-a-long-random-string"
+      DATABASE_URL: "postgresql://kicklink:${POSTGRES_PASSWORD}@db:5432/kicklink?schema=public"
       AUTH_TRUST_HOST: "true"
-      # Optional — set to enable real Stripe payments:
-      STRIPE_SECRET_KEY: ""
-      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ""
     ports:
       - "3000:3000"
     # Apply migrations on boot, then start the server.

@@ -41,8 +41,8 @@ export type SignupState =
 
 export type ResetState = { error?: string; ok?: boolean } | undefined;
 
-const setupError =
-  "KickLink could not reach the production database. Check DATABASE_URL in Vercel and run the Prisma migrations.";
+// Shown to users; the real cause is logged server-side.
+const setupError = "Something went wrong on our side. Please try again in a minute.";
 
 async function requestIp() {
   return clientIpFromHeaders(await headers()) ?? "unknown";

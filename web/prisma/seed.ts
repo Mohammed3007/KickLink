@@ -16,6 +16,18 @@ const color = (i: number) => PALETTE[i % PALETTE.length];
 const hoursFromNow = (h: number) => new Date(Date.now() + h * 3600_000);
 
 async function main() {
+  // The seed wipes every table and creates an admin account with the password
+  // "password". Refuse when the database holds anyone but demo accounts, so it
+  // can't wipe a real deployment by accident (e.g. a pasted prod DATABASE_URL).
+  const realUsers = await db.user.count({
+    where: { NOT: { email: { endsWith: "@kicklink.app" } } },
+  });
+  if (realUsers > 0 && process.env.ALLOW_DEMO_SEED !== "true") {
+    throw new Error(
+      `Refusing to seed: ${realUsers} non-demo user(s) found and seeding deletes ALL data. ` +
+        "Set ALLOW_DEMO_SEED=true only for a throwaway demo/staging database."
+    );
+  }
   console.log("Resetting data…");
   await db.notification.deleteMany();
   await db.payment.deleteMany();

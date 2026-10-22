@@ -58,9 +58,8 @@ export const createGameSchema = z.object({
   model: z.enum(["PAY", "LATER", "FREE"]),
   recurrenceMode: z.enum(["SINGLE", "WEEKLY"]).default("SINGLE"),
   occurrenceCount: z.coerce.number().int().min(2).max(26).default(6),
-  seriesPaymentMode: z
-    .enum(["PER_GAME", "UPFRONT", "WEEKLY_RECURRING"])
-    .default("PER_GAME"),
+  // UPFRONT / WEEKLY_RECURRING exist in the schema but aren't implemented.
+  seriesPaymentMode: z.enum(["PER_GAME"]).default("PER_GAME"),
 });
 
 export const announcementSchema = z.object({

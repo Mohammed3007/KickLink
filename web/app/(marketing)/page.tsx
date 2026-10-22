@@ -26,7 +26,7 @@ const FEATURES = [
   },
   {
     icon: Shuffle,
-    title: "Waitlists and transfers",
+    title: "Automatic waitlists",
     body: "When a player drops, the next person can be offered the spot without the organizer rebuilding the lineup.",
   },
   {
