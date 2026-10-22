@@ -7,14 +7,15 @@ import { confirmPaidRegistration } from "@/lib/payment-confirm";
 import { refundPayment } from "@/lib/refunds";
 import { CHECKOUT_HOLD_MINUTES, CHECKOUT_SESSION_MINUTES, promoteWaitlist } from "@/lib/waitlist";
 import { readLimitedText, REQUEST_LIMITS } from "@/lib/input";
+import { stripeWebhookSecrets, verifyStripeEvent } from "@/lib/stripe-webhook";
 
 export async function POST(req: Request) {
   // Not IP rate limited: Stripe delivers from a small set of shared IPs, and
   // throttling them would delay payment confirmations. The signature check
   // below rejects anything that isn't from Stripe.
   const stripe = getStripe();
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!stripe || !secret) {
+  const secrets = stripeWebhookSecrets();
+  if (!stripe || secrets.length === 0) {
     return NextResponse.json({ error: "Stripe not configured" }, { status: 400 });
   }
 
@@ -26,10 +27,17 @@ export async function POST(req: Request) {
   const body = limitedBody.text;
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, sig ?? "", secret);
+    event = verifyStripeEvent(stripe, body, sig ?? "", secrets);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "bad signature";
     return NextResponse.json({ error: msg }, { status: 400 });
+  }
+
+  // Checkout sessions are created on the platform account (destination
+  // charges). Ignore checkout events from a connected account's own Stripe
+  // activity so an organizer's unrelated sales can't touch registrations.
+  if (event.account && event.type.startsWith("checkout.")) {
+    return NextResponse.json({ received: true, ignored: "connected-account checkout" });
   }
 
   switch (event.type) {
