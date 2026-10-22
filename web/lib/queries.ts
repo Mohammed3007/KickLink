@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { sportSlug } from "@/lib/sports";
+import { hasStaleHolds, sweepGameHolds } from "@/lib/waitlist";
 
 // Registration statuses that occupy a spot in the game.
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"] as const;
@@ -12,6 +13,9 @@ export type GameMeta = Awaited<ReturnType<typeof getGame>>;
  * private, so rosters and details are members-only.
  */
 export async function getGame(gameId: string, viewerId: string) {
+  // Release lapsed offers/holds first so the roster and CTA are accurate even
+  // between scheduled sweeps.
+  if (await hasStaleHolds(gameId)) await sweepGameHolds(gameId);
   const game = await db.game.findFirst({
     where: { id: gameId, org: { memberships: { some: { userId: viewerId } } } },
     include: {

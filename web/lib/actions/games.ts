@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
-import { promoteWaitlist } from "@/lib/waitlist";
+import { compactWaitlist, expireStaleHolds, promoteWaitlist } from "@/lib/waitlist";
+import { isRefundable, refundGamePayments } from "@/lib/refunds";
 
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"] as const;
 
@@ -42,6 +43,13 @@ async function lockGameForRegistration(tx: Prisma.TransactionClient, gameId: str
   return game;
 }
 
+/** Lock the game and release any lapsed holds before counting spots. */
+async function lockGameAndSweep(tx: Prisma.TransactionClient, gameId: string) {
+  const game = await lockGameForRegistration(tx, gameId);
+  await expireStaleHolds(tx, gameId);
+  return game;
+}
+
 /** Reserve a spot for FREE or pay-later (LATER) games. */
 export async function reserveSpot(gameId: string): Promise<ActionResult> {
   const user = await requireUser();
@@ -50,7 +58,7 @@ export async function reserveSpot(gameId: string): Promise<ActionResult> {
 
   try {
     await db.$transaction(async (tx) => {
-      const game = await lockGameForRegistration(tx, gameId);
+      const game = await lockGameAndSweep(tx, gameId);
       if (game.model === "PAY") {
         throw new Error("This game requires payment to reserve.");
       }
@@ -94,7 +102,7 @@ export async function joinWaitlist(gameId: string): Promise<ActionResult> {
 
   try {
     await db.$transaction(async (tx) => {
-      await lockGameForRegistration(tx, gameId);
+      await lockGameAndSweep(tx, gameId);
       const existing = await tx.registration.findUnique({
         where: { userId_gameId: { userId: user.id, gameId } },
       });
@@ -123,37 +131,43 @@ export async function joinWaitlist(gameId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
-/** Cancel a registration; refund if paid, then promote the waitlist. */
+/**
+ * Cancel a registration and promote the waitlist. Paid spots cancelled at
+ * least REFUND_CUTOFF_HOURS before kickoff are refunded; later than that the
+ * spot is released but the club keeps the payment, as the policy states.
+ */
 export async function cancelRegistration(gameId: string): Promise<ActionResult> {
   const user = await requireUser();
   const reg = await db.registration.findUnique({
     where: { userId_gameId: { userId: user.id, gameId } },
+    include: { game: { select: { startsAt: true } } },
   });
-  if (!reg) return { ok: false, error: "You're not registered." };
+  if (!reg || reg.status === "CANCELLED") return { ok: false, error: "You're not registered." };
+
+  // Refund before releasing the spot so a failed refund leaves things as they were.
+  let refunded = false;
+  if (reg.payStatus === "PAID" && isRefundable(reg.game.startsAt)) {
+    try {
+      refunded = await refundGamePayments(user.id, gameId);
+    } catch (error) {
+      console.error("Refund failed on cancellation", error);
+      return { ok: false, error: "We couldn't process your refund. Please try again." };
+    }
+  }
 
   const freedSpot = ["CONFIRMED", "PROVISIONAL", "OFFERED"].includes(reg.status);
-
   await db.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${gameId} FOR UPDATE`;
-    if (!(await tx.game.findUnique({ where: { id: gameId } }))) {
-      throw new Error("Game not found.");
-    }
-    const refunding = reg.payStatus === "PAID";
     await tx.registration.update({
       where: { id: reg.id },
       data: {
         status: "CANCELLED",
-        payStatus: refunding ? "REFUNDED" : reg.payStatus,
+        payStatus: refunded ? "REFUNDED" : reg.payStatus,
         waitlistPos: null,
         offerExpiresAt: null,
       },
     });
-    if (refunding) {
-      await tx.payment.updateMany({
-        where: { userId: user.id, gameId, status: "SUCCEEDED" },
-        data: { status: "REFUNDED" },
-      });
-    }
+    if (reg.status === "WAITLISTED") await compactWaitlist(tx, gameId);
     if (freedSpot) await promoteWaitlist(tx, gameId);
   });
 
@@ -171,6 +185,7 @@ export async function declineOffer(gameId: string): Promise<ActionResult> {
     return { ok: false, error: "No active offer." };
   }
   await db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${gameId} FOR UPDATE`;
     await tx.registration.update({
       where: { id: reg.id },
       data: { status: "CANCELLED", offerExpiresAt: null },

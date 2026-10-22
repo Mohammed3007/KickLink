@@ -17,9 +17,10 @@ export function RosterActions({
   const router = useRouter();
   const [pending, start] = useTransition();
 
-  const run = (fn: () => Promise<void>) =>
+  const run = (fn: () => Promise<{ ok: boolean; error?: string } | void>) =>
     start(async () => {
-      await fn();
+      const result = await fn();
+      if (result && !result.ok && result.error) window.alert(result.error);
       router.refresh();
     });
 
@@ -61,7 +62,11 @@ export function RosterActions({
         <UserX className="size-3.5" /> No-show
       </button>
       <button
-        onClick={() => run(() => removePlayer(registrationId))}
+        onClick={() => {
+          if (window.confirm("Remove this player? Any card payment will be refunded in full.")) {
+            run(() => removePlayer(registrationId));
+          }
+        }}
         aria-label="Remove player"
         className="flex size-7 items-center justify-center rounded-lg text-ink-3 transition-colors hover:bg-bad-bg hover:text-bad"
       >

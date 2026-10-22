@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AvatarStack } from "@/components/ui/avatar";
 import { formatPrice, formatGameDate, formatTime } from "@/lib/utils";
+import { isRefundable } from "@/lib/refund-policy";
 
 export default async function GameDetailPage({
   params,
@@ -173,6 +174,9 @@ export default async function GameDetailPage({
             priceLabel={priceLabel}
             isFull={game.isFull}
             myStatus={game.myReg?.status ?? null}
+            refundable={
+              game.myReg?.payStatus === "PAID" ? isRefundable(game.startsAt) : null
+            }
           />
         </div>
       </div>

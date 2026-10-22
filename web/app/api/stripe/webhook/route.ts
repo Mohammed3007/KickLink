@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { confirmPaidRegistration } from "@/lib/payment-confirm";
+import { refundPayment } from "@/lib/refunds";
 import { readLimitedText, REQUEST_LIMITS } from "@/lib/input";
 
 export async function POST(req: Request) {
@@ -36,7 +37,7 @@ export async function POST(req: Request) {
       const userId = session.metadata?.userId;
       const gameId = session.metadata?.gameId;
       if (userId && gameId && session.payment_status === "paid") {
-        await confirmPaidRegistration({
+        const result = await confirmPaidRegistration({
           userId,
           gameId,
           amountCents: session.amount_total ?? 0,
@@ -47,6 +48,12 @@ export async function POST(req: Request) {
               : undefined,
           stripeSessionId: session.id,
         });
+        if (result.paymentId) {
+          // Paid for a spot that's gone (refundDue); give the money back. A
+          // throw returns 500 so Stripe retries, and the refund is idempotent.
+          const payment = await db.payment.findUnique({ where: { id: result.paymentId } });
+          if (payment?.refundDue) await refundPayment(payment);
+        }
         revalidatePath("/home");
         revalidatePath("/games");
         revalidatePath("/profile");
