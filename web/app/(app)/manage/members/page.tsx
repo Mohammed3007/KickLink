@@ -137,7 +137,7 @@ export default async function ManageMembersPage() {
                   </div>
                   <div className="mt-3 space-y-2">
                     {org.games.map((game) => (
-                      <Link key={game.id} href={`/manage/games/${game.id}`} className="block rounded-xl bg-white/70 p-3 ring-1 ring-line transition-colors hover:bg-white">
+                      <Link key={game.id} href={`/manage/games/${game.id}`} className="block rounded-xl bg-surface-2 p-3 ring-1 ring-line transition-colors hover:ring-brand-300">
                         <p className="truncate text-sm font-bold text-ink">{game.sport} - {game.title}</p>
                         <p className="mt-0.5 text-xs text-ink-3">
                           {formatGameDate(game.startsAt)} - {formatTime(game.startsAt)}

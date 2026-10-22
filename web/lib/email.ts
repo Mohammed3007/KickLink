@@ -29,14 +29,14 @@ async function send({ to, subject, html, text }: Mail) {
 }
 
 function shell(title: string, body: string, cta: { href: string; label: string }) {
-  return `<!doctype html><html><body style="margin:0;background:#f7f6fb;font-family:-apple-system,Segoe UI,Roboto,sans-serif">
+  return `<!doctype html><html><body style="margin:0;background:#08080a;font-family:-apple-system,Segoe UI,Roboto,sans-serif">
   <div style="max-width:480px;margin:0 auto;padding:32px 20px">
-    <div style="font-size:22px;font-weight:800;color:#15131c;margin-bottom:24px">Kick<span style="color:#6e3bd8">Link</span></div>
-    <div style="background:#fff;border-radius:16px;padding:28px;border:1px solid #e9e7f0">
-      <h1 style="font-size:20px;color:#15131c;margin:0 0 12px">${title}</h1>
-      <p style="font-size:15px;line-height:1.6;color:#5c5a66;margin:0 0 24px">${body}</p>
-      <a href="${cta.href}" style="display:inline-block;background:#6e3bd8;color:#fff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:12px">${cta.label}</a>
-      <p style="font-size:12px;color:#8e8c99;margin:24px 0 0">If the button doesn't work, copy this link:<br>${cta.href}</p>
+    <div style="font-size:22px;font-weight:700;color:#f5f3ef;margin-bottom:24px">Kick<span style="color:#e7b95a">Link</span></div>
+    <div style="background:#141418;border-radius:18px;padding:28px;border:1px solid rgba(231,185,90,0.2)">
+      <h1 style="font-size:20px;color:#f7f5f0;margin:0 0 12px">${title}</h1>
+      <p style="font-size:15px;line-height:1.6;color:#a29a8c;margin:0 0 24px">${body}</p>
+      <a href="${cta.href}" style="display:inline-block;background:#e7b95a;background-image:linear-gradient(135deg,#f4d78b,#e7b95a 55%,#b8862e);color:#1a1304;text-decoration:none;font-weight:700;padding:13px 24px;border-radius:14px">${cta.label}</a>
+      <p style="font-size:12px;color:#7e796e;margin:24px 0 0">If the button doesn't work, copy this link:<br><span style="color:#b6b0a4;word-break:break-all">${cta.href}</span></p>
     </div>
   </div></body></html>`;
 }

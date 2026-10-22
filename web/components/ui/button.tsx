@@ -10,18 +10,18 @@ type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-brand-600 text-white shadow-brand hover:bg-brand-700 active:bg-brand-700",
+    "bg-gold text-on-brand font-bold shadow-brand hover:brightness-105 hover:shadow-[0_16px_38px_rgba(231,185,90,0.48)]",
   secondary:
-    "bg-surface text-ink ring-1 ring-line hover:bg-surface-2 active:bg-surface-2",
-  dark: "bg-ink text-white hover:bg-ink/90 active:bg-ink/90",
+    "bg-surface-2 text-ink ring-1 ring-line hover:ring-brand-300 active:bg-surface",
+  dark: "bg-[#16161a] text-ink ring-1 ring-white/10 hover:ring-brand-400/45",
   ghost: "bg-transparent text-brand-700 hover:bg-brand-50 active:bg-brand-100",
-  danger: "bg-bad text-white hover:opacity-90",
+  danger: "bg-bad text-on-brand hover:opacity-90",
 };
 
 const sizes: Record<Size, string> = {
   sm: "h-9 px-3.5 text-sm rounded-xl gap-1.5",
-  md: "h-11 px-5 text-[15px] rounded-2xl gap-2",
-  lg: "h-13 px-6 text-base rounded-2xl gap-2",
+  md: "h-11 px-5 text-[15px] rounded-[14px] gap-2",
+  lg: "h-[54px] px-6 text-[15.5px] rounded-[14px] gap-2",
 };
 
 export interface ButtonProps extends Omit<HTMLMotionProps<"button">, "children"> {
@@ -45,7 +45,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || loading}
         className={cn(
           "inline-flex select-none items-center justify-center font-semibold tracking-[-0.01em]",
-          "transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-55",
+          "transition-[color,background-color,box-shadow,filter] duration-200 disabled:cursor-not-allowed disabled:opacity-55",
           variants[variant],
           sizes[size],
           full && "w-full",

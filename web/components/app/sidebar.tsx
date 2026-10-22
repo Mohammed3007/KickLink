@@ -24,7 +24,7 @@ export function Sidebar({
   const pathname = usePathname();
 
   return (
-    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-gold-400/15 bg-[#fffdf6]/80 px-4 py-6 backdrop-blur-xl lg:flex">
+    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-gold-400/15 bg-[#0c0c0f]/85 px-4 py-6 backdrop-blur-xl lg:flex">
       <Link href="/home" className="px-2">
         <Logo size={30} />
       </Link>
@@ -73,7 +73,7 @@ export function Sidebar({
             "flex items-center gap-3 px-2",
             isOrganizer
               ? "rounded-2xl bg-field-950 p-2 text-white"
-              : "rounded-2xl bg-white/72 p-2 ring-1 ring-gold-400/15"
+              : "rounded-2xl bg-surface/70 p-2 ring-1 ring-gold-400/15"
           )}
         >
           <Avatar name={user.name} color={user.avatarColor} size={36} />
@@ -125,9 +125,9 @@ function SidebarItem({
             ? "bg-gold-400 text-field-950"
             : "text-white/75 hover:bg-white/8 hover:text-white"
           : fieldMode && active
-            ? "bg-gold-400/14 text-gold-600"
+            ? "bg-gold-400/14 text-gold-300"
             : fieldMode
-              ? "text-ink-2 hover:bg-gold-400/10 hover:text-field-950"
+              ? "text-ink-2 hover:bg-gold-400/10 hover:text-ink"
               : active
                 ? "text-brand-700"
                 : "text-ink-2 hover:bg-surface-2 hover:text-ink"

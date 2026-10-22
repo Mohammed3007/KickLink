@@ -8,9 +8,9 @@ export function Input({
   return (
     <input
       className={cn(
-        "h-11 w-full rounded-xl bg-surface px-3.5 text-[15px] text-ink ring-1 ring-line",
+        "h-12 w-full rounded-[14px] bg-surface px-4 text-[15px] text-ink ring-[1.5px] ring-white/12",
         "placeholder:text-ink-3 transition-shadow",
-        "focus:outline-none focus:ring-2 focus:ring-brand-500",
+        "focus:outline-none focus:ring-brand-600 focus:shadow-[0_0_0_4px_rgba(231,185,90,0.16)]",
         "disabled:opacity-60",
         className
       )}
@@ -26,9 +26,9 @@ export function Textarea({
   return (
     <textarea
       className={cn(
-        "w-full rounded-xl bg-surface px-3.5 py-3 text-[15px] text-ink ring-1 ring-line",
+        "w-full rounded-[14px] bg-surface px-4 py-3 text-[15px] text-ink ring-[1.5px] ring-white/12",
         "placeholder:text-ink-3 transition-shadow resize-none",
-        "focus:outline-none focus:ring-2 focus:ring-brand-500",
+        "focus:outline-none focus:ring-brand-600 focus:shadow-[0_0_0_4px_rgba(231,185,90,0.16)]",
         className
       )}
       {...props}
@@ -43,8 +43,8 @@ export function Select({
   return (
     <select
       className={cn(
-        "h-11 w-full appearance-none rounded-xl bg-surface px-3.5 text-[15px] text-ink ring-1 ring-line",
-        "focus:outline-none focus:ring-2 focus:ring-brand-500",
+        "h-12 w-full appearance-none rounded-[14px] bg-surface px-4 text-[15px] text-ink ring-[1.5px] ring-white/12",
+        "focus:outline-none focus:ring-brand-600 focus:shadow-[0_0_0_4px_rgba(231,185,90,0.16)]",
         className
       )}
       {...props}
@@ -69,7 +69,7 @@ export function Field({
     <div className="space-y-1.5">
       <label
         htmlFor={htmlFor}
-        className="block text-sm font-semibold text-ink"
+        className="block text-[13px] font-semibold text-[#b6b0a4]"
       >
         {label}
       </label>

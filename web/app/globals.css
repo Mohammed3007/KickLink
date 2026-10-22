@@ -1,66 +1,74 @@
 @import "tailwindcss";
 
 /* ──────────────────────────────────────────────────────────────
-   KickLink design system
-   Refined-minimal base · Club Violet energy · warm, human edges
+   KickLink design system: Onyx & Gold
+   Near-black surfaces, warm gold accent, Space Grotesk display type.
+   Token names are kept from the original theme, so `brand-*` is now the
+   gold scale (low steps are dark gold tints for backgrounds, high steps
+   are light golds for text) and `ink` is the light text colour.
    ────────────────────────────────────────────────────────────── */
 
 @theme {
-  /* Brand — Club Violet */
-  --color-brand-50: #f4f0fd;
-  --color-brand-100: #e9ddfa;
-  --color-brand-200: #d6c2f4;
-  --color-brand-300: #b89aea;
-  --color-brand-400: #946bdd;
-  --color-brand-500: #7c4bd6;
-  --color-brand-600: #6e3bd8;
-  --color-brand-700: #5a2bbf;
-  --color-brand-800: #4a2399;
-  --color-brand-900: #3c1f7a;
+  --font-sans: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk Variable", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
 
-  --color-field-950: #080a09;
-  --color-field-900: #0b100d;
-  --color-field-800: #102318;
-  --color-field-700: #16402c;
+  /* Brand: gold */
+  --color-brand-50: #16130c;
+  --color-brand-100: #201a0e;
+  --color-brand-200: #3a2f18;
+  --color-brand-300: #6e5728;
+  --color-brand-400: #c9952f;
+  --color-brand-500: #d9a945;
+  --color-brand-600: #e7b95a;
+  --color-brand-700: #efc76f;
+  --color-brand-800: #f4d78b;
+  --color-brand-900: #f8e6b8;
+  /* Text on a gold fill */
+  --color-on-brand: #1a1304;
+
+  --color-field-950: #08080a;
+  --color-field-900: #0c0c0f;
+  --color-field-800: #141418;
+  --color-field-700: #1c1a17;
   --color-grass-500: #54e0a0;
   --color-grass-600: #2bb47c;
-  --color-gold-300: #f6d788;
-  --color-gold-400: #e9be5a;
-  --color-gold-500: #e0a93c;
+  --color-gold-300: #f4d78b;
+  --color-gold-400: #e7b95a;
+  --color-gold-500: #c9952f;
 
-  /* Ink / text */
-  --color-ink: #15131c;
-  --color-ink-2: #5c5a66;
-  --color-ink-3: #8e8c99;
+  /* Ink / text (light on dark) */
+  --color-ink: #f7f5f0;
+  --color-ink-2: #a29a8c;
+  --color-ink-3: #7e796e;
 
   /* Surfaces */
-  --color-canvas: #f7f6fb;
-  --color-surface: #ffffff;
-  --color-surface-2: #f1eff7;
-  --color-line: #e9e7f0;
-  --color-line-2: #f0eef6;
+  --color-canvas: #08080a;
+  --color-surface: #141418;
+  --color-surface-2: #1b1b20;
+  --color-line: #26262d;
+  --color-line-2: #1d1d22;
 
-  /* Status */
-  --color-ok: #12915a;
-  --color-ok-bg: #e4f4ec;
-  --color-warn: #b7790e;
-  --color-warn-bg: #fbf0dc;
-  --color-info: #2666d6;
-  --color-info-bg: #e7f0fd;
-  --color-alert: #d85a18;
-  --color-alert-bg: #fceadd;
-  --color-bad: #cf3a40;
-  --color-bad-bg: #fbe9ea;
+  /* Status (tuned for dark surfaces) */
+  --color-ok: #5bd69a;
+  --color-ok-bg: #11241b;
+  --color-warn: #f0b44c;
+  --color-warn-bg: #2a2110;
+  --color-info: #82acff;
+  --color-info-bg: #121c2e;
+  --color-alert: #ff9a62;
+  --color-alert-bg: #2c1a10;
+  --color-bad: #ff7272;
+  --color-bad-bg: #2d1416;
 
   /* Radii */
   --radius-xl: 1rem;
   --radius-2xl: 1.25rem;
   --radius-3xl: 1.75rem;
 
-  /* Shadows — soft, layered, never harsh */
-  --shadow-card: 0 1px 2px rgba(21, 19, 28, 0.04), 0 4px 16px rgba(21, 19, 28, 0.05);
-  --shadow-pop: 0 8px 30px rgba(21, 19, 28, 0.12);
-  --shadow-brand: 0 10px 30px rgba(110, 59, 216, 0.28);
+  /* Shadows */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.28);
+  --shadow-pop: 0 18px 44px rgba(0, 0, 0, 0.5);
+  --shadow-brand: 0 10px 28px rgba(231, 185, 90, 0.32);
 
   /* Motion */
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
@@ -74,6 +82,8 @@
   --animate-field-ball: field-ball 2.4s ease-in-out infinite;
   --animate-ring-pulse: ring-pulse 1.8s ease-out infinite;
   --animate-soft-ping: soft-ping 1.9s ease-out infinite;
+  /* Staggered entrance: pair with style={{ animationDelay }} */
+  --animate-rise: rise-in 0.62s cubic-bezier(0.33, 1, 0.68, 1) both;
 }
 
 @keyframes fade-up {
@@ -104,6 +114,14 @@
   from { transform: translate(-50%, -50%) scale(0.82); opacity: 0.9; }
   to { transform: translate(-50%, -50%) scale(1.55); opacity: 0; }
 }
+@keyframes gold-shine {
+  0% { transform: translateX(-130%) skewX(-18deg); }
+  60%, 100% { transform: translateX(260%) skewX(-18deg); }
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 @keyframes soft-ping {
   75%, 100% { transform: scale(2.2); opacity: 0; }
 }
@@ -113,16 +131,22 @@
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
   }
+  html {
+    color-scheme: dark;
+  }
   body {
     background: var(--color-canvas);
     color: var(--color-ink);
-    font-family: var(--font-geist-sans), -apple-system, system-ui, sans-serif;
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+  }
   ::selection {
-    background: var(--color-brand-200);
-    color: var(--color-brand-900);
+    background: rgba(231, 185, 90, 0.35);
+    color: var(--color-ink);
   }
   /* Quiet, modern scrollbar */
   * {
@@ -143,14 +167,36 @@
 }
 
 @layer utilities {
-  /* Subtle violet field used on heros / brand panels */
+  /* Onyx panel with gold glow, used on heros / brand panels */
   .bg-brand-field {
-    background-image: radial-gradient(
-        120% 120% at 100% 0%,
-        #8a57e6 0%,
-        var(--color-brand-600) 45%,
-        var(--color-brand-800) 100%
-      );
+    background-color: #0c0c0f;
+    background-image:
+      radial-gradient(120% 120% at 18% 12%, rgba(231, 185, 90, 0.26) 0%, rgba(231, 185, 90, 0) 42%),
+      radial-gradient(120% 120% at 85% 90%, rgba(231, 185, 90, 0.15) 0%, rgba(231, 185, 90, 0) 45%),
+      linear-gradient(150deg, #141216 0%, #08080a 100%);
+  }
+  /* Gold fill for primary actions */
+  .bg-gold {
+    background-image: linear-gradient(135deg, #f4d78b 0%, #e7b95a 55%, #b8862e 100%);
+  }
+  .text-gold-gradient {
+    background: linear-gradient(120deg, #f4d78b, #e7b95a 50%, #c9952f);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  /* Moving highlight across a gold button */
+  .gold-shine::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 60%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0));
+    animation: gold-shine 3s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gold-shine::before { animation: none; display: none; }
   }
   .bg-match-field {
     background:
@@ -171,9 +217,12 @@
   }
   .bg-grid {
     background-image:
-      linear-gradient(to right, rgba(21, 19, 28, 0.04) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(21, 19, 28, 0.04) 1px, transparent 1px);
+      linear-gradient(to right, rgba(244, 239, 227, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(244, 239, 227, 0.04) 1px, transparent 1px);
     background-size: 44px 44px;
   }
   .text-balance { text-wrap: balance; }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-rise { animation: none; }
+  }
 }

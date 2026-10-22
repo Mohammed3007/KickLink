@@ -2,7 +2,7 @@ import { cn, formatDateChipParts } from "@/lib/utils";
 
 export function DateChip({
   date,
-  color = "#6E3BD8",
+  color = "#E7B95A",
   className,
 }: {
   date: Date;

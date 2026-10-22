@@ -53,12 +53,12 @@ export function PlayerModePage({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-      <section className="relative overflow-hidden rounded-[1.6rem] border border-gold-400/15 bg-gradient-to-br from-[#fffdf6] via-white to-[#eef7ef] px-5 py-6 shadow-card sm:px-7">
+      <section className="relative overflow-hidden rounded-[1.6rem] border border-gold-400/15 bg-brand-field px-5 py-6 shadow-card sm:px-7">
         <div className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full border border-gold-400/20" />
         <div className="pointer-events-none absolute -right-5 top-10 size-28 rounded-full border border-grass-500/15" />
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-gold-400/25 bg-gold-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-gold-500">
+            <div className="inline-flex items-center gap-2 rounded-full border border-gold-400/25 bg-gold-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-gold-300">
               Player view
             </div>
             <h1 className="mt-4 text-3xl font-black tracking-[-0.035em] text-ink sm:text-4xl">
