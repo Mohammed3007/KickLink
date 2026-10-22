@@ -70,6 +70,7 @@ export async function joinClub(
   });
 
   revalidatePath("/clubs");
+  revalidatePath(`/clubs/${org.handle}`);
   revalidatePath("/home");
   return { ok: true, handle: org.handle };
 }

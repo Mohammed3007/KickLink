@@ -124,7 +124,9 @@ export async function devCompletePayment(gameId: string): Promise<PayResult> {
     };
   }
   const user = await requireUser();
-  const game = await db.game.findUnique({ where: { id: gameId } });
+  const game = await db.game.findFirst({
+    where: { id: gameId, org: { memberships: { some: { userId: user.id } } } },
+  });
   if (!game) return { ok: false, error: "Game not found." };
   if (game.startsAt <= new Date()) return { ok: false, error: "Registration is closed for this game." };
   if (game.priceCents <= 0 || game.model === "FREE") {
@@ -198,6 +200,11 @@ export async function connectStripe(orgId: string): Promise<CheckoutResult> {
 
 /** Refresh a club's payout status from Stripe (called on return from onboarding). */
 export async function refreshConnectStatus(orgId: string) {
+  const user = await requireUser();
+  const membership = await db.membership.findUnique({
+    where: { userId_orgId: { userId: user.id, orgId } },
+  });
+  if (membership?.role !== "ORGANIZER") return;
   const stripe = getStripe();
   if (!stripe) return;
   const org = await db.organization.findUnique({ where: { id: orgId } });
