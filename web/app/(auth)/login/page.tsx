@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { LoginForm } from "./login-form";
-import { GoogleButton, OrDivider } from "@/components/auth/google-button";
+import { GoogleButton } from "@/components/auth/google-button";
+import { AuthFooter, AuthHeading, GoldLink, OrDivider } from "@/components/auth/auth-ui";
 import { isGoogleEnabled } from "@/lib/flags";
 
 export const metadata: Metadata = { title: "Log in" };
@@ -20,28 +20,20 @@ export default async function LoginPage({
   const returnTo = safeReturnPath(params.from);
   const google = isGoogleEnabled();
   return (
-    <div>
-      <h1 className="text-3xl font-bold tracking-[-0.02em] text-ink">
-        Welcome back
-      </h1>
-      <p className="mt-2 text-ink-2">Log in to your KickLink account.</p>
+    <>
+      <AuthHeading title="Welcome back" subtitle="Log in to see your games, clubs and payments." delay={0.05} />
 
-      <div className="mt-8">
-        {google && (
-          <>
-            <GoogleButton />
-            <OrDivider />
-          </>
-        )}
-        <LoginForm returnTo={returnTo} />
-      </div>
+      {google && (
+        <>
+          <GoogleButton label="Continue with Google" delay={0.18} />
+          <OrDivider delay={0.24} />
+        </>
+      )}
+      <LoginForm returnTo={returnTo} delay={google ? 0.3 : 0.18} />
 
-      <p className="mt-6 text-sm text-ink-2">
-        New to KickLink?{" "}
-        <Link href="/signup" className="font-semibold text-brand-700 hover:underline">
-          Create an account
-        </Link>
-      </p>
-    </div>
+      <AuthFooter delay={0.42}>
+        New to KickLink? <GoldLink href="/signup">Create an account</GoldLink>
+      </AuthFooter>
+    </>
   );
 }

@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { db } from "@/lib/db";
 import { consumeEmailVerificationToken } from "@/lib/tokens";
-import { Button } from "@/components/ui/button";
+import { AuthStatusCard, GoldButtonLink } from "@/components/auth/auth-ui";
 
 export const metadata = { title: "Verify email" };
 
@@ -25,26 +24,17 @@ export default async function VerifyPage({
   }
 
   return (
-    <div className="text-center">
-      <span
-        className={
-          "mx-auto flex size-14 items-center justify-center rounded-2xl " +
-          (ok ? "bg-ok-bg text-ok" : "bg-bad-bg text-bad")
-        }
-      >
-        {ok ? <CheckCircle2 className="size-7" /> : <XCircle className="size-7" />}
-      </span>
-      <h1 className="mt-5 text-2xl font-bold tracking-[-0.02em] text-ink">
-        {ok ? "Email verified" : "Link invalid or expired"}
-      </h1>
-      <p className="mt-2 text-ink-2">
+    <AuthStatusCard
+      tone={ok ? "gold" : "bad"}
+      icon={ok ? <CheckCircle2 className="size-[26px]" /> : <XCircle className="size-[26px]" />}
+      title={ok ? "Email verified" : "Link invalid or expired"}
+    >
+      <p className="mb-5">
         {ok
-          ? "Your account is active. You can log in now."
+          ? "Your account is active. Log in to pick your club."
           : "This verification link is no longer valid. Try logging in to get a fresh one."}
       </p>
-      <Link href="/login" className="mt-6 inline-block">
-        <Button size="lg">Go to login</Button>
-      </Link>
-    </div>
+      <GoldButtonLink href="/login">Go to login</GoldButtonLink>
+    </AuthStatusCard>
   );
 }

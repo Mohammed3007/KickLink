@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { SignupForm } from "./signup-form";
-import { GoogleButton, OrDivider } from "@/components/auth/google-button";
+import { GoogleButton } from "@/components/auth/google-button";
+import { AuthFooter, AuthHeading, AuthPill, GoldLink, OrDivider } from "@/components/auth/auth-ui";
 import { isGoogleEnabled } from "@/lib/flags";
 
 export const metadata: Metadata = { title: "Sign up" };
@@ -9,30 +9,24 @@ export const metadata: Metadata = { title: "Sign up" };
 export default function SignupPage() {
   const google = isGoogleEnabled();
   return (
-    <div>
-      <h1 className="text-3xl font-bold tracking-[-0.02em] text-ink">
-        Create your account
-      </h1>
-      <p className="mt-2 text-ink-2">
-        Join a club, find games, and never chase an e-transfer again.
-      </p>
+    <>
+      <AuthPill>Free forever · No card needed</AuthPill>
+      <AuthHeading
+        title="Create your account"
+        subtitle="Join a club, find games, and never chase an e-transfer again."
+      />
 
-      <div className="mt-8">
-        {google && (
-          <>
-            <GoogleButton label="Sign up with Google" />
-            <OrDivider />
-          </>
-        )}
-        <SignupForm />
-      </div>
+      {google && (
+        <>
+          <GoogleButton label="Sign up with Google" />
+          <OrDivider />
+        </>
+      )}
+      <SignupForm delay={google ? 0.38 : 0.26} />
 
-      <p className="mt-6 text-sm text-ink-2">
-        Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-brand-700 hover:underline">
-          Log in
-        </Link>
-      </p>
-    </div>
+      <AuthFooter>
+        Already have an account? <GoldLink href="/login">Log in</GoldLink>
+      </AuthFooter>
+    </>
   );
 }
