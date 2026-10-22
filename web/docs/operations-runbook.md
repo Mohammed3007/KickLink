@@ -20,8 +20,10 @@ check the first log lines of every new deployment.
   `CRON_SECRET` for the 10-minute sweep workflow.
 - Google OAuth redirect URIs for every production/preview domain used.
 - Resend API key and verified sender domain for email verification/reset.
-- Stripe Connect keys and webhook secret. Webhook events:
-  `checkout.session.completed`, `checkout.session.expired`, `account.updated`.
+- Stripe Connect keys and two webhook endpoints, both at `/api/stripe/webhook`:
+  "Your account" (`checkout.session.completed`, `checkout.session.expired`)
+  with secret `STRIPE_WEBHOOK_SECRET`, and "Connected accounts"
+  (`account.updated`) with secret `STRIPE_CONNECT_WEBHOOK_SECRET`.
 - `NEXT_PUBLIC_LEGAL_NAME` and `NEXT_PUBLIC_SUPPORT_EMAIL` for the legal pages.
 - `ALLOW_ADMIN_EMAIL_BOOTSTRAP=false` after the first DB admin has been assigned.
 - `ALLOW_DEV_PAYMENTS` and `ALLOW_DEMO_SEED` unset.

@@ -8,6 +8,7 @@ const good = {
   NEXT_PUBLIC_APP_URL: "https://kicklink.example",
   STRIPE_SECRET_KEY: "sk_live_x",
   STRIPE_WEBHOOK_SECRET: "whsec_x",
+  STRIPE_CONNECT_WEBHOOK_SECRET: "whsec_connect_x",
   RESEND_API_KEY: "re_x",
   CRON_SECRET: "c".repeat(32),
   NEXT_PUBLIC_LEGAL_NAME: "KickLink Inc.",

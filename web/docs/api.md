@@ -39,5 +39,7 @@ Stripe webhook endpoint.
 
 - Not IP rate limited (Stripe sends from shared IPs); the signature check gates it.
 - Rejects oversized bodies.
-- Requires Stripe signature verification.
+- Requires Stripe signature verification against `STRIPE_WEBHOOK_SECRET`
+  (platform endpoint) or `STRIPE_CONNECT_WEBHOOK_SECRET` (connected-accounts endpoint).
 - Handles `checkout.session.completed`, `checkout.session.expired` and `account.updated`.
+- Ignores checkout events that originate on a connected account.
