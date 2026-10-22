@@ -5,6 +5,7 @@ import { getStripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { confirmPaidRegistration } from "@/lib/payment-confirm";
 import { refundPayment } from "@/lib/refunds";
+import { CHECKOUT_HOLD_MINUTES, CHECKOUT_SESSION_MINUTES, promoteWaitlist } from "@/lib/waitlist";
 import { readLimitedText, REQUEST_LIMITS } from "@/lib/input";
 
 export async function POST(req: Request) {
@@ -66,18 +67,25 @@ export async function POST(req: Request) {
       const userId = session.metadata?.userId;
       const gameId = session.metadata?.gameId;
       if (userId && gameId) {
-        await db.registration.updateMany({
-          where: {
-            userId,
-            gameId,
-            status: "PROVISIONAL",
-            payStatus: "UNPAID",
-          },
-          data: {
-            status: "CANCELLED",
-            waitlistPos: null,
-            offerExpiresAt: null,
-          },
+        await db.$transaction(async (tx) => {
+          await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${gameId} FOR UPDATE`;
+          const released = await tx.registration.updateMany({
+            where: {
+              userId,
+              gameId,
+              status: "PROVISIONAL",
+              payStatus: "UNPAID",
+              // Only release this session's checkout hold. Pay-later
+              // reservations have no expiry, and a hold renewed by a newer
+              // checkout session still has most of its window left.
+              offerExpiresAt: {
+                not: null,
+                lte: new Date(Date.now() + (CHECKOUT_HOLD_MINUTES - CHECKOUT_SESSION_MINUTES + 1) * 60_000),
+              },
+            },
+            data: { status: "CANCELLED", waitlistPos: null, offerExpiresAt: null },
+          });
+          if (released.count > 0) await promoteWaitlist(tx, gameId);
         });
         revalidatePath(`/games/${gameId}`);
       }
