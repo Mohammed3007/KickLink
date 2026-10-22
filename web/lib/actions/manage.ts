@@ -14,14 +14,11 @@ import {
 } from "@/lib/waitlist";
 import { refundGamePayments } from "@/lib/refunds";
 import { formDataToSafeObject } from "@/lib/input";
+import { addWeeksInZone, parseLocalDateTime } from "@/lib/timezone";
+import { APP_TIME_ZONE } from "@/lib/utils";
 
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"] as const;
 
-function addWeeks(date: Date, weeks: number) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + weeks * 7);
-  return next;
-}
 
 async function assertOrganizer(userId: string, orgId: string) {
   const m = await db.membership.findUnique({
@@ -48,10 +45,13 @@ export async function createGame(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the form." };
   }
-  const data = parsed.data;
-  if (data.startsAt <= new Date()) {
+  const startsAt = parseLocalDateTime(parsed.data.startsAt, APP_TIME_ZONE);
+  if (!startsAt) return { error: "Choose a valid start time." };
+  if (startsAt <= new Date()) {
     return { error: "Choose a future start time." };
   }
+  const data = { ...parsed.data, startsAt };
+  const addWeeks = (date: Date, weeks: number) => addWeeksInZone(date, weeks, APP_TIME_ZONE);
 
   try {
     await assertOrganizer(user.id, data.orgId);

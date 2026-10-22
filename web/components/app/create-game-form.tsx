@@ -7,6 +7,7 @@ import { createGame, type FormState } from "@/lib/actions/manage";
 import { Input, Select, Field } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SPORT_OPTIONS } from "@/lib/sports";
+import { timeZoneLabel } from "@/lib/utils";
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -66,7 +67,7 @@ export function CreateGameForm({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Date & time" htmlFor="startsAt">
+        <Field label={`Date & time (${timeZoneLabel()})`} htmlFor="startsAt">
           <Input id="startsAt" name="startsAt" type="datetime-local" required />
         </Field>
         <Field label="Duration (min)" htmlFor="durationMins">
