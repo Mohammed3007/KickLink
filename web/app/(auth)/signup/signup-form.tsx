@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
+import Link from "next/link";
 import { AlertCircle, MailCheck } from "lucide-react";
 import { register, resendVerification } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,11 @@ export function SignupForm() {
       </Field>
 
       <SubmitButton />
+      <p className="text-center text-xs text-ink-3">
+        By creating an account you agree to the{" "}
+        <Link href="/terms" className="underline hover:text-ink">Terms</Link> and{" "}
+        <Link href="/privacy" className="underline hover:text-ink">Privacy policy</Link>.
+      </p>
     </form>
   );
 }

@@ -57,3 +57,13 @@ test("protected app routes redirect signed-out users with a safe return path", a
   await page.goto("/manage");
   await expect(page).toHaveURL(/\/login\?from=%2Fmanage$/);
 });
+
+test("privacy policy and terms are public and linked from the landing page", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: /^privacy$/i }).click();
+  await expect(page).toHaveURL(/\/privacy$/);
+  await expect(page.getByRole("heading", { name: /privacy policy/i })).toBeVisible();
+
+  await page.goto("/terms");
+  await expect(page.getByRole("heading", { name: /terms of service/i })).toBeVisible();
+});

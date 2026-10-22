@@ -41,6 +41,11 @@ export function checkProductionConfig(env: NodeJS.ProcessEnv = process.env): Con
   if (!env.CRON_SECRET) {
     warnings.push("CRON_SECRET is not set; /api/cron/sweep is disabled (lapsed holds release only on page views).");
   }
+  if (!env.NEXT_PUBLIC_SUPPORT_EMAIL || !env.NEXT_PUBLIC_LEGAL_NAME) {
+    warnings.push(
+      "NEXT_PUBLIC_LEGAL_NAME / NEXT_PUBLIC_SUPPORT_EMAIL are not set; the privacy policy and terms lack your legal name and contact."
+    );
+  }
   if (env.ALLOW_ADMIN_EMAIL_BOOTSTRAP === "true") {
     warnings.push("ALLOW_ADMIN_EMAIL_BOOTSTRAP=true; turn it off once a DB admin exists.");
   }

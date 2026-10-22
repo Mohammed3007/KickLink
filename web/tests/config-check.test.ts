@@ -10,6 +10,8 @@ const good = {
   STRIPE_WEBHOOK_SECRET: "whsec_x",
   RESEND_API_KEY: "re_x",
   CRON_SECRET: "c".repeat(32),
+  NEXT_PUBLIC_LEGAL_NAME: "KickLink Inc.",
+  NEXT_PUBLIC_SUPPORT_EMAIL: "support@kicklink.example",
 } as unknown as NodeJS.ProcessEnv;
 
 test("a complete production config passes cleanly", () => {
