@@ -34,9 +34,14 @@ export default async function AdminApplicationsPage() {
               Review organizer access before users can create clubs or collect payments.
             </p>
           </div>
-          <Link href="/admin/audit">
-            <Button variant="secondary">Audit history</Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/admin/analytics">
+              <Button variant="secondary">Analytics</Button>
+            </Link>
+            <Link href="/admin/audit">
+              <Button variant="secondary">Audit history</Button>
+            </Link>
+          </div>
         </div>
 
         <div className="mt-6 space-y-3">

@@ -105,6 +105,7 @@ Override with `PLAYWRIGHT_PORT` or point at an existing deployment with
 | `NEXT_PUBLIC_LEGAL_NAME`             | prod     | operator name shown in the privacy policy and terms     |
 | `NEXT_PUBLIC_SUPPORT_EMAIL`          | prod     | contact address for privacy/support requests            |
 | `NEXT_PUBLIC_LEGAL_JURISDICTION`     | no       | governing law in the terms, default `Ontario, Canada`   |
+| `NEXT_PUBLIC_PRIVACY_OFFICER`        | prod     | person or title responsible for privacy, shown in the privacy policy (Quebec Law 25) |
 | `ALLOW_DEV_PAYMENTS`                 | no       | `true` enables the fake test-payment flow in production (demo only) |
 | `ALLOW_DEMO_SEED`                    | no       | `true` lets the seed wipe a DB that has non-demo users  |
 

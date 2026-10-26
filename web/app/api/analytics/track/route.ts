@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { endpointRateLimit } from "@/lib/api-rate-limit";
 import { readLimitedText } from "@/lib/input";
 import { db } from "@/lib/db";
@@ -7,8 +6,14 @@ import {
   ANALYTICS_LIMITS,
   analyticsEventSchema,
   clientIpFromHeaders,
-  hashIp,
+  coarseLocation,
+  deviceFromUserAgent,
+  isBot,
+  optedOut,
+  referrerHost,
+  visitorHash,
 } from "@/lib/analytics";
+import { dailySalt } from "@/lib/analytics-salt";
 
 export async function POST(req: Request) {
   const limited = await endpointRateLimit({
@@ -17,6 +22,11 @@ export async function POST(req: Request) {
     maxBodyBytes: ANALYTICS_LIMITS.maxBodyBytes,
   });
   if (limited) return limited;
+
+  const userAgent = req.headers.get("user-agent") ?? "";
+  if (optedOut(req.headers) || isBot(userAgent)) {
+    return new NextResponse(null, { status: 204 });
+  }
 
   const body = await readLimitedText(req, ANALYTICS_LIMITS.maxBodyBytes);
   if (!body.ok) {
@@ -35,23 +45,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid analytics payload." }, { status: 400 });
   }
 
-  const session = await auth();
-  const ipHash = hashIp(clientIpFromHeaders(req.headers));
-
   try {
+    const salt = await dailySalt();
     await db.analyticsEvent.create({
       data: {
         type: parsed.data.type,
         name: parsed.data.name,
         path: parsed.data.path,
-        referrer: parsed.data.referrer,
+        referrer: referrerHost(parsed.data.referrer, req.headers.get("host")?.split(":")[0] ?? null),
         title: parsed.data.title,
-        visitorId: parsed.data.visitorId,
-        sessionId: parsed.data.sessionId,
         metadata: parsed.data.metadata,
-        userAgent: (req.headers.get("user-agent") ?? "").slice(0, 300),
-        ipHash,
-        userId: session?.user?.id ?? null,
+        visitorId: visitorHash(salt, clientIpFromHeaders(req.headers), userAgent),
+        device: deviceFromUserAgent(userAgent),
+        ...coarseLocation(req.headers),
       },
     });
   } catch (error) {

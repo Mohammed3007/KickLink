@@ -12,23 +12,30 @@ declare global {
   interface Window {
     kicklinkTrack?: (name: string, metadata?: Metadata) => void;
   }
+  interface Navigator {
+    globalPrivacyControl?: boolean;
+  }
 }
 
-function idFromStorage(key: string) {
-  const existing = window.localStorage.getItem(key);
-  if (existing) return existing;
+// Visitor IDs used to live in local storage; analytics no longer store
+// anything in the browser, so clear what older versions left behind.
+function clearLegacyIds() {
+  try {
+    window.localStorage.removeItem("kicklink_visitor_id");
+    window.localStorage.removeItem("kicklink_session_id");
+  } catch {
+    // Storage blocked: nothing to clear.
+  }
+}
 
-  const generated =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  window.localStorage.setItem(key, generated);
-  return generated;
+function trackingAllowed() {
+  return !analyticsDisabled && navigator.globalPrivacyControl !== true && navigator.doNotTrack !== "1";
 }
 
 function sendAnalytics(type: EventType, name: string, metadata: Metadata = {}) {
-  if (analyticsDisabled) return;
+  if (!trackingAllowed()) return;
 
+  // The server keeps only an allowlist of query parameters; send no hash.
   const path = `${window.location.pathname}${window.location.search}`;
   const payload = JSON.stringify({
     type,
@@ -36,8 +43,6 @@ function sendAnalytics(type: EventType, name: string, metadata: Metadata = {}) {
     path,
     referrer: document.referrer || "",
     title: document.title || "",
-    visitorId: idFromStorage("kicklink_visitor_id"),
-    sessionId: idFromStorage("kicklink_session_id"),
     metadata,
   });
 
@@ -58,12 +63,15 @@ export function AnalyticsTracker() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (analyticsDisabled) return;
+    clearLegacyIds();
+  }, []);
+
+  useEffect(() => {
     sendAnalytics("PAGE_VIEW", "page_view");
   }, [pathname]);
 
   useEffect(() => {
-    if (analyticsDisabled) return;
+    if (!trackingAllowed()) return;
 
     window.kicklinkTrack = (name, metadata) => sendAnalytics("USER_EVENT", name, metadata);
 
@@ -77,7 +85,7 @@ export function AnalyticsTracker() {
 
       sendAnalytics("USER_EVENT", name, {
         label: element.dataset.analyticsLabel ?? element.textContent?.trim().slice(0, 80) ?? "",
-        href: element instanceof HTMLAnchorElement ? element.href : "",
+        href: element instanceof HTMLAnchorElement ? new URL(element.href).pathname : "",
       });
     };
 

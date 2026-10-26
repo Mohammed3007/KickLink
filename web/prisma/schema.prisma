@@ -431,18 +431,26 @@ model Notification {
   @@index([userId])
 }
 
+// Anonymous usage analytics. Nothing here identifies a person: visitorId is
+// a hash of the IP and browser with a salt that is replaced every day, so a
+// visitor can't be followed from one day to the next, and events are never
+// linked to an account. userId, sessionId, userAgent and ipHash are legacy
+// columns that are no longer written.
 model AnalyticsEvent {
   id          String             @id @default(cuid())
   type        AnalyticsEventType
   name        String
   path        String
-  referrer    String             @default("")
+  referrer    String             @default("") // referring site's host only
   title       String             @default("")
   visitorId   String
   sessionId   String?
   metadata    Json               @default("{}")
   userAgent   String             @default("")
   ipHash      String?
+  device      String             @default("") // mobile, tablet or desktop
+  country     String             @default("")
+  region      String             @default("")
   createdAt   DateTime           @default(now())
 
   userId String?
@@ -455,3 +463,12 @@ model AnalyticsEvent {
   @@index([userId])
   @@index([createdAt])
 }
+
+// Today's random salt for analytics visitor hashes. Older salts are deleted,
+// which makes earlier hashes impossible to link to new ones.
+model AnalyticsSalt {
+  day       String   @id // YYYY-MM-DD in the app time zone
+  salt      String
+  createdAt DateTime @default(now())
+}
+
