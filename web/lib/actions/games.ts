@@ -102,13 +102,19 @@ export async function joinWaitlist(gameId: string): Promise<ActionResult> {
 
   try {
     await db.$transaction(async (tx) => {
-      await lockGameAndSweep(tx, gameId);
+      const game = await lockGameAndSweep(tx, gameId);
       const existing = await tx.registration.findUnique({
         where: { userId_gameId: { userId: user.id, gameId } },
       });
       if (existing && existing.status !== "CANCELLED") {
         throw new Error("You're already on the list.");
       }
+      // A waitlist entry only moves when a spot frees up, so joining one
+      // while spots are open would leave the player stuck behind them.
+      const taken = await tx.registration.count({
+        where: { gameId, status: { in: [...OCCUPYING] } },
+      });
+      if (taken < game.capacity) throw new Error("Spots are open. Reserve one instead.");
       const count = await tx.registration.count({
         where: { gameId, status: "WAITLISTED" },
       });

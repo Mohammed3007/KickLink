@@ -19,7 +19,7 @@ const FEATURES = [
   },
   {
     title: "Collect dues automatically",
-    body: "Split the pitch fee and collect from everyone before kickoff — no more chasing e-transfers.",
+    body: "Split the field or court fee and collect from everyone before kickoff — no more chasing e-transfers.",
     icon: (
       <>
         <circle cx="12" cy="12" r="8.5" />
@@ -113,7 +113,7 @@ function BrandPanel() {
         <div {...rise(0.72)} className="animate-rise flex items-center gap-2.5">
           <span className="h-px w-6 bg-[linear-gradient(90deg,#e7b95a,rgba(231,185,90,0))]" />
           <span className="text-[12.5px] font-semibold tracking-[0.04em] text-[#7e796e]">
-            Built for grassroots football.
+            Built for pickup sports.
           </span>
         </div>
       </div>

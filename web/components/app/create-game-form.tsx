@@ -49,7 +49,7 @@ export function CreateGameForm({
       </Field>
 
       <Field label="Sport" htmlFor="sport" hint="Use any sport. Players can filter games by this value.">
-        <Input id="sport" name="sport" list="game-sports" defaultValue={orgs[0]?.sport ?? "Football"} required />
+        <Input id="sport" name="sport" list="game-sports" defaultValue={orgs[0]?.sport ?? "Soccer"} required />
         <datalist id="game-sports">
           {SPORT_OPTIONS.map((sport) => (
             <option key={sport} value={sport} />

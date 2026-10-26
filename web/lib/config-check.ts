@@ -28,6 +28,11 @@ export function checkProductionConfig(env: NodeJS.ProcessEnv = process.env): Con
   if (env.STRIPE_SECRET_KEY && !env.STRIPE_WEBHOOK_SECRET) {
     fatal.push("STRIPE_SECRET_KEY is set without STRIPE_WEBHOOK_SECRET; paid spots would never confirm.");
   }
+  if (env.STRIPE_SECRET_KEY && !env.STRIPE_CONNECT_WEBHOOK_SECRET) {
+    warnings.push(
+      "STRIPE_CONNECT_WEBHOOK_SECRET is not set; organizers' payout status only refreshes when they return from Stripe onboarding."
+    );
+  }
   if (!env.STRIPE_SECRET_KEY) {
     warnings.push(
       env.ALLOW_DEV_PAYMENTS === "true"

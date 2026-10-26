@@ -37,7 +37,7 @@ export function CreateClubForm() {
       </Field>
 
       <Field label="Primary sport" htmlFor="sport" hint="You can still schedule other sports inside this club.">
-        <Input id="sport" name="sport" list="club-sports" defaultValue="Football" required />
+        <Input id="sport" name="sport" list="club-sports" placeholder="e.g. Basketball, volleyball, pickleball" required />
         <datalist id="club-sports">
           {SPORT_OPTIONS.map((sport) => (
             <option key={sport} value={sport} />
@@ -59,7 +59,7 @@ export function CreateClubForm() {
           id="blurb"
           name="blurb"
           rows={3}
-          placeholder="Friendly but competitive 7-a-side every Sunday. All welcome."
+          placeholder="Friendly but competitive pickup every Sunday. All welcome."
         />
       </Field>
 

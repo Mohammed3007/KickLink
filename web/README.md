@@ -97,8 +97,8 @@ Override with `PLAYWRIGHT_PORT` or point at an existing deployment with
 | `RESEND_API_KEY`                     | no       | sends real verification/reset emails (else logged)      |
 | `EMAIL_FROM`                         | no       | from-address for emails                                 |
 | `STRIPE_SECRET_KEY`                  | no       | enables real Stripe Connect payments                    |
-| `STRIPE_WEBHOOK_SECRET`             | no       | for the `/api/stripe/webhook` endpoint                  |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | no       | Stripe publishable key                                  |
+| `STRIPE_WEBHOOK_SECRET`             | with Stripe | signing secret of the "Your account" webhook endpoint |
+| `STRIPE_CONNECT_WEBHOOK_SECRET`     | with Stripe | signing secret of the "Connected accounts" webhook endpoint |
 | `PLATFORM_FEE_BPS`                   | no       | platform fee in basis points (e.g. `500` = 5%)          |
 | `NEXT_PUBLIC_APP_TIME_ZONE`          | no       | IANA zone games are entered and shown in, default `America/Toronto` |
 | `CRON_SECRET`                        | prod     | bearer token for `/api/cron/sweep` (releases lapsed holds, retries refunds) |
@@ -136,11 +136,15 @@ role, then turn `ALLOW_ADMIN_EMAIL_BOOTSTRAP` back off. The seed account
 - **Payments (Stripe Connect):** set `STRIPE_SECRET_KEY`. Each organizer then
   clicks **Connect Stripe** on the Manage page to onboard their club's payout
   account; player payments go to that account (minus `PLATFORM_FEE_BPS`).
-  Add a webhook in the Stripe dashboard pointing at
-  `<APP_URL>/api/stripe/webhook` for events `checkout.session.completed`,
-  `checkout.session.expired` and `account.updated`, and set
-  `STRIPE_WEBHOOK_SECRET`. The app won't start with a Stripe key but no
-  webhook secret.
+  In Stripe → Developers → Webhooks add **two** endpoints, both pointing at
+  `<APP_URL>/api/stripe/webhook`:
+  - *Events on your account*: `checkout.session.completed` and
+    `checkout.session.expired`. Its signing secret is `STRIPE_WEBHOOK_SECRET`.
+  - *Events on connected accounts*: `account.updated`. Its signing secret is
+    `STRIPE_CONNECT_WEBHOOK_SECRET` (keeps organizers' payout status current).
+
+  The app won't start with a Stripe key but no `STRIPE_WEBHOOK_SECRET`.
+  Checkout is hosted by Stripe, so no publishable key is needed.
 - **Scheduled sweep:** set `CRON_SECRET` (`openssl rand -hex 32`). Vercel runs
   `/api/cron/sweep` daily (`vercel.json`); for the 10-minute schedule, set the
   GitHub repo variable `APP_URL` and secret `CRON_SECRET` to enable
@@ -198,7 +202,7 @@ The app runs on Vercel's Node.js runtime (not edge), so the Postgres driver
 works as-is.
 
 > Want real payments? Add `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` and
-> `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`. Without them, paid games can't take
+> `STRIPE_CONNECT_WEBHOOK_SECRET`. Without them, paid games can't take
 > payments in production.
 
 ---

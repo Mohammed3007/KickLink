@@ -228,7 +228,7 @@ model Organization {
   handle     String   @unique
   city       String   @default("Ottawa")
   venue      String   @default("")
-  sport      String   @default("Football")
+  sport      String   @default("Soccer")
   color      String   @default("#6E3BD8")
   blurb      String   @default("")
   inviteCode String   @unique @default(cuid())
@@ -266,7 +266,7 @@ model Game {
   title            String
   venue            String
   address          String         @default("")
-  sport            String         @default("Football")
+  sport            String         @default("Soccer")
   startsAt         DateTime
   durationMins     Int            @default(90)
   format           String         @default("7-a-side")
@@ -308,7 +308,7 @@ model RecurringEventSeries {
   endsAt           DateTime
   venue            String
   address          String            @default("")
-  sport            String            @default("Football")
+  sport            String            @default("Soccer")
   durationMins     Int               @default(90)
   format           String            @default("7-a-side")
   skill            String            @default("Intermediate")
@@ -343,6 +343,8 @@ model Registration {
   waitlistPos    Int?
   // When an OFFERED spot or a checkout hold (PROVISIONAL, paid game) lapses.
   offerExpiresAt DateTime?
+  // When the spot-offer email went out; null until it has been sent.
+  offerEmailedAt DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 

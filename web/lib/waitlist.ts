@@ -1,9 +1,20 @@
+import { after } from "next/server";
 import { db } from "@/lib/db";
+import { sendSpotOfferEmail } from "@/lib/email";
+import { formatGameDate, formatTime, timeZoneLabel } from "@/lib/utils";
 
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"] as const;
 
-/** How long a waitlisted player has to accept an offered spot. */
-export const OFFER_WINDOW_MINUTES = 15;
+/**
+ * When an offered spot lapses: 2 hours to claim it, shrinking as kickoff
+ * nears so the spot can still move down the line, and never past kickoff.
+ */
+export function offerExpiry(startsAt: Date, now = new Date()) {
+  const untilKickoff = startsAt.getTime() - now.getTime();
+  const hours = untilKickoff / 3_600_000;
+  const windowMins = hours > 24 ? 120 : hours > 6 ? 60 : 30;
+  return new Date(now.getTime() + Math.min(windowMins * 60_000, Math.max(untilKickoff, 0)));
+}
 
 /**
  * How long a spot is held while the player is in Stripe Checkout. Checkout
@@ -46,7 +57,8 @@ export async function promoteWaitlist(tx: Tx, gameId: string) {
         status: "OFFERED",
         payStatus: game.model === "FREE" ? "FREE" : "UNPAID",
         waitlistPos: null,
-        offerExpiresAt: new Date(Date.now() + OFFER_WINDOW_MINUTES * 60_000),
+        offerExpiresAt: offerExpiry(game.startsAt),
+        offerEmailedAt: null,
       },
     });
     await tx.notification.create({
@@ -59,6 +71,66 @@ export async function promoteWaitlist(tx: Tx, gameId: string) {
       },
     });
   }
+  if (next.length > 0) {
+    // Everyone still waiting moves up the line.
+    await compactWaitlist(tx, gameId);
+    queueOfferEmails(gameId);
+  }
+}
+
+/**
+ * Email the game's open offers once the current request finishes. The emails
+ * are read from the database, so an offer rolled back with its transaction
+ * is never sent. The scheduled sweep picks up any that didn't go out.
+ */
+export function queueOfferEmails(gameId: string) {
+  try {
+    after(() => sendOfferEmails(gameId));
+  } catch {
+    // Outside a request (scripts, tests): the sweep sends them instead.
+  }
+}
+
+/** Send the email for each open offer that hasn't had one yet. */
+export async function sendOfferEmails(gameId?: string) {
+  const pending = await db.registration.findMany({
+    where: {
+      ...(gameId ? { gameId } : {}),
+      status: "OFFERED",
+      offerEmailedAt: null,
+      offerExpiresAt: { gt: new Date() },
+    },
+    select: {
+      id: true,
+      offerExpiresAt: true,
+      user: { select: { email: true } },
+      game: { select: { id: true, title: true, startsAt: true } },
+    },
+  });
+
+  let sent = 0;
+  for (const offer of pending) {
+    // Claim the offer first so overlapping runs don't send it twice.
+    const claimed = await db.registration.updateMany({
+      where: { id: offer.id, status: "OFFERED", offerEmailedAt: null },
+      data: { offerEmailedAt: new Date() },
+    });
+    if (claimed.count === 0) continue;
+    try {
+      await sendSpotOfferEmail({
+        to: offer.user.email,
+        gameId: offer.game.id,
+        gameTitle: offer.game.title,
+        gameWhen: `${formatGameDate(offer.game.startsAt)}, ${formatTime(offer.game.startsAt)}`,
+        deadline: `${formatTime(offer.offerExpiresAt!)} ${timeZoneLabel(offer.offerExpiresAt!)}`,
+      });
+      sent += 1;
+    } catch (error) {
+      console.error(JSON.stringify({ level: "error", msg: "offer_email_failed", registrationId: offer.id, error: String(error) }));
+      await db.registration.update({ where: { id: offer.id }, data: { offerEmailedAt: null } });
+    }
+  }
+  return sent;
 }
 
 /** Renumber waitlist positions 1..n after someone leaves it. */

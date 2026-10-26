@@ -11,7 +11,7 @@ test("analyticsEventSchema accepts a page view payload", () => {
   const parsed = analyticsEventSchema.safeParse({
     type: "PAGE_VIEW",
     name: "page_view",
-    path: "/games?sport=Football",
+    path: "/games?sport=Soccer",
     referrer: "https://kick-link.vercel.app/",
     title: "Games",
     visitorId: "visitor-123",

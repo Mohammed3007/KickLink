@@ -42,7 +42,7 @@ export const resetPasswordSchema = z.object({
 export const createGameSchema = z.object({
   orgId: text(120).pipe(z.string().min(1, "Choose a club")),
   title: text(80).pipe(z.string().min(3, "Give the game a title")),
-  sport: text(40).pipe(z.string().min(2, "Choose a sport")).default("Football"),
+  sport: text(40).pipe(z.string().min(2, "Choose a sport")).default("Soccer"),
   venue: text(120).pipe(z.string().min(2, "Where is it?")),
   address: text(160).optional().default(""),
   // Wall time from <input type="datetime-local">; converted to an instant in
@@ -74,7 +74,7 @@ export const joinClubSchema = z.object({
 
 export const createClubSchema = z.object({
   name: text(60).pipe(z.string().min(3, "Give your club a name")),
-  sport: text(40).pipe(z.string().min(2, "Choose a primary sport")).default("Football"),
+  sport: text(40).pipe(z.string().min(2, "Choose a primary sport")).default("Soccer"),
   city: text(60).pipe(z.string().min(2, "Where do you play?")),
   venue: text(120).optional().default(""),
   blurb: text(400).optional().default(""),

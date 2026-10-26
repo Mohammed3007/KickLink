@@ -6,11 +6,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "KickLink — Pickup soccer, organized",
+    default: "KickLink — Pickup games, organized",
     template: "%s · KickLink",
   },
   description:
-    "Run private pickup soccer the easy way. Clubs, games, payments and waitlists — all in one clean app.",
+    "Run private pickup games for any sport. Clubs, games, payments and waitlists, all in one app.",
 };
 
 export const viewport: Viewport = {

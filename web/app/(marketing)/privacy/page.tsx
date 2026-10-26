@@ -26,7 +26,7 @@ const sections: LegalSection[] = [
     heading: "How we use it",
     body: [
       [
-        "To run your account and sign you in, including verification and password-reset emails.",
+        "To run your account and sign you in, including verification and password-reset emails, and to email you when a waitlist spot opens up for you.",
         "To let organizers manage their clubs: rosters, waitlists, attendance and payments.",
         "To process payments and refunds through Stripe.",
         "To protect the service, for example by rate limiting sign-in attempts.",

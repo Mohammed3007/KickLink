@@ -164,6 +164,9 @@ test("promoteWaitlist only offers as many spots as are open", async () => {
   const offered = await db.registration.findMany({ where: { gameId: game.id, status: "OFFERED" } });
   assert.deepEqual(offered.map((r) => r.userId), [w1]);
   assert.equal(offered[0].payStatus, "FREE");
+  // The player still waiting moves up to the front of the line.
+  const remaining = await db.registration.findFirstOrThrow({ where: { userId: w2, gameId: game.id } });
+  assert.equal(remaining.waitlistPos, 1);
 });
 
 test("refunds cover test payments but leave in-person payments to the organizer", async () => {
@@ -198,4 +201,34 @@ test("owed refunds are retried by the scheduled sweep", async () => {
   const after = await db.payment.findUniqueOrThrow({ where: { id: payment.id } });
   assert.equal(after.status, "REFUNDED");
   assert.equal(after.refundDue, false);
+});
+
+test("offer windows shrink as kickoff nears and never pass it", () => {
+  const now = new Date("2026-11-01T12:00:00Z");
+  const at = (hours: number) => new Date(now.getTime() + hours * 3_600_000);
+  const minsLeft = (d: Date) => (d.getTime() - now.getTime()) / 60_000;
+  assert.equal(minsLeft(waitlist.offerExpiry(at(72), now)), 120);
+  assert.equal(minsLeft(waitlist.offerExpiry(at(12), now)), 60);
+  assert.equal(minsLeft(waitlist.offerExpiry(at(3), now)), 30);
+  assert.equal(minsLeft(waitlist.offerExpiry(at(0.25), now)), 15);
+});
+
+test("each spot offer is emailed once", async () => {
+  const game = await makeGame(1, "FREE");
+  const userId = await makeUser("emailed");
+  await db.registration.create({
+    data: { userId, gameId: game.id, status: "WAITLISTED", payStatus: "UNPAID", waitlistPos: 1 },
+  });
+  await db.$transaction((tx) => waitlist.promoteWaitlist(tx, game.id));
+
+  const offer = await db.registration.findFirstOrThrow({ where: { userId, gameId: game.id } });
+  assert.equal(offer.status, "OFFERED");
+  assert.equal(offer.offerEmailedAt, null);
+  const minsLeft = (offer.offerExpiresAt!.getTime() - Date.now()) / 60_000;
+  assert.ok(minsLeft > 115 && minsLeft <= 120);
+
+  assert.equal(await waitlist.sendOfferEmails(game.id), 1);
+  assert.equal(await waitlist.sendOfferEmails(game.id), 0);
+  const sent = await db.registration.findFirstOrThrow({ where: { userId, gameId: game.id } });
+  assert.ok(sent.offerEmailedAt);
 });

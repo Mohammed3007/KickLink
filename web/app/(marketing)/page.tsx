@@ -37,7 +37,7 @@ const FEATURES = [
   {
     icon: Megaphone,
     title: "Club announcements",
-    body: "Send field changes, kit reminders and schedule updates from one place instead of chasing group chats.",
+    body: "Send venue changes, jersey reminders and schedule updates from one place instead of chasing group chats.",
   },
   {
     icon: CalendarCheck,
@@ -60,9 +60,11 @@ const STEPS = [
   {
     n: "03",
     title: "Show up and play",
-    body: "Organizers see the roster, record attendance and keep club history accurate after the match.",
+    body: "Organizers see the roster, record attendance and keep club history accurate after the game.",
   },
 ];
+
+const HERO_SPORTS = ["Soccer", "Basketball", "Volleyball", "Pickleball", "Hockey", "Ultimate"];
 
 const STATS = [
   ["3", "clubs in Ottawa"],
@@ -85,7 +87,7 @@ export default function LandingPage() {
             <Reveal>
               <span className="inline-flex items-center gap-2 rounded-full border border-gold-400/25 bg-gold-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-gold-300">
                 <span className="size-1.5 animate-pulse rounded-full bg-grass-500" />
-                Pickup soccer, organized
+                Pickup games, organized
               </span>
             </Reveal>
             <Reveal delay={0.05}>
@@ -101,7 +103,8 @@ export default function LandingPage() {
             <Reveal delay={0.1}>
               <p className="mt-6 max-w-[20.5rem] text-base leading-relaxed text-[#c8c4b7] sm:max-w-xl sm:text-xl">
                 KickLink helps private pickup clubs manage rosters, payments,
-                waitlists and attendance without the group chat scramble.
+                waitlists and attendance for any sport, without the group chat
+                scramble.
               </p>
             </Reveal>
             <Reveal delay={0.15}>
@@ -138,6 +141,16 @@ export default function LandingPage() {
               <p className="mt-5 text-sm font-medium text-[#9a9c8f]">
                 Free for players. Built for clubs that play every week.
               </p>
+              <ul aria-label="Sports clubs run on KickLink" className="mt-5 flex flex-wrap gap-2">
+                {HERO_SPORTS.map((sport) => (
+                  <li
+                    key={sport}
+                    className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-[#c8c4b7]"
+                  >
+                    {sport}
+                  </li>
+                ))}
+              </ul>
             </Reveal>
           </div>
 
