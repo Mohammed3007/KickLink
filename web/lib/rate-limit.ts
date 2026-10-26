@@ -173,3 +173,15 @@ export function rateLimitMessage(result: Extract<RateLimitResult, { ok: false }>
 export function requestRateLimitIdentifier(req: Request, prefix = "ip") {
   return `${prefix}:${clientIpFromHeaders(req.headers) ?? "unknown"}`;
 }
+
+/**
+ * Delete rate-limit buckets idle for a day. Windows and blocks last at most an
+ * hour, so nothing active is lost, and the IP addresses and emails they are
+ * keyed on aren't kept longer than needed.
+ */
+export async function purgeStaleRateLimits() {
+  const { count } = await db.rateLimitBucket.deleteMany({
+    where: { updatedAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+  });
+  return count;
+}

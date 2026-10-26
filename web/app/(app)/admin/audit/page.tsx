@@ -41,9 +41,14 @@ export default async function AdminAuditPage() {
               Sensitive platform and organizer actions recorded by the server.
             </p>
           </div>
-          <Link href="/admin/applications">
-            <Button variant="secondary">Applications</Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/admin/analytics">
+              <Button variant="secondary">Analytics</Button>
+            </Link>
+            <Link href="/admin/applications">
+              <Button variant="secondary">Applications</Button>
+            </Link>
+          </div>
         </div>
 
         <div className="mt-6 space-y-3">

@@ -15,7 +15,7 @@ export const ORGANIZER_ITEM = {
 };
 
 export const ADMIN_ITEM = {
-  href: "/admin/applications",
+  href: "/admin/analytics",
   label: "Admin",
   icon: ShieldCheck,
 };

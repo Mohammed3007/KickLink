@@ -114,7 +114,9 @@ function SidebarItem({
   organizer?: boolean;
   fieldMode?: boolean;
 }) {
-  const active = pathname === item.href || pathname.startsWith(item.href + "/");
+  // Every admin page highlights the Admin item.
+  const base = item === ADMIN_ITEM ? "/admin" : item.href;
+  const active = pathname === base || pathname.startsWith(base + "/");
   return (
     <Link
       href={item.href}

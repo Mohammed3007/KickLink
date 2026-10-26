@@ -24,7 +24,8 @@ check the first log lines of every new deployment.
   "Your account" (`checkout.session.completed`, `checkout.session.expired`)
   with secret `STRIPE_WEBHOOK_SECRET`, and "Connected accounts"
   (`account.updated`) with secret `STRIPE_CONNECT_WEBHOOK_SECRET`.
-- `NEXT_PUBLIC_LEGAL_NAME` and `NEXT_PUBLIC_SUPPORT_EMAIL` for the legal pages.
+- `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_SUPPORT_EMAIL` and
+  `NEXT_PUBLIC_PRIVACY_OFFICER` for the legal pages.
 - `ALLOW_ADMIN_EMAIL_BOOTSTRAP=false` after the first DB admin has been assigned.
 - `ALLOW_DEV_PAYMENTS` and `ALLOW_DEMO_SEED` unset.
 
@@ -61,7 +62,9 @@ check the first log lines of every new deployment.
   past kickoff;
 - emails spot offers that haven't been sent yet (normally they go out right
   away; failures log `"msg":"offer_email_failed"` and are retried here);
-- retries refunds for payments flagged `refundDue` (paid after the game filled).
+- retries refunds for payments flagged `refundDue` (paid after the game filled);
+- deletes analytics older than 13 months and rate-limit records idle for 24 hours,
+  as the privacy policy promises.
 
 It runs every 10 minutes from GitHub Actions (`.github/workflows/sweep.yml`)
 and daily from Vercel Cron. Game pages also release lapsed holds when viewed.
@@ -131,7 +134,8 @@ Configure external monitoring for:
 
 - Auth/users/profiles: retain while account is active.
 - Payment/audit records: retain for legal/accounting needs; do not hard-delete in normal workflows.
-- Analytics events: retain 13 months, then delete:
-  `DELETE FROM "AnalyticsEvent" WHERE "createdAt" < now() - interval '13 months';`
+- Analytics events: anonymous; the scheduled sweep deletes them after 13 months.
+- Rate-limit records (keyed on IP addresses and emails): the sweep deletes them
+  after 24 hours idle.
 - Handle access, correction and deletion requests manually (privacy policy
   promises a response within 30 days) until self-service tooling exists.
