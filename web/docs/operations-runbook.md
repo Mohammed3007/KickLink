@@ -55,8 +55,12 @@ check the first log lines of every new deployment.
 
 `GET /api/cron/sweep` with `Authorization: Bearer $CRON_SECRET`:
 
-- cancels waitlist offers past their 15-minute window and checkout holds past
-  36 minutes, then offers the freed spots to the waitlist;
+- cancels waitlist offers past their window and checkout holds past
+  36 minutes, then offers the freed spots to the waitlist. Offers last 2 hours,
+  1 hour inside 24 hours of kickoff, 30 minutes inside 6 hours, and never
+  past kickoff;
+- emails spot offers that haven't been sent yet (normally they go out right
+  away; failures log `"msg":"offer_email_failed"` and are retried here);
 - retries refunds for payments flagged `refundDue` (paid after the game filled).
 
 It runs every 10 minutes from GitHub Actions (`.github/workflows/sweep.yml`)
@@ -109,7 +113,7 @@ Configure external monitoring for:
 - Server errors: each one is logged as a JSON line with
   `"msg":"unhandled_server_error"`. Forward logs with a Vercel log drain
   (or add Sentry) and alert on that message.
-- `"msg":"email_send_failed"` and `Refund failed` log lines.
+- `"msg":"email_send_failed"`, `"msg":"offer_email_failed"` and `Refund failed` log lines.
 - Stripe webhook failures (Stripe dashboard → Webhooks shows failed deliveries).
 - The `Scheduled sweep` GitHub workflow failing.
 

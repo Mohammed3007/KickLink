@@ -41,10 +41,15 @@ async function ensureProvisionalHold(
       });
       if (existing?.status === "CONFIRMED") throw new Error("confirmed");
       if (existing?.status === "OFFERED" || (existing?.status === "PROVISIONAL" && existing.offerExpiresAt)) {
-        // Accepted offer or retried checkout: (re)start the checkout hold.
+        // Accepted offer or retried checkout: (re)start the checkout hold,
+        // keeping whatever is left of a longer offer window.
+        const keepUntil =
+          existing.offerExpiresAt && existing.offerExpiresAt > holdUntil
+            ? existing.offerExpiresAt
+            : holdUntil;
         await tx.registration.update({
           where: { id: existing.id },
-          data: { status: "PROVISIONAL", payStatus: "UNPAID", offerExpiresAt: holdUntil },
+          data: { status: "PROVISIONAL", payStatus: "UNPAID", offerExpiresAt: keepUntil },
         });
         return;
       }

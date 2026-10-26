@@ -9,8 +9,9 @@ import { createGameSchema, announcementSchema } from "@/lib/validators";
 import {
   compactWaitlist,
   expireStaleHolds,
-  OFFER_WINDOW_MINUTES,
+  offerExpiry,
   promoteWaitlist,
+  queueOfferEmails,
 } from "@/lib/waitlist";
 import { refundGamePayments } from "@/lib/refunds";
 import { formDataToSafeObject } from "@/lib/input";
@@ -293,7 +294,7 @@ export async function offerWaitlistedSpot(registrationId: string) {
     await expireStaleHolds(tx, reg.gameId);
     const game = await tx.game.findUnique({
       where: { id: reg.gameId },
-      select: { id: true, title: true, capacity: true, model: true },
+      select: { id: true, title: true, capacity: true, model: true, startsAt: true },
     });
     if (!game) return;
     // The sweep may have already offered this player the spot.
@@ -311,10 +312,12 @@ export async function offerWaitlistedSpot(registrationId: string) {
         status: "OFFERED",
         payStatus: game.model === "FREE" ? "FREE" : "UNPAID",
         waitlistPos: null,
-        offerExpiresAt: new Date(Date.now() + OFFER_WINDOW_MINUTES * 60_000),
+        offerExpiresAt: offerExpiry(game.startsAt),
+        offerEmailedAt: null,
       },
     });
     await compactWaitlist(tx, reg.gameId);
+    queueOfferEmails(reg.gameId);
     await tx.notification.create({
       data: {
         userId: reg.userId,

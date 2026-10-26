@@ -68,3 +68,34 @@ export async function sendPasswordResetEmail(to: string, token: string) {
     ),
   });
 }
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+export async function sendSpotOfferEmail(opts: {
+  to: string;
+  gameId: string;
+  gameTitle: string;
+  gameWhen: string;
+  deadline: string;
+}) {
+  const href = `${appUrl()}/games/${opts.gameId}`;
+  const intro = `You're next on the waitlist for ${opts.gameTitle} (${opts.gameWhen}).`;
+  const deadline = `Claim it by ${opts.deadline}, or it goes to the next player.`;
+  await send({
+    to: opts.to,
+    subject: `A spot opened up: ${opts.gameTitle}`,
+    text: `${intro} ${deadline}\n\nClaim your spot: ${href}`,
+    html: shell(
+      "A spot opened up",
+      `${escapeHtml(intro)} ${escapeHtml(deadline)}`,
+      { href, label: "Claim your spot" }
+    ),
+  });
+}

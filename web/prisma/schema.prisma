@@ -343,6 +343,8 @@ model Registration {
   waitlistPos    Int?
   // When an OFFERED spot or a checkout hold (PROVISIONAL, paid game) lapses.
   offerExpiresAt DateTime?
+  // When the spot-offer email went out; null until it has been sent.
+  offerEmailedAt DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 

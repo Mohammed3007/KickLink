@@ -202,3 +202,33 @@ test("owed refunds are retried by the scheduled sweep", async () => {
   assert.equal(after.status, "REFUNDED");
   assert.equal(after.refundDue, false);
 });
+
+test("offer windows shrink as kickoff nears and never pass it", () => {
+  const now = new Date("2026-11-01T12:00:00Z");
+  const at = (hours: number) => new Date(now.getTime() + hours * 3_600_000);
+  const minsLeft = (d: Date) => (d.getTime() - now.getTime()) / 60_000;
+  assert.equal(minsLeft(waitlist.offerExpiry(at(72), now)), 120);
+  assert.equal(minsLeft(waitlist.offerExpiry(at(12), now)), 60);
+  assert.equal(minsLeft(waitlist.offerExpiry(at(3), now)), 30);
+  assert.equal(minsLeft(waitlist.offerExpiry(at(0.25), now)), 15);
+});
+
+test("each spot offer is emailed once", async () => {
+  const game = await makeGame(1, "FREE");
+  const userId = await makeUser("emailed");
+  await db.registration.create({
+    data: { userId, gameId: game.id, status: "WAITLISTED", payStatus: "UNPAID", waitlistPos: 1 },
+  });
+  await db.$transaction((tx) => waitlist.promoteWaitlist(tx, game.id));
+
+  const offer = await db.registration.findFirstOrThrow({ where: { userId, gameId: game.id } });
+  assert.equal(offer.status, "OFFERED");
+  assert.equal(offer.offerEmailedAt, null);
+  const minsLeft = (offer.offerExpiresAt!.getTime() - Date.now()) / 60_000;
+  assert.ok(minsLeft > 115 && minsLeft <= 120);
+
+  assert.equal(await waitlist.sendOfferEmails(game.id), 1);
+  assert.equal(await waitlist.sendOfferEmails(game.id), 0);
+  const sent = await db.registration.findFirstOrThrow({ where: { userId, gameId: game.id } });
+  assert.ok(sent.offerEmailedAt);
+});
