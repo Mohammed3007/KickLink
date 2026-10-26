@@ -85,7 +85,7 @@ test("game schema only accepts local datetime input for startsAt", () => {
   assert.equal(createGameSchema.safeParse({ ...base, startsAt: "tomorrow" }).success, false);
 });
 
-test("club schema defaults primary sport to Football", () => {
+test("club schema defaults primary sport to Soccer", () => {
   const parsed = createClubSchema.parse({
     name: "Westside Sunday League",
     city: "Ottawa",
@@ -93,7 +93,7 @@ test("club schema defaults primary sport to Football", () => {
     blurb: "",
   });
 
-  assert.equal(parsed.sport, "Football");
+  assert.equal(parsed.sport, "Soccer");
 });
 
 test("organizer rejection requires an admin note", () => {
@@ -121,6 +121,6 @@ test("profile schema validates avatar color and skill", () => {
 
 test("sport helpers normalize search and display values", () => {
   assert.equal(normalizeSport("  Padel  "), "Padel");
-  assert.equal(normalizeSport(""), "Football");
+  assert.equal(normalizeSport(""), "Soccer");
   assert.equal(sportSlug(" Beach Volleyball "), "beach volleyball");
 });

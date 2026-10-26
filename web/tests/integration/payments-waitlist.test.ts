@@ -164,6 +164,9 @@ test("promoteWaitlist only offers as many spots as are open", async () => {
   const offered = await db.registration.findMany({ where: { gameId: game.id, status: "OFFERED" } });
   assert.deepEqual(offered.map((r) => r.userId), [w1]);
   assert.equal(offered[0].payStatus, "FREE");
+  // The player still waiting moves up to the front of the line.
+  const remaining = await db.registration.findFirstOrThrow({ where: { userId: w2, gameId: game.id } });
+  assert.equal(remaining.waitlistPos, 1);
 });
 
 test("refunds cover test payments but leave in-person payments to the organizer", async () => {

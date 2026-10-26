@@ -1,5 +1,5 @@
 export const SPORT_OPTIONS = [
-  "Football",
+  "Soccer",
   "Basketball",
   "Volleyball",
   "Tennis",
@@ -18,7 +18,7 @@ export const SPORT_OPTIONS = [
 
 export function normalizeSport(value: unknown) {
   const sport = String(value ?? "").trim();
-  return sport.length > 0 ? sport : "Football";
+  return sport.length > 0 ? sport : "Soccer";
 }
 
 export function sportSlug(value: string) {

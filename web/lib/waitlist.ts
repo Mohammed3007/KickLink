@@ -59,6 +59,8 @@ export async function promoteWaitlist(tx: Tx, gameId: string) {
       },
     });
   }
+  // Everyone still waiting moves up the line.
+  if (next.length > 0) await compactWaitlist(tx, gameId);
 }
 
 /** Renumber waitlist positions 1..n after someone leaves it. */
