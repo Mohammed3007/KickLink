@@ -391,6 +391,9 @@ model Payment {
   // Set when a payment arrived for a spot that was no longer available; the
   // webhook and the scheduled sweep keep retrying the refund until it clears.
   refundDue       Boolean       @default(false)
+  // Set when the player cancelled after the refund cutoff and the club kept
+  // the fee. Later refunds for the same game skip these payments.
+  keptAt          DateTime?
   createdAt       DateTime      @default(now())
 
   userId String

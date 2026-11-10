@@ -60,10 +60,13 @@ export async function processDueRefunds() {
   return { due: due.length, refunded };
 }
 
-/** Refund every successful payment a player made for a game. */
+/**
+ * Refund a player's successful payments for a game, skipping any the club
+ * kept under the refund policy when they cancelled late (keptAt set).
+ */
 export async function refundGamePayments(userId: string, gameId: string) {
   const payments = await db.payment.findMany({
-    where: { userId, gameId, status: "SUCCEEDED" },
+    where: { userId, gameId, status: "SUCCEEDED", keptAt: null },
   });
   let refunded = false;
   for (const payment of payments) {

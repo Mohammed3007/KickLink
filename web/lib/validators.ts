@@ -60,7 +60,16 @@ export const createGameSchema = z.object({
   occurrenceCount: z.coerce.number().int().min(2).max(26).default(6),
   // UPFRONT / WEEKLY_RECURRING exist in the schema but aren't implemented.
   seriesPaymentMode: z.enum(["PER_GAME"]).default("PER_GAME"),
-});
+})
+  // A $0 pay-now game can't be joined: reserving needs a payment, and
+  // paying is refused because nothing is owed.
+  .refine((game) => game.model === "FREE" || game.priceCents > 0, {
+    message: "Set a price for paid games, or choose Free.",
+    path: ["priceCents"],
+  })
+  // The form's price field keeps its value when Free is picked; drop it so
+  // free games never show or record a price.
+  .transform((game) => (game.model === "FREE" ? { ...game, priceCents: 0 } : game));
 
 export const announcementSchema = z.object({
   orgId: text(120).pipe(z.string().min(1)),

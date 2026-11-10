@@ -188,10 +188,27 @@ export async function postAnnouncement(
 
 export type RosterResult = { ok: true } | { ok: false; error: string };
 
+const NOT_AUTHORIZED = { ok: false, error: "Not authorized for this club." } as const;
+
+async function canManage(userId: string, orgId: string) {
+  const m = await db.membership.findUnique({
+    where: { userId_orgId: { userId, orgId } },
+  });
+  return m?.role === "ORGANIZER";
+}
+
+function revalidateRoster(gameId: string) {
+  revalidatePath(`/manage/games/${gameId}`);
+  revalidatePath(`/games/${gameId}`);
+  revalidatePath(`/games/${gameId}/participants`);
+}
+
 /**
  * Organizer marks a held (unpaid) player as paid, e.g. cash at the field.
- * Only players already holding a spot qualify, so this can't push a game
+ * Only players still holding a spot qualify, so this can't push a game
  * over capacity; waitlisted players have to be offered a spot first.
+ * Runs under the game lock and releases lapsed holds first, so a hold that
+ * the sweep is handing to the next player can't also be confirmed.
  */
 export async function markPaid(registrationId: string): Promise<RosterResult> {
   const user = await requireUser();
@@ -200,15 +217,21 @@ export async function markPaid(registrationId: string): Promise<RosterResult> {
     include: { game: true },
   });
   if (!reg) return { ok: false, error: "Registration not found." };
-  await assertOrganizer(user.id, reg.game.orgId);
-  if (!["PROVISIONAL", "OFFERED"].includes(reg.status) || reg.payStatus === "PAID") {
-    return { ok: false, error: "Only players holding an unpaid spot can be marked paid." };
+  if (!(await canManage(user.id, reg.game.orgId))) return NOT_AUTHORIZED;
+  if (reg.game.model === "FREE" || reg.game.priceCents <= 0) {
+    return { ok: false, error: "This game is free, so there's nothing to mark paid." };
   }
 
-  await db.$transaction(async (tx) => {
+  const outcome = await db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${reg.gameId} FOR UPDATE`;
+    await expireStaleHolds(tx, reg.gameId);
+    const current = await tx.registration.findUnique({ where: { id: registrationId } });
+    if (!current || !["PROVISIONAL", "OFFERED"].includes(current.status) || current.payStatus === "PAID") {
+      return current?.status === "CANCELLED" ? ("released" as const) : ("not_held" as const);
+    }
     await tx.registration.update({
       where: { id: registrationId },
-      data: { status: "CONFIRMED", payStatus: "PAID", offerExpiresAt: null },
+      data: { status: "CONFIRMED", payStatus: "PAID", waitlistPos: null, offerExpiresAt: null },
     });
     // No Stripe id: refunds for in-person payments are settled by the organizer.
     await tx.payment.create({
@@ -220,9 +243,17 @@ export async function markPaid(registrationId: string): Promise<RosterResult> {
         status: "SUCCEEDED",
       },
     });
+    return "paid" as const;
   });
-  revalidatePath(`/manage/games/${reg.gameId}`);
-  revalidatePath(`/games/${reg.gameId}`);
+
+  if (outcome === "released") {
+    revalidateRoster(reg.gameId);
+    return { ok: false, error: "This player's spot was released before it was paid. They'll need to rejoin." };
+  }
+  if (outcome === "not_held") {
+    return { ok: false, error: "Only players holding an unpaid spot can be marked paid." };
+  }
+  revalidateRoster(reg.gameId);
   return { ok: true };
 }
 
@@ -234,7 +265,7 @@ export async function removePlayer(registrationId: string): Promise<RosterResult
     include: { game: true },
   });
   if (!reg) return { ok: false, error: "Registration not found." };
-  await assertOrganizer(user.id, reg.game.orgId);
+  if (!(await canManage(user.id, reg.game.orgId))) return NOT_AUTHORIZED;
   if (reg.status === "CANCELLED") return { ok: true };
 
   let refunded = false;
@@ -248,8 +279,13 @@ export async function removePlayer(registrationId: string): Promise<RosterResult
   }
 
   const freedSpot = ["CONFIRMED", "PROVISIONAL", "OFFERED"].includes(reg.status);
-  await db.$transaction(async (tx) => {
+  const outcome = await db.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${reg.gameId} FOR UPDATE`;
+    // Re-read under the lock: the player may have cancelled or paid meanwhile.
+    const current = await tx.registration.findUnique({ where: { id: registrationId } });
+    if (!current || current.status === "CANCELLED") return "gone" as const;
+    if (current.status !== reg.status || current.payStatus !== reg.payStatus) return "changed" as const;
+
     await tx.registration.update({
       where: { id: registrationId },
       data: {
@@ -272,39 +308,45 @@ export async function removePlayer(registrationId: string): Promise<RosterResult
         href: `/games/${reg.gameId}`,
       },
     });
+    return "removed" as const;
   });
+  if (outcome === "changed") {
+    return { ok: false, error: "This player's registration just changed. Refresh and try again." };
+  }
 
-  revalidatePath(`/manage/games/${reg.gameId}`);
-  revalidatePath(`/games/${reg.gameId}`);
-  revalidatePath(`/games/${reg.gameId}/participants`);
+  revalidateRoster(reg.gameId);
   return { ok: true };
 }
 
-export async function offerWaitlistedSpot(registrationId: string) {
+/** Organizer offers an open spot to a specific waitlisted player. */
+export async function offerWaitlistedSpot(registrationId: string): Promise<RosterResult> {
   const user = await requireUser();
   const reg = await db.registration.findUnique({
     where: { id: registrationId },
     include: { game: true },
   });
-  if (!reg || reg.status !== "WAITLISTED") return;
-  await assertOrganizer(user.id, reg.game.orgId);
+  if (!reg) return { ok: false, error: "Registration not found." };
+  if (!(await canManage(user.id, reg.game.orgId))) return NOT_AUTHORIZED;
+  if (reg.status !== "WAITLISTED") return { ok: false, error: "This player isn't on the waitlist." };
 
-  await db.$transaction(async (tx) => {
+  const outcome = await db.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${reg.gameId} FOR UPDATE`;
-    await expireStaleHolds(tx, reg.gameId);
     const game = await tx.game.findUnique({
       where: { id: reg.gameId },
       select: { id: true, title: true, capacity: true, model: true, startsAt: true },
     });
-    if (!game) return;
+    if (!game) return "missing" as const;
+    // An offer after kickoff would expire the moment it was made.
+    if (game.startsAt <= new Date()) return "started" as const;
+    await expireStaleHolds(tx, reg.gameId);
     // The sweep may have already offered this player the spot.
     const current = await tx.registration.findUnique({ where: { id: registrationId } });
-    if (current?.status !== "WAITLISTED") return;
+    if (current?.status !== "WAITLISTED") return "moved" as const;
 
     const taken = await tx.registration.count({
       where: { gameId: reg.gameId, status: { in: [...OCCUPYING] } },
     });
-    if (taken >= game.capacity) return;
+    if (taken >= game.capacity) return "full" as const;
 
     await tx.registration.update({
       where: { id: registrationId },
@@ -327,29 +369,39 @@ export async function offerWaitlistedSpot(registrationId: string) {
         href: `/games/${reg.gameId}`,
       },
     });
+    return "offered" as const;
   });
 
-  revalidatePath(`/manage/games/${reg.gameId}`);
-  revalidatePath(`/games/${reg.gameId}`);
-  revalidatePath(`/games/${reg.gameId}/participants`);
+  revalidateRoster(reg.gameId);
+  switch (outcome) {
+    case "offered":
+    case "moved":
+      return { ok: true };
+    case "started":
+      return { ok: false, error: "This game has already started." };
+    case "full":
+      return { ok: false, error: "The game is full. Free up a spot first." };
+    default:
+      return { ok: false, error: "Game not found." };
+  }
 }
 
 export async function recordAttendance(
   registrationId: string,
   status: AttendanceStatus
-) {
+): Promise<RosterResult> {
   const user = await requireUser();
-  if (!["PRESENT", "NO_SHOW"].includes(status)) return;
+  if (!["PRESENT", "NO_SHOW"].includes(status)) return { ok: false, error: "Unknown attendance status." };
 
   const reg = await db.registration.findUnique({
     where: { id: registrationId },
     include: { game: true },
   });
-  if (!reg) return;
-  await assertOrganizer(user.id, reg.game.orgId);
+  if (!reg) return { ok: false, error: "Registration not found." };
+  if (!(await canManage(user.id, reg.game.orgId))) return NOT_AUTHORIZED;
 
   if (!["CONFIRMED", "PROVISIONAL", "OFFERED"].includes(reg.status)) {
-    return;
+    return { ok: false, error: "Only players on the roster can be checked in." };
   }
 
   try {
@@ -370,9 +422,9 @@ export async function recordAttendance(
     });
   } catch (error) {
     console.error("Attendance record failed", error);
-    return;
+    return { ok: false, error: "Couldn't save attendance. Try again." };
   }
 
-  revalidatePath(`/manage/games/${reg.gameId}`);
-  revalidatePath(`/games/${reg.gameId}/participants`);
+  revalidateRoster(reg.gameId);
+  return { ok: true };
 }

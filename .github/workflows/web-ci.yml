@@ -44,6 +44,7 @@ jobs:
       - run: npm test
       - run: npx prisma migrate deploy
       - run: npm run test:integration
+      - run: npm run test:actions
       - run: npm audit --omit=dev --audit-level=high
       - run: npm run build
       - run: npm run test:e2e
