@@ -63,6 +63,9 @@ export default async function AdminAnalyticsPage({
             <p className="mt-1 text-ink-2">Traffic and activity across KickLink.</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Link href="/admin/leads">
+              <Button variant="secondary">Leads</Button>
+            </Link>
             <Link href="/admin/applications">
               <Button variant="secondary">Applications</Button>
             </Link>

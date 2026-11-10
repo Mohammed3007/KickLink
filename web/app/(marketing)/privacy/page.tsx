@@ -19,6 +19,7 @@ const sections: LegalSection[] = [
         "Club activity: the clubs you join, games you register for, waitlist and cancellation history, attendance marked by organizers, and announcements and notifications sent to you.",
         "Payments: the amount, status and Stripe reference for each payment. Card details are entered on Stripe's checkout page and never reach our servers.",
         "Organizer applications: the club name, city, experience and expected players you submit when applying to organize.",
+        "Organizer enquiries: the name, email, club name, sport and description you send through the \"Organize a club?\" form on our home page. We use them only to reply to you about setting up your club.",
         "Anonymous usage statistics: the pages viewed and buttons tapped, the website that sent you (its domain only), your device type (phone, tablet or computer), and your country and province or state. To count visitors without identifying them, we combine your IP address and browser type with a random code that we replace every day and keep only the scrambled result. We never store the IP address itself, nothing is saved in your browser, and statistics are never linked to your account, so they can't be used to identify or follow you.",
         "Security records: to stop abuse such as repeated sign-in attempts, we briefly keep your IP address and, for sign-in and password reset, the email address entered. These records are deleted after 24 hours of inactivity.",
       ],
@@ -55,7 +56,7 @@ const sections: LegalSection[] = [
   {
     heading: "How long we keep it",
     body: [
-      "We keep account and club data while your account is active. Payment and audit records are kept as long as needed for accounting and legal obligations. Anonymous usage statistics are deleted after 13 months, and security records after 24 hours of inactivity.",
+      "We keep account and club data while your account is active. Payment and audit records are kept as long as needed for accounting and legal obligations. Anonymous usage statistics are deleted after 13 months, organizer enquiries after 24 months, and security records after 24 hours of inactivity.",
     ],
   },
   {

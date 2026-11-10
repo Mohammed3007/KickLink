@@ -1,14 +1,15 @@
-import Link from "next/link";
-import type { ReactNode } from "react";
-import { Logo, LogoMark } from "@/components/brand/logo";
-import { NetworkCanvas } from "@/components/auth/network-canvas";
+import type { CSSProperties, ReactNode } from "react";
+import "@fontsource-variable/archivo/wdth.css";
+import "@/app/glass.css";
+import { GlassBackdrop } from "@/components/glass/backdrop";
+import { GlassLogo } from "@/components/glass/logo";
+import { TiltCard } from "@/components/glass/tilt-card";
 import { rise } from "@/components/auth/rise";
-
 
 const FEATURES = [
   {
     title: "Find games near you",
-    body: "Browse open matches and pickup games close by, and jump in with a tap.",
+    body: "Browse open pickup games close by and jump in with a tap.",
     icon: (
       <>
         <circle cx="12" cy="12" r="9" />
@@ -19,7 +20,7 @@ const FEATURES = [
   },
   {
     title: "Collect dues automatically",
-    body: "Split the field or court fee and collect from everyone before kickoff — no more chasing e-transfers.",
+    body: "Collect the field fee from everyone before kickoff.",
     icon: (
       <>
         <circle cx="12" cy="12" r="8.5" />
@@ -29,7 +30,7 @@ const FEATURES = [
   },
   {
     title: "Build your full roster",
-    body: "Track who's in, fill the empty spots, and keep your squad organised week to week.",
+    body: "Track who is in and fill the empty spots week to week.",
     icon: (
       <>
         <circle cx="8" cy="8" r="3.2" />
@@ -40,107 +41,103 @@ const FEATURES = [
   },
 ];
 
-function BrandPanel() {
+// The passing chain GK -> LB -> CM -> RW -> ST, with each receiver's arrival
+// time on the 7-second loop; the last four players are off the ball.
+const PLAYERS: { x: number; y: number; n: number; cls: string; t: string }[] = [
+  { x: 50, y: 170, n: 1, cls: "a", t: "0s" },
+  { x: 150, y: 262, n: 4, cls: "a", t: "0.97s" },
+  { x: 250, y: 170, n: 8, cls: "a", t: "1.94s" },
+  { x: 300, y: 58, n: 7, cls: "a", t: "2.81s" },
+  { x: 400, y: 170, n: 9, cls: "a", t: "3.89s" },
+  { x: 150, y: 80, n: 5, cls: "a np", t: "0s" },
+  { x: 300, y: 282, n: 11, cls: "a np", t: "0s" },
+  { x: 470, y: 100, n: 4, cls: "b np", t: "0s" },
+  { x: 470, y: 240, n: 5, cls: "b np", t: "0s" },
+];
+
+function PassingScene() {
   return (
-    <div className="relative min-h-[560px] overflow-hidden bg-[#08080a] text-[#f5f3ef] min-[881px]:min-h-0 min-[881px]:flex-[1.22]">
-      <div className="bg-brand-field absolute inset-0" />
-      <div className="absolute -right-[70px] -top-[90px] size-[360px] rounded-full bg-[radial-gradient(circle,rgba(244,215,139,0.32),rgba(244,215,139,0)_70%)] blur-[20px]" />
-      <div className="absolute -bottom-[110px] -left-[80px] size-[400px] rounded-full bg-[radial-gradient(circle,rgba(231,185,90,0.22),rgba(231,185,90,0)_70%)] blur-[22px]" />
-      <NetworkCanvas className="absolute inset-0 size-full opacity-85" />
-
-      <div className="relative z-[2] flex h-full min-h-[560px] flex-col justify-between gap-10 px-7 py-12 min-[881px]:px-[54px] min-[881px]:py-[50px]">
-        <div {...rise(0.2)}>
-          <span className="flex items-center gap-2.5">
-            <LogoMark size={32} variant="subtle" />
-            <span className="font-display text-[17px] font-bold tracking-[-0.01em]">KickLink</span>
-          </span>
-        </div>
-
-        <div className="max-w-[540px]">
-          <span
-            {...rise(0.28)}
-            className="animate-rise mb-[18px] inline-block text-[11px] font-bold tracking-[0.18em] text-brand-600"
-          >
-            YOUR CLUB, SORTED
-          </span>
-          <h2
-            {...rise(0.34)}
-            className="animate-rise mb-4 text-[clamp(30px,3.2vw,44px)] font-bold leading-[1.05] tracking-[-0.02em]"
-          >
-            Find your team.
-            <br />
-            <span className="text-gold-gradient">Play every week.</span>
-          </h2>
-          <p
-            {...rise(0.4)}
-            className="animate-rise mb-[34px] max-w-[440px] text-base leading-[1.55] text-[#a29a8c]"
-          >
-            One place to find games, sort the squad, and split the costs — so you can just turn up
-            and play.
-          </p>
-
-          <div className="flex flex-col gap-3">
-            {FEATURES.map((feature, i) => (
-              <div
-                key={feature.title}
-                {...rise(0.48 + i * 0.08)}
-                className="animate-rise flex items-start gap-[15px] rounded-2xl border border-[rgba(231,185,90,0.14)] bg-white/[0.035] px-[19px] py-[17px] transition-[transform,border-color,background-color] duration-250 hover:translate-x-[5px] hover:border-[rgba(231,185,90,0.4)] hover:bg-white/[0.06]"
-              >
-                <div className="flex size-[42px] flex-none items-center justify-center rounded-xl border border-[rgba(231,185,90,0.3)] bg-[rgba(231,185,90,0.12)]">
-                  <svg
-                    width="21"
-                    height="21"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#F4D78B"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    {feature.icon}
-                  </svg>
-                </div>
-                <div>
-                  <div className="mb-[3px] text-[15px] font-bold text-[#f2ede1]">{feature.title}</div>
-                  <div className="text-[13.5px] leading-normal text-[#968f82]">{feature.body}</div>
-                </div>
-              </div>
-            ))}
+    <div className="scene" role="img" aria-label="A 3D pitch where gold players pass the ball along a glowing line into the goal.">
+      <div className="plane" style={{ "--yaw": "-16deg" } as CSSProperties}>
+        <div className="mk mk-mid" />
+        <div className="mk mk-c" />
+        <div className="mk mk-l" />
+        <div className="mk mk-r" />
+        <div className="net" />
+        <svg className="links" viewBox="0 0 560 340" aria-hidden="true">
+          <path className="web" d="M50 170 L150 80 L300 58 M150 80 L250 170 L150 262 L50 170 M250 170 L300 282 L400 170 L300 58 L250 170 M150 262 L300 282 M400 170 L470 100 M400 170 L470 240 M470 100 L470 240" />
+          <path className="pass" pathLength={1} d="M50 170 L150 262 L250 170 L300 58 L400 170 L548 170" />
+        </svg>
+        <div className="ball" />
+        {PLAYERS.map((p, i) => (
+          <div key={i} className={`tok ${p.cls}`} style={{ left: p.x, top: p.y, "--i": i, "--t": p.t } as CSSProperties}>
+            <div className="foot" />
+            <div className="halo" />
+            <div className="pin">
+              <div className="stem" />
+              <div className="head">{p.n}</div>
+            </div>
           </div>
-        </div>
-
-        <div {...rise(0.72)} className="animate-rise flex items-center gap-2.5">
-          <span className="h-px w-6 bg-[linear-gradient(90deg,#e7b95a,rgba(231,185,90,0))]" />
-          <span className="text-[12.5px] font-semibold tracking-[0.04em] text-[#7e796e]">
-            Built for pickup sports.
-          </span>
-        </div>
+        ))}
+      </div>
+      <div className="fc glass" style={{ top: "8%", right: "4%", "--d": "1400ms" } as CSSProperties}>
+        <span className="dot" />
+        Sunday Night 7s · 14/14
+      </div>
+      <div className="fc glass" style={{ bottom: "10%", left: "2%", "--d": "1900ms" } as CSSProperties}>
+        <svg className="okc" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M5 12.5l4.5 4.5L19 7.5" />
+        </svg>
+        $12 paid · Spot confirmed
       </div>
     </div>
   );
 }
 
 /**
- * Split auth layout from the sign-up design: form panel (left) and animated
- * brand panel (right). Below 881px the brand panel stacks under the form.
+ * KickLink Glass auth layout (docs/design/kicklink-glass): brand panel with
+ * the passing scene on the left, the page's form in a tilting glass card on
+ * the right. Below 980px the panel stacks on top and the features hide.
  */
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-dvh w-full flex-col overflow-hidden bg-[#08080a] min-[881px]:flex-row">
-      <div className="relative flex flex-col items-center justify-center bg-[#0c0c0f] px-7 pb-12 pt-[118px] min-[881px]:flex-[1.02] min-[881px]:px-14 min-[881px]:py-[118px]">
-        <div className="pointer-events-none absolute -left-[120px] -top-[120px] size-[360px] rounded-full bg-[radial-gradient(circle,rgba(231,185,90,0.12),rgba(231,185,90,0)_70%)]" />
-        <Link
-          href="/"
-          {...rise(0)}
-          className="animate-rise absolute left-7 top-[38px] min-[881px]:left-14"
-          aria-label="KickLink home"
-        >
-          <Logo size={38} />
-        </Link>
-        <div className="relative w-full max-w-[418px]">{children}</div>
-      </div>
-      <BrandPanel />
+    <div className="kl kl-auth">
+      <GlassBackdrop glows={3} />
+
+      <section className="art" aria-label="About KickLink">
+        <GlassLogo animated />
+        <div style={{ marginTop: "clamp(28px, 5vh, 64px)" }}>
+          <span {...rise(0.2)} className="eyebrow rise">Your club, sorted</span>
+          <h2 {...rise(0.28)}>
+            Find your team.
+            <br />
+            <span className="ext">Play every week.</span>
+          </h2>
+          <p className="sub rise" style={rise(0.36).style}>
+            One place to find games, sort the squad and split the costs, so you can just turn up and play.
+          </p>
+        </div>
+        <PassingScene />
+        <ul className="feats rise" style={rise(0.52).style}>
+          {FEATURES.map((feature) => (
+            <li key={feature.title}>
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                {feature.icon}
+              </svg>
+              <div>
+                <strong>{feature.title}</strong>
+                <span>{feature.body}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <main className="side">
+        <TiltCard className="card glass" maxX={3} maxY={4}>
+          {children}
+        </TiltCard>
+      </main>
     </div>
   );
 }

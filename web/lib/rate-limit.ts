@@ -31,6 +31,13 @@ export const AUTH_IP_RATE_LIMIT = {
   blockMs: 15 * 60 * 1000,
 } as const;
 
+/** Landing-page "Organize a club?" submissions per IP. */
+export const LEAD_RATE_LIMIT = {
+  maxAttempts: 5,
+  windowMs: 60 * 60 * 1000,
+  blockMs: 60 * 60 * 1000,
+} as const;
+
 export const API_RATE_LIMIT = {
   maxAttempts: 60,
   windowMs: 60 * 1000,

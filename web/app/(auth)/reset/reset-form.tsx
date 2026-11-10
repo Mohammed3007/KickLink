@@ -22,7 +22,7 @@ export function ResetForm({ token }: { token: string }) {
   if (state?.ok) {
     return (
       <AuthStatusCard icon={<Check className="size-[26px]" strokeWidth={2.4} />} title="Password updated">
-        <p className="mb-5">You&apos;ve been signed out everywhere. Log in with your new password.</p>
+        <p style={{ margin: "0 0 20px" }}>You&apos;ve been signed out everywhere. Log in with your new password.</p>
         <GoldButtonLink href="/login">Go to login</GoldButtonLink>
       </AuthStatusCard>
     );

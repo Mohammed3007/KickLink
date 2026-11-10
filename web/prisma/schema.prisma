@@ -472,3 +472,18 @@ model AnalyticsSalt {
   createdAt DateTime @default(now())
 }
 
+
+// "Organize a club?" form on the landing page. Shown in Admin → Leads and
+// emailed to the support address.
+model OrganizerLead {
+  id        String    @id @default(cuid())
+  name      String
+  email     String
+  club      String    @default("")
+  sport     String    @default("")
+  message   String    @default("")
+  handledAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([createdAt])
+}

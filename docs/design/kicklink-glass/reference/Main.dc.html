@@ -1,0 +1,1098 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>KickLink — Pickup games, organized</title>
+<script src="./support.js"></script>
+<script src="/_blob/8f569a80485c2e1eae1a7ea67151f774"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;display=swap">
+<style>
+body{margin:0;background:#08080A}
+a{color:#E7B95A}a:hover{color:#F4D78B}
+@property --n{syntax:'<integer>';inherits:false;initial-value:14}
+
+.kl{
+  --ink:#08080A;--deep:#0B1A14;--text:#F4EFE3;--muted:#A9A293;
+  --gold-hi:color-mix(in oklab,var(--gold) 62%,#fff);
+  --gold-deep:color-mix(in oklab,var(--gold) 40%,#000);
+  --line:color-mix(in oklab,var(--gold) 15%,transparent);
+  --gborder:color-mix(in oklab,var(--gold) 20%,transparent);
+  --ext:0 1px 0 color-mix(in oklab,var(--gold) 88%,#000),0 2px 0 color-mix(in oklab,var(--gold) 78%,#000),0 3px 0 color-mix(in oklab,var(--gold) 68%,#000),0 4px 0 color-mix(in oklab,var(--gold) 58%,#000),0 5px 0 color-mix(in oklab,var(--gold) 49%,#000),0 6px 0 var(--gold-deep),0 24px 36px rgba(0,0,0,.6);
+  --soft:linear(0,.09 3%,.34 8%,.7 15%,.95 22%,1.06 29%,1.08 34%,1.05 42%,1.01 54%,.995 66%,1);
+  --pop:linear(0,.16 3%,.56 9%,1.02 16%,1.2 22%,1.19 27%,1.05 36%,.95 45%,.96 54%,1.01 66%,1);
+  --out:cubic-bezier(.2,.8,.2,1);
+  position:relative;isolation:isolate;overflow-x:clip;background:var(--ink);color:var(--text);
+  font-family:'Archivo',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;font-size:18px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.kl *{box-sizing:border-box}
+.kl ::selection{background:var(--gold);color:#1A1304}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px;position:relative}
+.sec{position:relative;z-index:1;padding:clamp(80px,11vw,160px) 0}
+.eyebrow{display:block;font-stretch:122%;text-transform:uppercase;letter-spacing:.18em;font-size:13px;font-weight:700;color:var(--gold);margin:0 0 20px}
+.title{font-weight:800;font-size:clamp(42px,5.2vw,76px);letter-spacing:-.03em;line-height:.96;margin:0;text-wrap:balance}
+.lede{font-size:20px;color:#CFC8B8;max-width:560px;margin:24px 0 0;text-wrap:pretty}
+.muted{color:var(--muted)}
+.hl{color:var(--gold)}
+.okc{color:var(--pitch)}
+.ext{color:var(--gold-hi);text-shadow:var(--ext)}
+.glass{background:rgba(255,255,255,.05);border:1px solid var(--gborder);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 30px 80px rgba(0,0,0,.5);backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%)}
+
+/* background */
+.glows{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.g{position:absolute;border-radius:50%;filter:blur(110px);animation:drift 26s ease-in-out infinite alternate}
+.g1{width:760px;height:760px;left:-260px;top:-240px;background:color-mix(in oklab,var(--gold) calc(var(--glow) * 100%),transparent)}
+.g2{width:620px;height:620px;right:-200px;top:30%;background:color-mix(in oklab,var(--gold) calc(var(--glow) * 60%),transparent);animation-duration:22s}
+.g3{width:900px;height:900px;left:-200px;bottom:-320px;background:color-mix(in oklab,var(--pitch) 16%,var(--deep));opacity:.9;animation-duration:30s}
+.g4{width:540px;height:540px;right:10%;bottom:-160px;background:color-mix(in oklab,var(--gold) calc(var(--glow) * 75%),transparent);animation-duration:24s}
+@keyframes drift{to{translate:90px 70px;scale:1.12}}
+.spot{position:fixed;left:0;top:0;width:720px;height:720px;border-radius:50%;pointer-events:none;z-index:0;opacity:0;transition:opacity .6s;background:radial-gradient(closest-side,color-mix(in oklab,var(--gold) 20%,transparent),transparent);mix-blend-mode:screen}
+
+/* nav */
+.nav{position:sticky;top:16px;z-index:50;max-width:1280px;margin:16px auto 0;padding:0 24px}
+.nav-in{position:relative;overflow:hidden;height:64px;border-radius:20px;display:flex;align-items:center;gap:28px;padding:0 10px 0 20px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);font-weight:800;font-stretch:125%;letter-spacing:.16em;font-size:15px;text-transform:uppercase}
+.logo:hover{color:var(--text)}
+.navlinks{display:flex;gap:28px;margin-left:auto}
+.navlinks a{color:var(--muted);text-decoration:none;font-size:15px;font-weight:500;transition:color .2s}
+.navlinks a:hover{color:var(--text)}
+.navcta{display:flex;align-items:center;gap:8px}
+.navcta .login{color:var(--text);text-decoration:none;font-size:15px;font-weight:600;padding:0 14px;height:44px;display:inline-flex;align-items:center;border-radius:12px}
+.navcta .login:hover{color:var(--gold-hi)}
+.prog{position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--pitch));transform-origin:0 50%;display:none}
+
+/* buttons */
+.btn{height:52px;padding:0 24px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;gap:10px;font-family:inherit;font-weight:800;font-size:16px;font-stretch:108%;line-height:1;text-decoration:none;cursor:pointer;border:0;translate:0 0;rotate:0deg;scale:1;transition:translate .8s var(--pop),rotate .8s var(--pop),scale .35s var(--pop),background-color .2s,border-color .2s}
+.btn:active{scale:.92}
+.btn:focus-visible,.prow:focus-visible,.kl a:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.btn-p{background:var(--gold);color:#1A1304;box-shadow:0 16px 36px -16px color-mix(in oklab,var(--gold) 85%,transparent)}
+.btn-p:hover{background:var(--gold-hi);color:#1A1304}
+.btn-s{background:color-mix(in oklab,var(--gold) 8%,rgba(255,255,255,.03));color:var(--text);border:1px solid color-mix(in oklab,var(--gold) 55%,transparent);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+.btn-s:hover{color:var(--text);border-color:var(--gold)}
+.btn-sm{height:44px;padding:0 18px;font-size:15px}
+
+/* hero */
+.hero{position:relative;z-index:1;padding:clamp(56px,7vw,104px) 0 clamp(64px,8vw,120px)}
+.chip{display:inline-flex;align-items:center;gap:10px;height:36px;padding:0 14px;border-radius:12px;font-stretch:120%;text-transform:uppercase;letter-spacing:.16em;font-size:12px;font-weight:700;color:var(--gold-hi)}
+.dot{width:8px;height:8px;border-radius:999px;background:var(--pitch);box-shadow:0 0 0 4px color-mix(in oklab,var(--pitch) 22%,transparent);animation:pulse 1.8s ease-in-out infinite;flex:none}
+@keyframes pulse{50%{box-shadow:0 0 0 7px color-mix(in oklab,var(--pitch) 0%,transparent)}}
+.display{font-weight:800;font-size:clamp(56px,8.4vw,124px);letter-spacing:-.03em;line-height:.95;margin:28px 0 0}
+.dline{display:block}
+.word{display:inline-block;white-space:nowrap;margin-right:.22em;perspective:600px}
+.ch{display:inline-block;transform-origin:50% 100%;animation:flip 1s var(--soft) both;animation-delay:calc(220ms + var(--i) * 35ms)}
+@keyframes flip{from{transform:translateY(96px) rotateX(-100deg);opacity:0}}
+.rise{animation:rise .9s var(--out) both;animation-delay:var(--d,0ms)}
+@keyframes rise{from{opacity:0;transform:translateY(60px);filter:blur(6px)}}
+.hero-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(500px,100%),1fr));gap:48px;align-items:center;margin-top:8px}
+.ctas{display:flex;flex-wrap:wrap;gap:12px;margin-top:36px}
+.fine{margin:20px 0 0;font-size:15px;color:var(--muted)}
+.pills{list-style:none;padding:0;margin:20px 0 0;display:flex;flex-wrap:wrap;gap:8px}
+.pills li{height:32px;display:inline-flex;align-items:center;padding:0 12px;border-radius:12px;font-size:13px;font-weight:600;color:#CFC8B8;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04)}
+
+/* 3D pitch */
+.scene{position:relative;height:540px;perspective:1600px;display:flex;align-items:center;justify-content:center}
+.plane{position:relative;flex:none;width:520px;height:330px;transform-style:preserve-3d;transform:rotateX(58deg) rotateZ(var(--yaw));border-radius:22px;border:1px solid rgba(244,239,227,.24);background:repeating-linear-gradient(90deg,color-mix(in oklab,var(--pitch) 10%,transparent) 0 10%,color-mix(in oklab,var(--pitch) 4%,transparent) 10% 20%),rgba(11,26,20,.72);box-shadow:0 60px 120px rgba(0,0,0,.6)}
+.hero .plane{animation:sway 14s ease-in-out infinite alternate}
+@keyframes sway{from{transform:rotateX(58deg) rotateZ(calc(var(--yaw) - 4deg))}to{transform:rotateX(54deg) rotateZ(calc(var(--yaw) + 4deg))}}
+.mk{position:absolute;border:1px solid rgba(244,239,227,.22)}
+.mk-mid{left:50%;top:0;bottom:0;width:0;border-width:0 0 0 1px}
+.mk-c{left:50%;top:50%;width:22%;aspect-ratio:1;border-radius:50%;translate:-50% -50%}
+.mk-l{left:0;top:28%;width:12%;height:44%;border-left:0}
+.mk-r{right:0;top:28%;width:12%;height:44%;border-right:0}
+.slot{position:absolute;width:34px;height:34px;translate:-50% -50%;border-radius:50%;border:1.5px dashed rgba(244,239,227,.34)}
+.tok{position:absolute;width:0;height:0;transform-style:preserve-3d;animation:drop .9s var(--soft) both;animation-delay:calc(700ms + var(--i) * 90ms)}
+@keyframes drop{from{transform:translateZ(240px)}}
+.foot{position:absolute;left:-13px;top:-13px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.5);filter:blur(3px)}
+.pin{position:absolute;left:0;top:0;width:36px;height:60px;transform-style:preserve-3d;transform-origin:50% 100%;transform:translate(-50%,-100%) rotateZ(calc(var(--yaw) * -1)) rotateX(-90deg)}
+.head{position:absolute;left:3px;top:0;width:30px;height:30px;border-radius:999px;display:grid;place-items:center;font-weight:800;font-size:12px;transform-origin:50% 100%;transform:rotateX(32deg);box-shadow:0 6px 14px rgba(0,0,0,.45);animation:fadein .5s ease both;animation-delay:calc(700ms + var(--i) * 90ms)}
+.stem{position:absolute;left:17px;top:30px;width:2px;height:30px;background:linear-gradient(rgba(244,239,227,.7),rgba(244,239,227,0))}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.a .head{background:var(--gold);color:#1A1304}
+.b .head{background:#F4EFE3;color:#141418}
+.sub .head{background:var(--pitch);color:#06140D}
+.fc{position:absolute;z-index:2;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;animation:popin .8s var(--pop) both,bob 6s ease-in-out infinite alternate;animation-delay:var(--d),0s}
+.fc strong{font-size:16px;font-weight:700}
+.fc span{font-size:13px;color:var(--muted)}
+.fc .row{display:flex;align-items:center;gap:8px;color:var(--text);font-size:14px;font-weight:600}
+@keyframes popin{from{scale:.6;opacity:0}}
+@keyframes bob{to{translate:0 -10px}}
+
+/* pinned story (Motion, scroll-scrubbed). Base styles = final state */
+@property --tilt{syntax:'<angle>';inherits:true;initial-value:56deg}
+@property --yaw{syntax:'<angle>';inherits:true;initial-value:-6deg}
+@property --spinY{syntax:'<angle>';inherits:true;initial-value:0deg}
+@property --sc{syntax:'<number>';inherits:true;initial-value:1.04}
+.story{position:relative;z-index:1}
+.story .stage{padding:120px 0}
+.story.live{height:4600px}
+.story.live .stage{position:sticky;top:0;height:min(100vh,940px);padding:96px 0 24px;display:flex;align-items:center}
+.sgrid{display:grid;grid-template-columns:minmax(280px,400px) minmax(0,1fr);gap:clamp(24px,4vw,64px);align-items:center;width:100%}
+.steps{list-style:none;margin:0 0 32px;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.steps li{height:32px;padding:0 12px;border-radius:999px;display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.12em;font-stretch:115%;text-transform:uppercase;color:var(--muted);border:1px solid rgba(255,255,255,.12);transition:color .35s,background-color .35s,border-color .35s,scale .5s var(--pop)}
+.steps li b{font-weight:800;opacity:.6}
+.steps li.on{color:#1A1304;background:var(--gold);border-color:var(--gold);scale:1.06}
+.steps li.on b{opacity:1}
+.caps2{display:flex;flex-direction:column;gap:40px}
+.story.live .caps2{display:grid}
+.story.live .cap2{grid-area:1 / 1}
+.sscene{position:relative;height:min(660px,calc(100vh - 130px));min-height:460px;display:flex;align-items:center;justify-content:center;perspective:1700px;min-width:0}
+.fit{position:relative;width:820px;height:600px;flex:none;display:flex;align-items:center;justify-content:center;transform-style:preserve-3d;scale:var(--fit,1)}
+.sp-plane{position:relative;width:760px;height:460px;flex:none;transform-style:preserve-3d;transform:rotateX(var(--tilt)) rotateY(var(--spinY)) rotateZ(var(--yaw)) scale(var(--sc));border-radius:26px;border:1px solid rgba(244,239,227,.26);background:radial-gradient(ellipse at 50% 50%,color-mix(in oklab,var(--gold) 10%,transparent),transparent 60%),repeating-linear-gradient(90deg,color-mix(in oklab,var(--pitch) 11%,transparent) 0 10%,color-mix(in oklab,var(--pitch) 4%,transparent) 10% 20%),rgba(11,26,20,.8);box-shadow:0 80px 140px rgba(0,0,0,.65)}
+.post{position:absolute;inset:0;border-radius:26px;padding:48px 56px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(155deg,#18171B,#0D1712);border:1px solid var(--gborder);opacity:0}
+.post-top{display:flex;justify-content:space-between;align-items:center;font-size:22px;color:var(--muted);font-weight:600}
+.ptag{display:inline-flex;height:42px;align-items:center;gap:10px;padding:0 18px;border-radius:999px;background:color-mix(in oklab,var(--gold) 16%,transparent);color:var(--gold-hi);font-weight:700;font-size:17px;letter-spacing:.14em;text-transform:uppercase;font-stretch:118%}
+.ptitle{font-weight:800;font-size:86px;letter-spacing:-.035em;line-height:.95}
+.prow2{display:flex;gap:28px;margin-top:18px;font-size:24px;color:#CFC8B8;font-weight:600}
+.postbtn{position:relative;height:78px;border-radius:18px;overflow:hidden;font-weight:800;font-size:26px;font-stretch:110%}
+.postbtn span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:12px}
+.pb-a{background:var(--gold);color:#1A1304}
+.pb-b{background:var(--pitch);color:#06140D}
+.sp-slot{position:absolute;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;border:1.5px dashed rgba(244,239,227,.36)}
+.sp-rip{position:absolute;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;border:2px solid var(--gold);box-shadow:0 0 18px color-mix(in oklab,var(--gold) 60%,transparent);opacity:0}
+.sp-open{position:absolute;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;border:2.5px solid var(--pitch);box-shadow:0 0 28px var(--pitch),inset 0 0 18px color-mix(in oklab,var(--pitch) 50%,transparent);opacity:0}
+.sp-lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.sp-lines path{fill:none;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:0}
+.sp-lines .ea{stroke:var(--gold);stroke-width:2.5;filter:drop-shadow(0 0 6px var(--gold))}
+.sp-lines .eb{stroke:#F4EFE3;stroke-width:2;stroke-opacity:.6}
+.sweep{position:absolute;top:0;bottom:0;left:0;width:200px;border-radius:26px;background:linear-gradient(90deg,transparent,color-mix(in oklab,var(--gold) 50%,transparent),transparent);opacity:0}
+.bench{position:absolute;left:32%;top:106%;width:36%;height:12%;border-radius:14px;border:1px dashed color-mix(in oklab,var(--pitch) 50%,transparent);display:flex;align-items:flex-end;justify-content:flex-end;padding:6px 12px;font-size:14px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--pitch)}
+.sp-tok{position:absolute;width:0;height:0;transform-style:preserve-3d;transform:translate3d(0px,0px,0px) rotateZ(0deg)}
+.sp-tok.leaving{transform:translate3d(170px,-90px,560px) rotateZ(70deg)}
+.sp-tok.leaving .sp-head,.sp-tok.leaving .sp-stem,.sp-tok.leaving .sp-foot{opacity:0}
+.sp-foot{position:absolute;left:-14px;top:-14px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.55);filter:blur(3px)}
+.sp-pin{position:absolute;left:0;top:0;width:40px;height:68px;transform-style:preserve-3d;transform-origin:50% 100%;transform:translate(-50%,-100%) rotateZ(calc(var(--yaw) * -1)) rotateX(-90deg)}
+.sp-head{position:absolute;left:3px;top:0;width:34px;height:34px;border-radius:999px;display:grid;place-items:center;font-weight:800;font-size:13px;transform-origin:50% 100%;transform:rotateX(calc(90deg - var(--tilt)));box-shadow:0 8px 16px rgba(0,0,0,.45)}
+.sp-stem{position:absolute;left:19px;top:34px;width:2px;height:34px;background:linear-gradient(rgba(244,239,227,.75),rgba(244,239,227,0))}
+.sp-cash{position:absolute;left:-20px;top:-34px;width:80px;text-align:center;transform-origin:50% 100%;transform:rotateX(calc(90deg - var(--tilt)))}
+.sp-cash span{display:inline-block;font-size:14px;font-weight:800;color:var(--pitch);text-shadow:0 2px 10px rgba(0,0,0,.8);opacity:0}
+.sp-tok.a .sp-head{background:var(--gold);color:#1A1304}
+.sp-tok.b .sp-head{background:#F4EFE3;color:#141418}
+.sp-tok.w .sp-head{background:var(--pitch);color:#06140D;box-shadow:0 0 0 3px color-mix(in oklab,var(--pitch) 30%,transparent),0 8px 16px rgba(0,0,0,.45)}
+/* floodlights */
+.fl-pools{position:absolute;inset:0;border-radius:26px;overflow:hidden;pointer-events:none}
+.fl-pool{position:absolute;width:560px;height:420px;margin:-210px 0 0 -280px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,244,214,.26),rgba(255,236,190,.08) 55%,transparent);opacity:.9}
+.fl-tok{position:absolute;width:0;height:0;transform-style:preserve-3d}
+.fl-mast{position:absolute;left:0;top:0;width:52px;height:170px;transform-style:preserve-3d;transform-origin:50% 100%;transform:translate(-50%,-100%) rotateZ(calc(var(--yaw) * -1)) rotateX(-90deg)}
+.fl-pole{position:absolute;left:25px;top:10px;width:2px;height:160px;border-radius:1px;background:linear-gradient(rgba(244,239,227,.55),rgba(244,239,227,.06))}
+.fl-head{position:absolute;left:0;top:0;width:52px;height:12px;transform-origin:50% 100%;transform:rotateX(calc(90deg - var(--tilt)))}
+.fl-bulbs{position:absolute;inset:0;border-radius:6px;background:#121215;border:1px solid rgba(244,239,227,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.fl-bulbs::after{content:'';position:absolute;left:5px;right:5px;bottom:3px;height:3px;border-radius:2px;background:#FFF8E8;box-shadow:0 0 6px #FFF4DA,0 0 16px rgba(255,244,218,.8),0 4px 22px rgba(255,236,190,.55)}
+.fl-glow{position:absolute;left:50%;top:70%;width:220px;height:140px;margin:-70px 0 0 -110px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,248,228,.42),rgba(255,236,190,.1) 45%,transparent);pointer-events:none}
+.fl-burst{position:absolute;left:50%;top:70%;width:420px;height:300px;margin:-150px 0 0 -210px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(255,246,221,.3) 30%,transparent);opacity:0;pointer-events:none}
+.sflash{position:absolute;inset:-10%;z-index:7;pointer-events:none;background:radial-gradient(ellipse at 50% 42%,rgba(255,248,230,.75),rgba(255,248,230,.15) 35%,transparent 62%);opacity:0}
+.sstatus{position:absolute;top:0;left:50%;translate:-50% 0;z-index:6;display:flex;gap:8px}
+.sstatus .glass{height:44px;border-radius:12px;padding:0 14px;display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+.stamp{position:absolute;left:50%;top:46%;translate:-50% -50%;z-index:5;pointer-events:none;text-align:center;white-space:nowrap;font-weight:800;font-stretch:125%;font-size:clamp(48px,7vw,104px);line-height:.88;letter-spacing:-.01em;text-transform:uppercase;color:var(--gold-hi);text-shadow:var(--ext);transform:rotate(-6deg)}
+.stamp span{display:block}
+.stamp span+span{color:var(--pitch);text-shadow:0 1px 0 color-mix(in oklab,var(--pitch) 80%,#000),0 2px 0 color-mix(in oklab,var(--pitch) 70%,#000),0 3px 0 color-mix(in oklab,var(--pitch) 60%,#000),0 4px 0 color-mix(in oklab,var(--pitch) 50%,#000),0 5px 0 color-mix(in oklab,var(--pitch) 42%,#000),0 6px 0 color-mix(in oklab,var(--pitch) 34%,#000),0 24px 36px rgba(0,0,0,.6)}
+.spark{position:absolute;left:50%;top:46%;width:9px;height:9px;margin:-4.5px;border-radius:50%;background:var(--gold-hi);box-shadow:0 0 12px var(--gold);z-index:4;opacity:0;pointer-events:none}
+.spark.g{background:var(--pitch);box-shadow:0 0 12px var(--pitch)}
+.spark.s{width:5px;height:5px;margin:-2.5px}
+.sready{position:absolute;bottom:4px;left:50%;translate:-50% 0;z-index:6;height:48px;border-radius:12px;padding:0 18px;display:inline-flex;align-items:center;gap:10px;font-size:15px;font-weight:700;white-space:nowrap;color:var(--pitch)}
+.cap .cn{font-stretch:120%;letter-spacing:.18em;font-size:13px;font-weight:700;color:var(--gold)}
+.cap h3{font-weight:800;font-size:clamp(34px,3.6vw,52px);letter-spacing:-.03em;line-height:1;margin:10px 0 14px}
+.cap p{margin:0;color:var(--muted);max-width:420px}
+
+/* ticker */
+.ticker{position:relative;z-index:1;padding:110px 0 130px;overflow:hidden}
+.band{position:relative;width:112%;margin-left:-6%;padding:18px 0;overflow:hidden;transform:rotate(-4deg) skewX(var(--skew,0deg))}
+.band.b1{background:var(--gold);color:#1A1304}
+.band.b2{margin-top:-46px;transform:rotate(3deg) skewX(var(--skew,0deg));background:rgba(12,12,15,.78);color:var(--gold-hi);border-block:1px solid var(--gborder);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+.track{display:flex;width:max-content;animation:marquee 38s linear infinite}
+.b2 .track{animation-direction:reverse;animation-duration:44s}
+.tg{display:flex;align-items:center;gap:36px;padding-right:36px;font-weight:800;font-stretch:118%;font-size:clamp(28px,3.6vw,52px);line-height:1;text-transform:uppercase;letter-spacing:.01em;white-space:nowrap}
+.sep{width:12px;height:12px;border-radius:999px;background:currentColor;opacity:.55;flex:none}
+@keyframes marquee{to{transform:translateX(-50%)}}
+
+/* statement */
+.say{font-weight:800;font-size:clamp(40px,5.6vw,86px);line-height:1.03;letter-spacing:-.03em;margin:0;max-width:1160px;perspective:900px;text-wrap:balance}
+.w{display:inline-block;margin-right:.22em;transform-origin:50% 100%}
+
+/* ring */
+.ringsec{position:relative;z-index:1}
+.rstage{padding:120px 0}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(440px,100%),1fr));gap:48px;align-items:center}
+.rscene{position:relative}
+.ring{display:grid;gap:16px}
+.face{border-radius:28px;padding:36px;background:rgba(18,18,22,.82);border:1px solid var(--gborder);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 30px 80px rgba(0,0,0,.5)}
+.face .num{font-weight:800;font-size:96px;line-height:.9;letter-spacing:-.04em}
+.face h3{font-weight:800;font-size:34px;letter-spacing:-.02em;line-height:1.05;margin:22px 0 10px}
+.face p{margin:0;color:var(--muted);font-size:17px}
+
+/* stacked panels */
+.stack{margin-top:72px}
+.panel{position:sticky;margin-bottom:120px}
+.panel:last-child{margin-bottom:0}
+.tilt{transform-origin:50% 100%}
+.pbody{border-radius:30px;padding:clamp(28px,4vw,56px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:40px;align-items:center;min-height:360px;background:rgba(17,17,21,.8)}
+.pn{font-stretch:120%;letter-spacing:.18em;font-size:13px;font-weight:700;color:var(--gold)}
+.pt{font-weight:800;font-size:clamp(32px,3.4vw,50px);letter-spacing:-.03em;line-height:1;margin:14px 0 16px}
+.pbody p{margin:0;color:var(--muted);max-width:480px}
+.mock{border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08)}
+.mrow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:8px 16px;border-radius:12px;background:rgba(255,255,255,.04);font-size:15px;font-weight:500}
+.st{flex:none;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;border-radius:999px}
+.st.ok{color:var(--pitch);background:color-mix(in oklab,var(--pitch) 14%,transparent)}
+.st.gd{color:var(--gold-hi);background:color-mix(in oklab,var(--gold) 16%,transparent)}
+.st.mu{color:#C4BDAE;background:rgba(255,255,255,.07)}
+
+/* audience */
+.biglist{list-style:none;margin:40px 0 0;padding:0;border-bottom:1px solid var(--line)}
+.biglist li{display:flex;align-items:baseline;gap:clamp(16px,3vw,40px);padding:14px 0;border-top:1px solid var(--line)}
+.bn{font-stretch:120%;letter-spacing:.18em;font-size:13px;font-weight:700;color:var(--muted);width:32px;flex:none}
+.bt{font-weight:800;font-size:clamp(52px,9vw,140px);line-height:.98;letter-spacing:-.035em;transition:color .3s,translate .7s var(--pop),text-shadow .3s}
+.biglist li:hover .bt{color:var(--gold-hi);text-shadow:var(--ext);translate:18px 0}
+.biglist li:hover .bn{color:var(--pitch)}
+
+/* quote */
+.qf{margin:0;max-width:1100px}
+.qf blockquote{margin:24px 0 0;font-weight:800;font-size:clamp(34px,4.2vw,62px);line-height:1.06;letter-spacing:-.025em;text-wrap:balance}
+.qf figcaption{margin-top:28px;font-size:16px;color:var(--muted);font-stretch:115%;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+
+/* pricing */
+.prows{list-style:none;margin:48px 0 0;padding:0;border-bottom:1px solid var(--line)}
+.prow{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,2fr) minmax(120px,auto) 44px;gap:24px;align-items:center;padding:30px 20px;border-top:1px solid var(--line);border-radius:20px;color:var(--text);text-decoration:none;transition:background-color .3s,border-color .3s}
+.prows li:first-child .prow{border-top-color:var(--line)}
+.prow:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.prow .pname{font-weight:800;font-size:clamp(26px,2.6vw,36px);letter-spacing:-.02em}
+.prow .pdesc{color:var(--muted);font-size:17px}
+.prow .price{font-weight:800;font-size:clamp(26px,2.6vw,36px);letter-spacing:-.02em;text-align:right;font-variant-numeric:tabular-nums}
+.prow .arr{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:var(--gold);border:1px solid var(--gborder);transition:translate .6s var(--pop),background-color .3s,color .3s}
+.prow:hover .arr{translate:6px 0;background:var(--gold);color:#1A1304}
+
+/* contact */
+.cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(460px,100%),1fr));gap:56px;align-items:center}
+.cform{border-radius:30px;padding:clamp(24px,3.5vw,44px);transform:perspective(1400px) rotateX(0deg) rotateY(0deg);transition:transform .9s var(--pop)}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:18px}
+.field{display:flex;flex-direction:column;gap:8px}
+.field.full{grid-column:1 / -1}
+.field label{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-stretch:115%;color:var(--muted)}
+.field input,.field select,.field textarea{font:inherit;font-size:16px;color:var(--text);height:52px;padding:0 16px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.14);outline:none;transition:border-color .2s,box-shadow .2s}
+.field textarea{height:120px;padding:14px 16px;resize:vertical}
+.field select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,#A9A293 50%),linear-gradient(135deg,#A9A293 50%,transparent 50%);background-position:calc(100% - 22px) 23px,calc(100% - 16px) 23px;background-size:6px 6px;background-repeat:no-repeat}
+.field select option{background:#141418;color:#F4EFE3}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold);box-shadow:0 0 0 4px color-mix(in oklab,var(--gold) 18%,transparent)}
+.field input::placeholder,.field textarea::placeholder{color:#7E796E}
+.sent{display:flex;flex-direction:column;gap:12px;min-height:300px;justify-content:center}
+
+/* footer */
+.footer{position:relative;z-index:1;padding:96px 0 40px;border-top:1px solid var(--line)}
+.ftop{display:flex;flex-wrap:wrap;justify-content:space-between;gap:24px}
+.flinks{display:flex;flex-wrap:wrap;gap:28px}
+.flinks a{color:var(--muted);text-decoration:none;font-size:15px}
+.flinks a:hover{color:var(--text)}
+.mark{display:flex;justify-content:space-between;margin:72px 0 40px;font-weight:800;font-stretch:125%;font-size:clamp(52px,12.2vw,186px);line-height:.9;letter-spacing:-.01em;perspective:900px;color:var(--gold-hi);text-shadow:var(--ext)}
+.fl{display:inline-block;transform-origin:50% 100%}
+.fbot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;font-size:14px;color:var(--muted)}
+
+/* scroll-driven motion, only where supported; base styles are the final states */
+@supports (animation-timeline: view()) {
+  .prog{display:block;animation:grow linear both;animation-timeline:scroll(root)}
+  @keyframes grow{from{transform:scaleX(0)}}
+
+
+  .w{animation:wordin linear both;animation-timeline:view();animation-range:entry calc(15% + var(--i) * 1.2%) cover calc(38% + var(--i) * 1.2%)}
+  @keyframes wordin{from{opacity:.12;filter:blur(8px);transform:rotateX(-80deg) translateY(24px)}}
+
+  .ringsec{height:2400px;view-timeline:--ring block}
+  .ringsec .rstage{position:sticky;top:0;height:820px;padding:0;display:flex;align-items:center}
+  .ringsec .rstage>.wrap{width:100%}
+  .rscene{perspective:1600px;height:560px;display:flex;align-items:center;justify-content:center}
+  .ring{display:block;position:relative;flex:none;width:400px;height:360px;transform-style:preserve-3d;transform:translateZ(-380px);animation:spin linear both;animation-timeline:--ring;animation-range:contain 10% contain 90%}
+  @keyframes spin{from{transform:translateZ(-380px) rotateY(0deg)}to{transform:translateZ(-380px) rotateY(-144deg)}}
+  .face{position:absolute;inset:0;backface-visibility:hidden;transform:rotateY(calc(var(--i) * 72deg)) translateZ(380px);animation:linear both;animation-timeline:--ring;animation-range:contain 10% contain 90%}
+  .face.f0{animation-name:f0}.face.f1{animation-name:f1}.face.f2{animation-name:f2}
+  @keyframes f0{0%,15%{opacity:1}45%,100%{opacity:.2}}
+  @keyframes f1{0%{opacity:.2}35%,65%{opacity:1}100%{opacity:.2}}
+  @keyframes f2{0%,55%{opacity:.2}85%,100%{opacity:1}}
+
+  .stack{timeline-scope:--p1,--p2,--p3,--p4,--p5,--p6}
+  .tilt{animation:tiltin linear both;animation-timeline:view();animation-range:entry 0% contain 25%}
+  @keyframes tiltin{from{transform:perspective(1400px) rotateX(26deg) translateY(90px) scale(.94)}}
+  .pbody{animation:sink linear both;animation-timeline:var(--next);animation-range:contain 0% contain 70%}
+  .panel.last .pbody{animation:none}
+  @keyframes sink{to{transform:scale(.92) translateY(-24px);filter:blur(3px) brightness(.5)}}
+
+  .blurup{animation:blurup linear both;animation-timeline:view();animation-range:entry 0% cover 30%}
+  @keyframes blurup{from{opacity:0;transform:translateY(60px);filter:blur(6px)}}
+
+  .footer{view-timeline:--foot block}
+  .fl{animation:tumble var(--pop) both;animation-timeline:--foot;animation-range:entry calc(20% + var(--i) * 5%) entry calc(60% + var(--i) * 5%)}
+  @keyframes tumble{from{transform:translateY(70%) rotateX(-110deg) rotateZ(-8deg);opacity:0}}
+}
+
+@media (max-width:860px){
+  .navlinks,.navcta .login{display:none}
+  .navcta{margin-left:auto}
+  .scene{height:380px}
+  .plane{scale:.62}
+  .sgrid{grid-template-columns:minmax(0,1fr);gap:8px;align-items:start}
+  .story.live .stage{padding-top:88px;align-items:flex-start}
+  .steps{margin-bottom:16px}
+  .cap2 h3{font-size:30px}
+  .cap2 p{font-size:16px}
+  .sscene{height:420px;min-height:0}
+  .sstatus .money{display:none}
+  .ring{scale:.8}
+  .prow{grid-template-columns:minmax(0,1fr) auto;gap:10px 16px;padding:24px 8px}
+  .prow .pdesc{grid-column:1 / -1;grid-row:2}
+  .prow .arr{display:none}
+}
+@media (hover:none){.spot{display:none}}
+@media (prefers-reduced-motion: reduce){
+  .kl *,.kl *::before,.kl *::after{animation:none !important;transition:none !important}
+  .spot{display:none}
+  .ringsec{height:auto}
+  .ringsec .rstage{position:relative;height:auto;padding:120px 0}
+}
+</style>
+</helmet>
+
+<div class="kl" style="--gold: {{gold}}; --pitch: {{pitch}}; --glow: {{glow}}">
+
+  <div class="glows" aria-hidden="true">
+    <div class="g g1"></div>
+    <div class="g g2"></div>
+    <div class="g g3"></div>
+    <div class="g g4"></div>
+  </div>
+  <sc-if value="{{spotlight}}" hint-placeholder-val="{{ true }}">
+    <div class="spot" aria-hidden="true" ref="{{refSpot}}"></div>
+  </sc-if>
+
+  <!-- NAV -->
+  <header class="nav">
+    <nav class="nav-in glass" aria-label="Main">
+      <a class="logo" href="#top" aria-label="KickLink home">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true" style="color: var(--gold)"><circle cx="12" cy="16" r="7.5"></circle><circle cx="20" cy="16" r="7.5"></circle></svg>
+        <span>KickLink</span>
+      </a>
+      <div class="navlinks">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#clubs">For organizers</a>
+      </div>
+      <div class="navcta">
+        <a class="login" href="Login.dc.html">Log in</a>
+        <a class="btn btn-p btn-sm" href="https://kick-link.vercel.app/signup" onPointerMove="{{mag}}" onPointerLeave="{{unmag}}">Get started</a>
+      </div>
+      <div class="prog" aria-hidden="true"></div>
+    </nav>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero" id="top">
+    <div class="wrap">
+      <span class="chip glass rise" style="--d: 80ms"><span class="dot"></span>Pickup games, organized</span>
+      <h1 class="display" aria-label="Lock the lineup before kickoff.">
+        <sc-for list="{{heroLines}}" as="line" hint-placeholder-count="2">
+          <span class="dline" aria-hidden="true">
+            <sc-for list="{{line.words}}" as="w" hint-placeholder-count="3">
+              <span class="word {{w.cls}}"><sc-for list="{{w.chars}}" as="c" hint-placeholder-count="5"><span class="ch" style="--i: {{c.i}}">{{c.ch}}</span></sc-for></span>
+            </sc-for>
+          </span>
+        </sc-for>
+      </h1>
+
+      <div class="hero-grid">
+        <div>
+          <p class="lede rise" style="--d: 700ms">KickLink helps private pickup clubs manage rosters, payments, waitlists and attendance for any sport, without the group chat scramble.</p>
+          <div class="ctas rise" style="--d: 820ms">
+            <a class="btn btn-p" href="https://kick-link.vercel.app/signup" onPointerMove="{{mag}}" onPointerLeave="{{unmag}}">
+              Get started free
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+            </a>
+            <a class="btn btn-s" href="Login.dc.html" onPointerMove="{{mag}}" onPointerLeave="{{unmag}}">Log in</a>
+          </div>
+          <p class="fine rise" style="--d: 920ms">Free for players. Built for clubs that play every week.</p>
+          <ul class="pills rise" style="--d: 1000ms" aria-label="Sports clubs run on KickLink">
+            <li>Soccer</li><li>Basketball</li><li>Volleyball</li><li>Pickleball</li><li>Hockey</li><li>Ultimate</li>
+          </ul>
+        </div>
+
+        <div class="scene" role="img" aria-label="A 3D pitch filling with fourteen players, with cards showing Sunday Night 7s at Brewer Park Turf, payment confirmed, and lineup ready 14 of 14.">
+          <div class="plane" style="--yaw: -22deg">
+            <div class="mk mk-mid"></div><div class="mk mk-c"></div><div class="mk mk-l"></div><div class="mk mk-r"></div>
+            <sc-for list="{{heroTokens}}" as="t" hint-placeholder-count="14">
+              <div class="tok {{t.cls}}" style="left: {{t.x}}%; top: {{t.y}}%; --i: {{t.i}}">
+                <div class="foot"></div>
+                <div class="pin"><div class="stem"></div><div class="head">{{t.n}}</div></div>
+              </div>
+            </sc-for>
+          </div>
+          <div class="fc glass" style="top: 28px; left: 0; --d: 500ms">
+            <strong>Sunday Night 7s</strong>
+            <span>Brewer Park Turf · [TIME]</span>
+          </div>
+          <div class="fc glass" style="top: 150px; right: 0; --d: 1500ms">
+            <strong>$12 per player</strong>
+            <span class="row okc"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg><span style="color: var(--text); font-size: 14px">Payment confirmed</span></span>
+          </div>
+          <div class="fc glass" style="bottom: 36px; left: 14%; --d: 2200ms">
+            <span class="row"><span class="dot"></span>14/14 · <span class="okc">Lineup ready</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PINNED STORY -->
+  <section class="story {{storyCls}}" id="flow" aria-label="How a game fills" ref="{{refStory}}">
+    <div class="stage">
+      <div class="wrap sgrid">
+        <div>
+          <span class="eyebrow">Game day, start to whistle</span>
+          <ol class="steps" aria-hidden="true">
+            <li><b>01</b>Post</li><li><b>02</b>Claim</li><li><b>03</b>Swap</li><li><b>04</b>Lock</li>
+          </ol>
+          <div class="caps2">
+            <div class="cap cap2">
+              <span class="cn">01 / Post</span>
+              <h3>Post the game.</h3>
+              <p>Sunday Night 7s, Brewer Park Turf, $12 a spot. One link to the club and the pitch opens up.</p>
+            </div>
+            <div class="cap cap2">
+              <span class="cn">02 / Claim</span>
+              <h3>Players claim <span class="hl">and pay.</span></h3>
+              <p>Every spot locks the moment the fee clears. No chasing payments in the group chat.</p>
+            </div>
+            <div class="cap cap2">
+              <span class="cn">03 / Swap</span>
+              <h3>Someone drops. <span class="okc">The waitlist moves up.</span></h3>
+              <p>The next player gets the offer automatically. You never rebuild the lineup.</p>
+            </div>
+            <div class="cap cap2">
+              <span class="cn">04 / Lock</span>
+              <h3><span class="ext">Lineup locked.</span></h3>
+              <p>Fourteen confirmed and fees collected, with nothing left to chase before kickoff.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="sscene" role="img" aria-label="A game card flips down into a 3D pitch. Fourteen players drop into their spots and pay, one drops out, a waitlisted player hops in, and the lineup locks.">
+          <div class="sstatus">
+            <span class="glass">Sunday Night 7s</span>
+            <span class="glass"><span class="hl" data-count="">14</span>/14 claimed</span>
+            <span class="glass money"><span class="okc">$<span data-money="">168</span></span> collected</span>
+          </div>
+
+          <div class="fit">
+            <div class="sp-plane">
+              <div class="mk mk-mid"></div><div class="mk mk-c"></div><div class="mk mk-l"></div><div class="mk mk-r"></div>
+              <div class="fl-pools">
+                <div class="fl-pool" style="left: 0px; top: 0px"></div>
+                <div class="fl-pool" style="left: 760px; top: 0px"></div>
+                <div class="fl-pool" style="left: 0px; top: 460px"></div>
+                <div class="fl-pool" style="left: 760px; top: 460px"></div>
+              </div>
+              <div class="bench">Waitlist</div>
+              <sc-for list="{{spSlots}}" as="s" hint-placeholder-count="14">
+                <div class="sp-slot" style="left: {{s.x}}px; top: {{s.y}}px"></div>
+              </sc-for>
+              <sc-for list="{{spSlots}}" as="s" hint-placeholder-count="14">
+                <div class="sp-rip" style="left: {{s.x}}px; top: {{s.y}}px"></div>
+              </sc-for>
+              <div class="sp-open" style="left: 501.6px; top: 230px"></div>
+              <svg class="sp-lines" viewBox="0 0 760 460" aria-hidden="true">
+                <sc-for list="{{spEdges}}" as="e" hint-placeholder-count="18"><path class="{{e.cls}}" pathLength="1" d="{{e.d}}"></path></sc-for>
+              </svg>
+              <div class="sweep"></div>
+
+              <sc-for list="{{spPins}}" as="t" hint-placeholder-count="14">
+                <div class="sp-tok {{t.cls}}" style="left: {{t.x}}px; top: {{t.y}}px">
+                  <div class="sp-foot"></div>
+                  <div class="sp-pin"><div class="sp-stem"></div><div class="sp-head">{{t.n}}</div><div class="sp-cash"><span>+$12</span></div></div>
+                </div>
+              </sc-for>
+              <div class="sp-tok w bn hop" style="left: 501.6px; top: 230px">
+                <div class="sp-foot"></div>
+                <div class="sp-pin"><div class="sp-stem"></div><div class="sp-head">17</div><div class="sp-cash"><span>+$12</span></div></div>
+              </div>
+              <div class="sp-tok w bn" style="left: 304px; top: 520px">
+                <div class="sp-foot"></div>
+                <div class="sp-pin"><div class="sp-stem"></div><div class="sp-head">21</div></div>
+              </div>
+              <div class="sp-tok w bn" style="left: 364.8px; top: 520px">
+                <div class="sp-foot"></div>
+                <div class="sp-pin"><div class="sp-stem"></div><div class="sp-head">23</div></div>
+              </div>
+
+              <div class="fl-tok" style="left: -34px; top: -34px"><div class="fl-mast"><div class="fl-pole"></div><div class="fl-head"><div class="fl-glow"></div><div class="fl-bulbs"></div><div class="fl-burst"></div></div></div></div>
+              <div class="fl-tok" style="left: 794px; top: -34px"><div class="fl-mast"><div class="fl-pole"></div><div class="fl-head"><div class="fl-glow"></div><div class="fl-bulbs"></div><div class="fl-burst"></div></div></div></div>
+              <div class="fl-tok" style="left: -34px; top: 494px"><div class="fl-mast"><div class="fl-pole"></div><div class="fl-head"><div class="fl-glow"></div><div class="fl-bulbs"></div><div class="fl-burst"></div></div></div></div>
+              <div class="fl-tok" style="left: 794px; top: 494px"><div class="fl-mast"><div class="fl-pole"></div><div class="fl-head"><div class="fl-glow"></div><div class="fl-bulbs"></div><div class="fl-burst"></div></div></div></div>
+
+              <div class="post">
+                <div class="post-top"><span class="ptag"><span class="dot"></span>New game</span><span>Brewer Park Turf</span></div>
+                <div>
+                  <div class="ptitle">Sunday Night 7s</div>
+                  <div class="prow2"><span>[DATE] · [TIME]</span><span>$12 a spot</span><span>14 spots</span></div>
+                </div>
+                <div class="postbtn"><span class="pb-a">Post to club</span><span class="pb-b">Posted · link sent to club</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stamp" aria-hidden="true"><span>Lineup</span><span>locked</span></div>
+          <sc-for list="{{sparks}}" as="p" hint-placeholder-count="22"><div class="spark {{p.cls}}" data-dx="{{p.dx}}" data-dy="{{p.dy}}"></div></sc-for>
+          <div class="sflash" aria-hidden="true"></div>
+          <div class="sready glass"><span class="dot"></span>Lineup ready · Kickoff [TIME]</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VELOCITY TICKER -->
+  <section class="ticker" aria-label="Sports and promises">
+    <div class="band b1" ref="{{refBandA}}">
+      <div class="track" ref="{{refTrackA}}">
+        <div class="tg"><span>Soccer</span><span class="sep"></span><span>Basketball</span><span class="sep"></span><span>Volleyball</span><span class="sep"></span><span>Pickleball</span><span class="sep"></span><span>Hockey</span><span class="sep"></span><span>Ultimate</span><span class="sep"></span></div>
+        <div class="tg" aria-hidden="true"><span>Soccer</span><span class="sep"></span><span>Basketball</span><span class="sep"></span><span>Volleyball</span><span class="sep"></span><span>Pickleball</span><span class="sep"></span><span>Hockey</span><span class="sep"></span><span>Ultimate</span><span class="sep"></span></div>
+      </div>
+    </div>
+    <div class="band b2" ref="{{refBandB}}">
+      <div class="track" ref="{{refTrackB}}">
+        <div class="tg"><span>Lineup locked</span><span class="sep"></span><span>Paid before kickoff</span><span class="sep"></span><span>Waitlist on</span><span class="sep"></span><span>No group chat scramble</span><span class="sep"></span></div>
+        <div class="tg" aria-hidden="true"><span>Lineup locked</span><span class="sep"></span><span>Paid before kickoff</span><span class="sep"></span><span>Waitlist on</span><span class="sep"></span><span>No group chat scramble</span><span class="sep"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WORD-BY-WORD STATEMENT -->
+  <section class="sec">
+    <div class="wrap">
+      <p class="say">
+        <span class="w" style="--i: 0">The</span><span class="w" style="--i: 1">group</span><span class="w" style="--i: 2">chat</span><span class="w muted" style="--i: 3">was</span><span class="w muted" style="--i: 4">never</span><span class="w muted" style="--i: 5">a</span><span class="w muted" style="--i: 6">roster.</span>
+        <span class="w" style="--i: 7">KickLink</span><span class="w hl" style="--i: 8">locks</span><span class="w hl" style="--i: 9">the</span><span class="w hl" style="--i: 10">lineup,</span><span class="w" style="--i: 11">takes</span><span class="w" style="--i: 12">the</span><span class="w" style="--i: 13">fee</span><span class="w" style="--i: 14">and</span><span class="w okc" style="--i: 15">fills</span><span class="w okc" style="--i: 16">the</span><span class="w okc" style="--i: 17">gap.</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- STEP RING -->
+  <section class="ringsec" id="how" aria-label="How it works">
+    <div class="rstage">
+      <div class="wrap rgrid">
+        <div>
+          <span class="eyebrow">Game day flow</span>
+          <h2 class="title">From invite to attendance in <span class="ext">three steps.</span></h2>
+          <p class="lede">Players get a fast path to a confirmed spot. Organizers get a clean record after the whistle.</p>
+        </div>
+        <div class="rscene">
+          <div class="ring">
+            <article class="face f0" style="--i: 0">
+              <div class="num ext">01</div>
+              <h3>Join your club</h3>
+              <p>Players sign up, complete their profile and join the organizations they actually play with.</p>
+            </article>
+            <article class="face f1" style="--i: 1">
+              <div class="num ext">02</div>
+              <h3>Claim a spot</h3>
+              <p>Browse eligible games, see the details, pay if needed and get a confirmed registration.</p>
+            </article>
+            <article class="face f2" style="--i: 2">
+              <div class="num ext">03</div>
+              <h3>Show up and play</h3>
+              <p>Organizers see the roster, record attendance and keep club history accurate after the game.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STACKED FEATURE PANELS -->
+  <section class="sec" id="features">
+    <div class="wrap">
+      <div class="blurup" style="max-width: 820px">
+        <span class="eyebrow">Built for real pickup</span>
+        <h2 class="title">The clean operating system for <span class="hl">weekly games.</span></h2>
+        <p class="lede">KickLink keeps the player experience fast while giving organizers the controls they need behind the scenes.</p>
+      </div>
+
+      <div class="stack">
+        <article class="panel" style="top: 112px; view-timeline-name: --p1">
+          <div class="tilt"><div class="pbody glass" style="--next: --p2">
+            <div>
+              <span class="pn">01</span>
+              <h3 class="pt">Private clubs</h3>
+              <p>Members stay inside their own organizations, with club-specific rosters, games, announcements and payments.</p>
+            </div>
+            <div class="mock">
+              <div class="mrow"><span>[CLUB NAME]</span><span class="st gd">Members only</span></div>
+              <div class="mrow"><span>Sunday Night 7s</span><span class="st mu">Club game</span></div>
+              <div class="mrow"><span>Announcements</span><span class="st mu">Club only</span></div>
+            </div>
+          </div></div>
+        </article>
+
+        <article class="panel" style="top: 130px; view-timeline-name: --p2">
+          <div class="tilt"><div class="pbody glass" style="--next: --p3">
+            <div>
+              <span class="pn">02</span>
+              <h3 class="pt">Game fees handled</h3>
+              <p>Players can pay for eligible games online, with money routed to the organizer's connected account.</p>
+            </div>
+            <div class="mock">
+              <div class="mrow"><span>Sunday Night 7s · $12</span><span class="st ok">Paid</span></div>
+              <div class="mrow"><span>Routed to [ORGANIZER]</span><span class="st mu">Connected account</span></div>
+            </div>
+          </div></div>
+        </article>
+
+        <article class="panel" style="top: 148px; view-timeline-name: --p3">
+          <div class="tilt"><div class="pbody glass" style="--next: --p4">
+            <div>
+              <span class="pn">03</span>
+              <h3 class="pt">Automatic waitlists</h3>
+              <p>When a player drops, the next person can be offered the spot without the organizer rebuilding the lineup.</p>
+            </div>
+            <div class="mock">
+              <div class="mrow"><span>#6 dropped out</span><span class="st mu">Cancelled</span></div>
+              <div class="mrow"><span>Next on waitlist</span><span class="st gd">Spot offered</span></div>
+              <div class="mrow"><span>[PLAYER] accepted</span><span class="st ok">Confirmed</span></div>
+            </div>
+          </div></div>
+        </article>
+
+        <article class="panel" style="top: 166px; view-timeline-name: --p4">
+          <div class="tilt"><div class="pbody glass" style="--next: --p5">
+            <div>
+              <span class="pn">04</span>
+              <h3 class="pt">Fewer no-shows</h3>
+              <p>Registration status, attendance, cancellations and audit history give organizers a cleaner operating record.</p>
+            </div>
+            <div class="mock">
+              <div class="mrow"><span>[PLAYER]</span><span class="st ok">Attended</span></div>
+              <div class="mrow"><span>[PLAYER]</span><span class="st mu">Cancelled early</span></div>
+              <div class="mrow"><span>[PLAYER]</span><span class="st gd">No-show</span></div>
+            </div>
+          </div></div>
+        </article>
+
+        <article class="panel" style="top: 184px; view-timeline-name: --p5">
+          <div class="tilt"><div class="pbody glass" style="--next: --p6">
+            <div>
+              <span class="pn">05</span>
+              <h3 class="pt">Club announcements</h3>
+              <p>Send venue changes, jersey reminders and schedule updates from one place instead of chasing group chats.</p>
+            </div>
+            <div class="mock">
+              <div class="mrow"><span>Venue change: [FIELD] tonight</span><span class="st gd">Sent</span></div>
+              <div class="mrow"><span>Bring a light and a dark jersey</span><span class="st mu">Scheduled</span></div>
+            </div>
+          </div></div>
+        </article>
+
+        <article class="panel last" style="top: 202px; view-timeline-name: --p6">
+          <div class="tilt"><div class="pbody glass">
+            <div>
+              <span class="pn">06</span>
+              <h3 class="pt">Weekly pickup ready</h3>
+              <p>Create one-off games today, with recurring pickup series becoming the foundation for weekly clubs.</p>
+            </div>
+            <div class="mock">
+              <div class="mrow"><span>Sunday Night 7s</span><span class="st ok">This week</span></div>
+              <div class="mrow"><span>Recurring series</span><span class="st gd">Coming</span></div>
+            </div>
+          </div></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- AUDIENCE -->
+  <section class="sec" aria-label="Sports">
+    <div class="wrap">
+      <span class="eyebrow blurup">Any sport with a lineup</span>
+      <ol class="biglist">
+        <li class="blurup"><span class="bn">01</span><span class="bt">Soccer</span></li>
+        <li class="blurup"><span class="bn">02</span><span class="bt">Basketball</span></li>
+        <li class="blurup"><span class="bn">03</span><span class="bt">Volleyball</span></li>
+        <li class="blurup"><span class="bn">04</span><span class="bt">Pickleball</span></li>
+        <li class="blurup"><span class="bn">05</span><span class="bt">Hockey</span></li>
+        <li class="blurup"><span class="bn">06</span><span class="bt">Ultimate</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- QUOTE -->
+  <section class="sec">
+    <div class="wrap">
+      <figure class="qf blurup">
+        <svg width="56" height="44" viewBox="0 0 56 44" aria-hidden="true" style="color: var(--gold)"><path fill="currentColor" d="M0 44V27C0 12 7 3 21 0l3 6c-7 2-11 7-11 14h10v24H0zm32 0V27C32 12 39 3 53 0l3 6c-7 2-11 7-11 14h10v24H32z"></path></svg>
+        <blockquote>[ORGANIZER QUOTE: one line on what changed after moving the club to KickLink.]</blockquote>
+        <figcaption>[NAME] · [ROLE], [CLUB]</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="sec" id="pricing">
+    <div class="wrap">
+      <div class="blurup">
+        <span class="eyebrow">Pricing</span>
+        <h2 class="title">Free to play. <span class="hl">Fair to run.</span></h2>
+      </div>
+      <ul class="prows">
+        <li class="blurup">
+          <a class="prow" href="https://kick-link.vercel.app/signup">
+            <span class="pname">Players</span>
+            <span class="pdesc">Join clubs, claim spots and pay for eligible games in the app.</span>
+            <span class="price okc">Free</span>
+            <span class="arr" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+          </a>
+        </li>
+        <li class="blurup">
+          <a class="prow" href="#clubs">
+            <span class="pname">Organizers</span>
+            <span class="pdesc">Games, rosters, waitlists, announcements and attendance in one dashboard.</span>
+            <span class="price">[PRICE]</span>
+            <span class="arr" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+          </a>
+        </li>
+        <li class="blurup">
+          <a class="prow" href="#clubs">
+            <span class="pname">Paid games</span>
+            <span class="pdesc">Online game fees routed to the organizer's connected account.</span>
+            <span class="price">[FEE]</span>
+            <span class="arr" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="sec" id="clubs">
+    <div class="wrap cgrid">
+      <div class="blurup">
+        <span class="eyebrow">For organizers</span>
+        <h2 class="title">Organize a club? <span class="ext">Get your weekends back.</span></h2>
+        <p class="lede">Create games, manage rosters, collect eligible payments and keep attendance history in one dashboard.</p>
+      </div>
+
+      <form class="cform glass" onSubmit="{{submit}}" onPointerMove="{{tilt}}" onPointerLeave="{{untilt}}">
+        <sc-if value="{{notSent}}" hint-placeholder-val="{{ true }}">
+          <div class="fgrid">
+            <div class="field"><label for="kl-name">Your name</label><input id="kl-name" name="name" autocomplete="name" placeholder="Alex Martin" required></div>
+            <div class="field"><label for="kl-email">Email</label><input id="kl-email" name="email" type="email" autocomplete="email" placeholder="you@club.com" required></div>
+            <div class="field"><label for="kl-club">Club name</label><input id="kl-club" name="club" placeholder="Sunday Night 7s"></div>
+            <div class="field"><label for="kl-sport">Sport</label>
+              <select id="kl-sport" name="sport">
+                <option>Soccer</option><option>Basketball</option><option>Volleyball</option><option>Pickleball</option><option>Hockey</option><option>Ultimate</option><option>Something else</option>
+              </select>
+            </div>
+            <div class="field full"><label for="kl-msg">How does your club run today?</label><textarea id="kl-msg" name="message" placeholder="Weekly game, roughly how many players, how you collect fees now"></textarea></div>
+            <div class="field full" style="flex-direction: row; justify-content: flex-end">
+              <button class="btn btn-p" type="submit" onPointerMove="{{mag}}" onPointerLeave="{{unmag}}">
+                Start organizing
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+              </button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{sent}}" hint-placeholder-val="{{ false }}">
+          <div class="sent" role="status">
+            <span class="chip glass" style="align-self: flex-start"><span class="dot"></span>Request in</span>
+            <h3 class="title" style="font-size: 44px">You are on the list.</h3>
+            <p class="muted" style="margin: 0">We will reach out about setting up your club within [RESPONSE TIME].</p>
+          </div>
+        </sc-if>
+      </form>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="wrap">
+      <div class="ftop">
+        <a class="logo" href="#top">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true" style="color: var(--gold)"><circle cx="12" cy="16" r="7.5"></circle><circle cx="20" cy="16" r="7.5"></circle></svg>
+          <span>KickLink</span>
+        </a>
+        <nav class="flinks" aria-label="Footer">
+          <a href="#features">Features</a>
+          <a href="#how">How it works</a>
+          <a href="#clubs">For organizers</a>
+          <a href="https://kick-link.vercel.app/privacy">Privacy</a>
+          <a href="https://kick-link.vercel.app/terms">Terms</a>
+        </nav>
+      </div>
+      <div class="mark" aria-hidden="true">
+        <sc-for list="{{markLetters}}" as="l" hint-placeholder-count="8"><span class="fl" style="--i: {{l.i}}">{{l.ch}}</span></sc-for>
+      </div>
+      <div class="fbot">
+        <span>© 2026 KickLink</span>
+        <span>Ottawa, ON</span>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"gold":{"editor":"color","default":"#E7B95A","options":["#E7B95A","#D9A945","#F4D78B","#C9952F"],"section":"Palette"},"pitch":{"editor":"color","default":"#54E0A0","options":["#54E0A0","#2BB47C","#7FD8FF","#FF8A5B"],"section":"Palette"},"glow":{"editor":"range","default":0.3,"min":0.2,"max":0.45,"step":0.01,"section":"Atmosphere"},"spotlight":{"editor":"boolean","default":true,"section":"Motion"},"$preview":{"width":1440,"height":17600}}'>
+class Component extends DCLogic {
+  reduced() {
+    try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
+  }
+  ensure() {
+    if (this.r) return;
+    this.el = {};
+    const set = (k) => (node) => { this.el[k] = node; };
+    this.r = {
+      spot: set('spot'), story: set('story'), bandA: set('bandA'), bandB: set('bandB'), trackA: set('trackA'), trackB: set('trackB'),
+      mag: (e) => {
+        if (this.reduced()) return;
+        const b = e.currentTarget, r = b.getBoundingClientRect();
+        const dx = (e.clientX - r.left) / r.width - 0.5, dy = (e.clientY - r.top) / r.height - 0.5;
+        b.style.translate = (dx * 14).toFixed(1) + 'px ' + (dy * 10).toFixed(1) + 'px';
+        b.style.rotate = (dx * 4).toFixed(2) + 'deg';
+      },
+      unmag: (e) => { const b = e.currentTarget; b.style.translate = '0px 0px'; b.style.rotate = '0deg'; },
+      tilt: (e) => {
+        if (this.reduced()) return;
+        const c = e.currentTarget, r = c.getBoundingClientRect();
+        const dx = (e.clientX - r.left) / r.width - 0.5, dy = (e.clientY - r.top) / r.height - 0.5;
+        c.style.transform = 'perspective(1400px) rotateX(' + (-dy * 7).toFixed(2) + 'deg) rotateY(' + (dx * 9).toFixed(2) + 'deg)';
+      },
+      untilt: (e) => { e.currentTarget.style.transform = 'perspective(1400px) rotateX(0deg) rotateY(0deg)'; },
+      submit: (e) => { e.preventDefault(); this.setState({ sent: true }); }
+    };
+  }
+  setupStory() {
+    const story = this.el.story;
+    if (!story) return;
+    const scene = story.querySelector('.sscene'), fit = story.querySelector('.fit');
+    const doFit = () => {
+      if (!scene || !fit) return;
+      const f = Math.min(1, scene.clientWidth / 840, scene.clientHeight / 600);
+      fit.style.setProperty('--fit', Math.max(0.3, f).toFixed(3));
+    };
+    doFit();
+    if (window.ResizeObserver) { this.ro = new ResizeObserver(doFit); this.ro.observe(scene); }
+    const M = window.Motion;
+    if (!M || !M.animate || !M.scroll || this.reduced()) return;
+    this.setState({ live: true }, () => {
+      requestAnimationFrame(() => {
+        try { this.buildStory(story, M); doFit(); }
+        catch (e) { this.setState({ live: false }); }
+      });
+    });
+  }
+  buildStory(story, M) {
+    const q = (s) => story.querySelector(s), qa = (s) => Array.from(story.querySelectorAll(s));
+    const seq = [];
+    const add = (el, kf, at, duration, ease, extra) => {
+      if (!el || (Array.isArray(el) && !el.length)) return;
+      seq.push([el, kf, Object.assign({ at: at, duration: duration, ease: ease || [0.2, 0.8, 0.2, 1] }, extra || {})]);
+    };
+    const T = (x, y, z, r) => 'translate3d(' + x + 'px,' + y + 'px,' + z + 'px) rotateZ(' + (r || 0) + 'deg)';
+    const parts = (el) => Array.from(el.querySelectorAll('.sp-head,.sp-stem,.sp-foot'));
+    const inOut = [0.65, 0, 0.35, 1];
+    const plane = q('.sp-plane');
+    const caps = qa('.cap2');
+    const pins = qa('.sp-tok.pl');
+    const rips = qa('.sp-rip');
+    const bench = qa('.sp-tok.bn');
+
+    // Act 1: the game card spins in, gets posted, then flips down into the pitch
+    add(plane, { '--tilt': ['12deg', '0deg'], '--spinY': ['-26deg', '0deg'], '--yaw': ['4deg', '0deg'], '--sc': [0.5, 0.58] }, 0, 1.0, inOut);
+    add(q('.post'), { opacity: [1, 1] }, 0, 0.01);
+    add(q('.pb-b'), { opacity: [0, 1] }, 1.0, 0.25);
+    add(q('.postbtn'), { scale: [1, 0.94, 1] }, 0.95, 0.35);
+    add(plane, { '--tilt': ['0deg', '58deg'], '--yaw': ['0deg', '-14deg'], '--sc': [0.58, 1] }, 1.4, 1.2, inOut);
+    add(q('.post'), { opacity: [1, 0] }, 1.75, 0.45);
+    add(qa('.sp-slot'), { opacity: [0, 1] }, 2.1, 0.3, 'linear', { delay: M.stagger(0.02) });
+    add(caps[0], { opacity: [1, 0], y: [0, -40], filter: ['blur(0px)', 'blur(8px)'] }, 2.3, 0.35);
+
+    // Act 2: fourteen players rain in, each landing pays $12
+    add(caps[1], { opacity: [0, 1], y: [40, 0], filter: ['blur(8px)', 'blur(0px)'] }, 2.6, 0.35);
+    const landing = [];
+    pins.forEach((p, i) => {
+      const t = 2.7 + i * 0.16;
+      add(p, { transform: [T(0, 0, 460), T(0, 0, 0), T(0, 0, 26), T(0, 0, 0)] }, t, 0.5, 'linear', { times: [0, 0.62, 0.8, 1] });
+      add(parts(p), { opacity: [0, 1] }, t, 0.12, 'linear');
+      add(rips[i], { opacity: [0, 0.95, 0], scale: [0.3, 1.6, 2.8] }, t + 0.3, 0.55);
+      add(p.querySelector('.sp-cash span'), { opacity: [0, 1, 1, 0], y: [8, -26, -40, -58] }, t + 0.3, 0.8, 'linear');
+      landing.push(t + 0.31);
+    });
+    add(caps[1], { opacity: [1, 0], y: [0, -40], filter: ['blur(0px)', 'blur(8px)'] }, 5.1, 0.35);
+
+    // Act 3: camera swings, #6 drops out, the waitlist hops in
+    add(caps[2], { opacity: [0, 1], y: [40, 0], filter: ['blur(8px)', 'blur(0px)'] }, 5.4, 0.35);
+    add(plane, { '--yaw': ['-14deg', '16deg'], '--tilt': ['58deg', '46deg'], '--sc': [1, 0.92] }, 5.35, 1.0, inOut);
+    const benchFrom = [[-197.6, 290], [60.8, 0], [60.8, 0]];
+    bench.forEach((b, i) => {
+      const o = benchFrom[i], t = 5.55 + i * 0.1;
+      add(b, { transform: [T(o[0], o[1], 260), T(o[0], o[1], 0), T(o[0], o[1], 18), T(o[0], o[1], 0)] }, t, 0.45, 'linear', { times: [0, 0.62, 0.8, 1] });
+      add(parts(b), { opacity: [0, 1] }, t, 0.12, 'linear');
+    });
+    const out = pins[10];
+    add(out, { transform: [T(0, 0, 0), T(30, -10, 90, 10), T(190, -110, 600, 80)] }, 6.0, 0.8, [0.5, 0, 0.9, 0.5]);
+    add(parts(out), { opacity: [1, 0] }, 6.35, 0.4, 'linear');
+    add(q('.sp-open'), { opacity: [0, 1, 1, 1, 0], scale: [0.4, 1, 1.25, 1, 1.6] }, 6.3, 1.3, 'linear');
+    const hop = bench[0];
+    add(hop, { transform: [T(-197.6, 290, 0), T(-148, 218, 150), T(-99, 145, 230), T(-49, 72, 150), T(0, 0, 0), T(0, 0, 20), T(0, 0, 0)] }, 6.8, 0.85, 'linear', { times: [0, 0.18, 0.36, 0.54, 0.74, 0.87, 1] });
+    add(rips[10], { opacity: [0, 0.95, 0], scale: [0.3, 1.6, 2.8] }, 7.45, 0.55);
+    add(hop.querySelector('.sp-cash span'), { opacity: [0, 1, 1, 0], y: [8, -26, -40, -58] }, 7.45, 0.8, 'linear');
+    add(bench[1], { transform: [T(60.8, 0, 0), T(30, 0, 30), T(0, 0, 0)] }, 7.55, 0.4, inOut);
+    add(bench[2], { transform: [T(60.8, 0, 0), T(30, 0, 30), T(0, 0, 0)] }, 7.62, 0.4, inOut);
+    add(caps[2], { opacity: [1, 0], y: [0, -40], filter: ['blur(0px)', 'blur(8px)'] }, 7.6, 0.35);
+
+    // Act 4: lineup locks: links draw, light sweeps, stamp slams, sparks burst
+    add(caps[3], { opacity: [0, 1], y: [40, 0], filter: ['blur(8px)', 'blur(0px)'] }, 7.9, 0.35);
+    add(plane, { '--yaw': ['16deg', '-6deg'], '--tilt': ['46deg', '56deg'], '--sc': [0.92, 1.04] }, 7.7, 1.3, inOut);
+    add(qa('.sp-lines path'), { strokeDashoffset: [1, 0] }, 8.0, 0.5, [0.2, 0.8, 0.2, 1], { delay: M.stagger(0.025) });
+    add(q('.sweep'), { x: [-220, 780], opacity: [0, 1, 1, 0] }, 8.15, 0.9, 'linear');
+    add(rips, { opacity: [0, 0.9, 0], scale: [0.3, 1.8, 3] }, 8.6, 0.55, [0.2, 0.8, 0.2, 1], { delay: M.stagger(0.025) });
+    const stamp = q('.stamp');
+    add(stamp, { opacity: [0, 1], scale: [2.6, 1], rotate: [-18, -6] }, 8.9, 0.55, [0.34, 1.56, 0.64, 1]);
+    add(stamp, { filter: ['blur(16px)', 'blur(0px)'] }, 8.9, 0.4);
+    qa('.spark').forEach((s) => {
+      const dx = parseFloat(s.getAttribute('data-dx')) || 0, dy = parseFloat(s.getAttribute('data-dy')) || 0;
+      add(s, { opacity: [0, 1, 1, 0], x: [0, dx * 0.7, dx * 0.95, dx], y: [0, dy * 0.7, dy * 0.95, dy + 30], scale: [0.4, 1.3, 1, 0.3] }, 9.05, 0.9, 'linear');
+    });
+    add(q('.sready'), { opacity: [0, 1], y: [24, 0], scale: [0.8, 1] }, 9.3, 0.5, [0.34, 1.56, 0.64, 1]);
+    add(plane, { '--sc': [1.04, 1.04] }, 9.95, 0.05, 'linear');
+
+    // Floodlights: towers appear as the card becomes a pitch, then power on corner by corner
+    const glows = qa('.fl-glow'), pools = qa('.fl-pool'), bulbs = qa('.fl-bulbs'), bursts = qa('.fl-burst');
+    add(qa('.fl-pole,.fl-head'), { opacity: [0, 1] }, 2.1, 0.3, 'linear');
+    const order = [0, 1, 3, 2];
+    order.forEach((k, n) => {
+      const t = 2.4 + n * 0.2;
+      add(bulbs[k], { opacity: [0.25, 1, 0.35, 1, 0.6, 1] }, t, 0.5, 'linear');
+      add(glows[k], { opacity: [0, 1, 0.15, 1, 0.5, 1] }, t, 0.5, 'linear');
+      add(pools[k], { opacity: [0, 0.9, 0.1, 0.9, 0.45, 0.9] }, t + 0.04, 0.5, 'linear');
+    });
+    // Act 3: a player drops, the stadium falters
+    add(glows, { opacity: [1, 0.3, 0.75, 0.25, 0.35] }, 5.95, 0.6, 'linear');
+    add(pools, { opacity: [0.9, 0.25, 0.6, 0.2, 0.25] }, 5.95, 0.6, 'linear');
+    add(bulbs, { opacity: [1, 0.45, 0.8, 0.4, 0.5] }, 5.95, 0.6, 'linear');
+    // the sub lands, lights snap back
+    add(glows, { opacity: [0.35, 1, 0.7, 1] }, 7.45, 0.3, 'linear');
+    add(pools, { opacity: [0.25, 0.9, 0.6, 0.9] }, 7.45, 0.3, 'linear');
+    add(bulbs, { opacity: [0.5, 1, 0.8, 1] }, 7.45, 0.3, 'linear');
+    // Act 4: lights chase the sweep left to right, then strobe as the stamp slams
+    [[0, 2], [1, 3]].forEach((pair, n) => {
+      const t = 8.15 + n * 0.45;
+      add(pair.map((k) => bursts[k]), { opacity: [0, 0.85, 0], scale: [0.6, 1, 1.2] }, t, 0.35, 'linear');
+    });
+    add(bursts, { opacity: [0, 1, 0.1, 1, 0.1, 0.9, 0], scale: [0.7, 1.1, 1, 1.15, 1, 1.2, 1.3] }, 8.88, 0.6, 'linear');
+    add(glows, { opacity: [1, 0.2, 1, 0.2, 1, 1] }, 8.88, 0.6, 'linear');
+    add(q('.sflash'), { opacity: [0, 0.6, 0, 0.45, 0, 0.25, 0] }, 8.88, 0.65, 'linear');
+
+    this.landing = landing;
+    this.countEl = q('[data-count]');
+    this.moneyEl = q('[data-money]');
+    this.stepEls = qa('.steps li');
+    const anim = M.animate(seq);
+    const opts = { target: story, offset: ['start start', 'end end'] };
+    this.storyStops = [M.scroll(anim, opts), M.scroll((p) => this.storyTick(p * 10), opts)];
+    this.storyAnim = anim;
+    this.storyTick(0);
+  }
+  storyTick(t) {
+    let c = 0;
+    (this.landing || []).forEach((l) => { if (t >= l) c++; });
+    if (t >= 6.35) c--;
+    if (t >= 7.76) c++;
+    c = Math.max(0, Math.min(14, c));
+    if (c !== this.lastCount) {
+      this.lastCount = c;
+      if (this.countEl) this.countEl.textContent = String(c);
+      if (this.moneyEl) this.moneyEl.textContent = String(c * 12);
+    }
+    const step = t < 2.45 ? 0 : t < 5.3 ? 1 : t < 7.8 ? 2 : 3;
+    if (step !== this.lastStep) {
+      this.lastStep = step;
+      (this.stepEls || []).forEach((li, i) => li.classList.toggle('on', i === step));
+    }
+  }
+  componentDidMount() {
+    this.ensure();
+    this.setupStory();
+    if (this.reduced()) return;
+    this.tx = window.innerWidth / 2; this.ty = window.innerHeight / 3;
+    this.x = this.tx; this.y = this.ty; this.vx = 0; this.vy = 0;
+    this.lastY = window.scrollY; this.vel = 0;
+    this.onMove = (e) => {
+      this.tx = e.clientX; this.ty = e.clientY;
+      if (this.el.spot) this.el.spot.style.opacity = '1';
+    };
+    window.addEventListener('pointermove', this.onMove, { passive: true });
+    let last = performance.now();
+    const tick = (now) => {
+      const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000)); last = now;
+      const k = 120, c = 16;
+      this.vx += ((this.tx - this.x) * k - this.vx * c) * dt; this.x += this.vx * dt;
+      this.vy += ((this.ty - this.y) * k - this.vy * c) * dt; this.y += this.vy * dt;
+      if (this.el.spot) this.el.spot.style.transform = 'translate3d(' + (this.x - 360).toFixed(1) + 'px,' + (this.y - 360).toFixed(1) + 'px,0)';
+      const sy = window.scrollY, raw = (sy - this.lastY) / dt; this.lastY = sy;
+      this.vel += (raw - this.vel) * 0.12;
+      const v = this.vel, speed = Math.min(6, 1 + Math.abs(v) / 400), dir = v < -20 ? -1 : 1;
+      [this.el.trackA, this.el.trackB].forEach((t) => {
+        if (t && t.getAnimations) t.getAnimations().forEach((a) => { a.playbackRate = speed * dir; });
+      });
+      const sk = Math.max(-10, Math.min(10, v / 120)).toFixed(2) + 'deg';
+      [this.el.bandA, this.el.bandB].forEach((b) => { if (b) b.style.setProperty('--skew', sk); });
+      this.raf = requestAnimationFrame(tick);
+    };
+    this.raf = requestAnimationFrame(tick);
+  }
+  componentWillUnmount() {
+    if (this.raf) cancelAnimationFrame(this.raf);
+    if (this.onMove) window.removeEventListener('pointermove', this.onMove);
+    if (this.ro) this.ro.disconnect();
+    (this.storyStops || []).forEach((stop) => { if (typeof stop === 'function') stop(); });
+    if (this.storyAnim && this.storyAnim.cancel) this.storyAnim.cancel();
+  }
+  renderVals() {
+    this.ensure();
+    const S = [[7,50],[21,24],[21,76],[34,50],[38,16],[38,84],[46,50],[93,50],[79,24],[79,76],[66,50],[62,16],[62,84],[54,50]];
+    const N = [1,4,5,8,7,11,9,1,2,3,6,10,14,9];
+    const tokens = (withLeaving) => S.map((p, i) => ({ i: i, x: p[0], y: p[1], n: N[i], cls: (i < 7 ? 'a' : 'b') + (withLeaving && i === 10 ? ' leaving' : '') }));
+    let k = 0;
+    const heroLines = [[['Lock',''],['the',''],['lineup','']],[['before',''],['kickoff.','ext']]].map((line) => ({
+      words: line.map((w) => ({ cls: w[1], chars: w[0].split('').map((ch) => ({ ch: ch, i: k++ })) }))
+    }));
+    const markLetters = 'KICKLINK'.split('').map((ch, i) => ({ ch: ch, i: i }));
+    const px = (p) => ({ x: +(p[0] * 7.6).toFixed(1), y: +(p[1] * 4.6).toFixed(1) });
+    const spSlots = S.map(px);
+    const spPins = S.map((p, i) => Object.assign(px(p), { n: N[i], cls: (i < 7 ? 'a' : 'b') + ' pl' + (i === 10 ? ' leaving' : '') }));
+    const E = [[0,1],[0,2],[1,3],[2,3],[1,4],[2,5],[3,6],[4,6],[5,6]];
+    const spEdges = [];
+    [0, 7].forEach((off) => E.forEach((e) => {
+      const a = spSlots[e[0] + off], b = spSlots[e[1] + off];
+      spEdges.push({ cls: off ? 'eb' : 'ea', d: 'M' + a.x + ' ' + a.y + ' L' + b.x + ' ' + b.y });
+    }));
+    const sparks = Array.from({ length: 22 }, (_, i) => {
+      const ang = (i / 22) * Math.PI * 2 + (i % 2) * 0.12, r = 150 + (i % 4) * 55;
+      return { dx: Math.round(Math.cos(ang) * r * 1.5), dy: Math.round(Math.sin(ang) * r * 0.75), cls: (i % 3 === 0 ? 'g' : '') + (i % 2 ? ' s' : '') };
+    });
+    const sent = !!(this.state && this.state.sent);
+    return {
+      gold: this.props.gold ?? '#E7B95A',
+      pitch: this.props.pitch ?? '#54E0A0',
+      glow: this.props.glow ?? 0.3,
+      spotlight: this.props.spotlight ?? true,
+      heroLines: heroLines,
+      heroTokens: tokens(false),
+      spSlots: spSlots, spPins: spPins, spEdges: spEdges, sparks: sparks,
+      storyCls: this.state && this.state.live ? 'live' : '',
+      refStory: this.r.story,
+      markLetters: markLetters,
+      sent: sent, notSent: !sent,
+      refSpot: this.r.spot, refBandA: this.r.bandA, refBandB: this.r.bandB, refTrackA: this.r.trackA, refTrackB: this.r.trackB,
+      mag: this.r.mag, unmag: this.r.unmag, tilt: this.r.tilt, untilt: this.r.untilt, submit: this.r.submit
+    };
+  }
+}
+</script>
+</body>
+</html>
