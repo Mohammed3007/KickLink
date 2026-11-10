@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform, type MotionValue } from "motion/react";
-import { useLiveMotion } from "@/components/glass/use-live-motion";
+import { useLiteMotion, useLiveMotion } from "@/components/glass/use-live-motion";
 
 const WORDS: [string, string?][] = [
   ["The"], ["group"], ["chat"], ["was", "muted"], ["never", "muted"], ["a", "muted"], ["roster.", "muted"],
@@ -10,7 +10,7 @@ const WORDS: [string, string?][] = [
   ["fills", "okc"], ["the", "okc"], ["gap.", "okc"],
 ];
 
-function Word({ text, className, index, progress, live }: { text: string; className?: string; index: number; progress: MotionValue<number>; live: boolean }) {
+function Word({ text, className, index, progress, live, lite }: { text: string; className?: string; index: number; progress: MotionValue<number>; live: boolean; lite: boolean }) {
   // Each word resolves over its own slice of the paragraph's scroll range.
   const start = (index / WORDS.length) * 0.55;
   const range = [start, start + 0.4];
@@ -19,7 +19,7 @@ function Word({ text, className, index, progress, live }: { text: string; classN
   const rotateX = useTransform(progress, range, [-80, 0]);
   const y = useTransform(progress, range, [24, 0]);
   return (
-    <motion.span className={className ? `w ${className}` : "w"} style={live ? { opacity, filter, rotateX, y } : undefined}>
+    <motion.span className={className ? `w ${className}` : "w"} style={live ? { opacity, rotateX, y, ...(lite ? {} : { filter }) } : undefined}>
       {text}
     </motion.span>
   );
@@ -28,6 +28,7 @@ function Word({ text, className, index, progress, live }: { text: string; classN
 /** "The group chat was never a roster…", resolving word by word on scroll. */
 export function Statement() {
   const live = useLiveMotion();
+  const lite = useLiteMotion();
   const ref = useRef<HTMLParagraphElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 90%", "end 45%"] });
   return (
@@ -35,7 +36,7 @@ export function Statement() {
       <div className="wrap">
         <p className="say" ref={ref}>
           {WORDS.map(([text, cls], i) => (
-            <Word key={i} text={text} className={cls} index={i} progress={scrollYProgress} live={live} />
+            <Word key={i} text={text} className={cls} index={i} progress={scrollYProgress} live={live} lite={lite} />
           ))}
         </p>
       </div>

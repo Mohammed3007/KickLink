@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { animate, stagger } from "motion";
 import { useMotionValueEvent, useScroll } from "motion/react";
-import { useLiveMotion } from "@/components/glass/use-live-motion";
+import { useLiteMotion, useLiveMotion } from "@/components/glass/use-live-motion";
 import { HERO_SLOTS, JERSEYS } from "./data";
 
 // Scene geometry (px on the 760×460 pitch) and timeline data from the design
@@ -44,7 +44,7 @@ type Controls = ReturnType<typeof animate>;
 // Motion sequence segments: [element(s), keyframes, options].
 type Segment = [Element | Element[], Record<string, unknown>, Record<string, unknown>];
 
-function buildTimeline(story: HTMLElement) {
+function buildTimeline(story: HTMLElement, lite: boolean) {
   const q = (s: string) => story.querySelector(s) as HTMLElement;
   const qa = (s: string) => Array.from(story.querySelectorAll<HTMLElement>(s));
   const seq: Segment[] = [];
@@ -61,8 +61,9 @@ function buildTimeline(story: HTMLElement) {
   const pins = qa(".sp-tok.pl");
   const rips = qa(".sp-rip");
   const bench = qa(".sp-tok.bench-tok");
-  const capOut = { opacity: [1, 0], y: [0, -40], filter: ["blur(0px)", "blur(8px)"] };
-  const capIn = { opacity: [0, 1], y: [40, 0], filter: ["blur(8px)", "blur(0px)"] };
+  // Phones skip the blur keyframes: filters are re-rasterised every frame.
+  const capOut = { opacity: [1, 0], y: [0, -40], ...(lite ? {} : { filter: ["blur(0px)", "blur(8px)"] }) };
+  const capIn = { opacity: [0, 1], y: [40, 0], ...(lite ? {} : { filter: ["blur(8px)", "blur(0px)"] }) };
   const landing: number[] = [];
 
   // Act 1: the game card spins in, gets posted, then flips down into the pitch.
@@ -117,7 +118,7 @@ function buildTimeline(story: HTMLElement) {
   add(rips, { opacity: [0, 0.9, 0], scale: [0.3, 1.8, 3] }, 8.6, 0.55, [0.2, 0.8, 0.2, 1], { delay: stagger(0.025) });
   const stamp = q(".stamp");
   add(stamp, { opacity: [0, 1], scale: [2.6, 1], rotate: [-18, -6] }, 8.9, 0.55, pop);
-  add(stamp, { filter: ["blur(16px)", "blur(0px)"] }, 8.9, 0.4);
+  if (!lite) add(stamp, { filter: ["blur(16px)", "blur(0px)"] }, 8.9, 0.4);
   qa(".spark").forEach((s) => {
     const dx = Number(s.dataset.dx) || 0;
     const dy = Number(s.dataset.dy) || 0;
@@ -164,6 +165,7 @@ function buildTimeline(story: HTMLElement) {
  */
 export function GameDayStory() {
   const live = useLiveMotion();
+  const lite = useLiteMotion();
   const [built, setBuilt] = useState(false);
   const ref = useRef<HTMLElement>(null);
   const countRef = useRef<HTMLSpanElement>(null);
@@ -216,7 +218,7 @@ export function GameDayStory() {
   useEffect(() => {
     if (!built || !ref.current) return;
     try {
-      timeline.current = buildTimeline(ref.current);
+      timeline.current = buildTimeline(ref.current, lite);
       const t = scrollYProgress.get() * TIMELINE;
       timeline.current.controls.time = t;
       tick(t);
@@ -230,8 +232,8 @@ export function GameDayStory() {
       timeline.current = null;
       last.current = { count: -1, step: -1 };
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- build once per switch to the pinned layout
-  }, [built]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- rebuild only when the layout or lite mode changes
+  }, [built, lite]);
 
   useMotionValueEvent(scrollYProgress, "change", (p) => {
     if (!timeline.current) return;

@@ -15,3 +15,22 @@ export function useLiveMotion() {
   useEffect(() => setMounted(true), []);
   return mounted && !reduced;
 }
+
+const LITE_QUERY = "(max-width: 860px), (pointer: coarse)";
+
+/**
+ * True on phones and touch devices (same query as the lite block in
+ * app/glass.css). Scroll effects there skip blur filters, which mobile GPUs
+ * re-rasterise every frame.
+ */
+export function useLiteMotion() {
+  const [lite, setLite] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(LITE_QUERY);
+    const update = () => setLite(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return lite;
+}

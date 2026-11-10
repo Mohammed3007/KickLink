@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, useMotionValue, useSpring } from "motion/react";
-import { useLiveMotion } from "./use-live-motion";
+import { useLiteMotion, useLiveMotion } from "./use-live-motion";
 
 /**
  * Drifting gold and pitch-green glows, plus a gold spotlight that follows the
@@ -10,6 +10,7 @@ import { useLiveMotion } from "./use-live-motion";
  */
 export function GlassBackdrop({ fixed = false, glows = 4 }: { fixed?: boolean; glows?: 3 | 4 }) {
   const live = useLiveMotion();
+  const lite = useLiteMotion();
   const [seen, setSeen] = useState(false);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -17,7 +18,7 @@ export function GlassBackdrop({ fixed = false, glows = 4 }: { fixed?: boolean; g
   const sy = useSpring(y, { stiffness: 120, damping: 16 });
 
   useEffect(() => {
-    if (!live) return;
+    if (!live || lite) return;
     x.jump(window.innerWidth / 2 - 360);
     y.jump(window.innerHeight / 3 - 360);
     const onMove = (e: PointerEvent) => {
@@ -28,7 +29,7 @@ export function GlassBackdrop({ fixed = false, glows = 4 }: { fixed?: boolean; g
     };
     window.addEventListener("pointermove", onMove, { passive: true });
     return () => window.removeEventListener("pointermove", onMove);
-  }, [live, x, y]);
+  }, [live, lite, x, y]);
 
   return (
     <>
@@ -38,7 +39,7 @@ export function GlassBackdrop({ fixed = false, glows = 4 }: { fixed?: boolean; g
         <div className="g g3" />
         {glows === 4 && <div className="g g4" />}
       </div>
-      {live && <motion.div className={seen ? "spot on" : "spot"} style={{ x: sx, y: sy }} aria-hidden="true" />}
+      {live && !lite && <motion.div className={seen ? "spot on" : "spot"} style={{ x: sx, y: sy }} aria-hidden="true" />}
     </>
   );
 }

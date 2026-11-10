@@ -2,7 +2,7 @@
 
 import { useRef, type RefObject } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
-import { useLiveMotion } from "@/components/glass/use-live-motion";
+import { useLiteMotion, useLiveMotion } from "@/components/glass/use-live-motion";
 
 type Tone = "ok" | "gd" | "mu";
 const PANELS: { title: string; body: string; rows: [string, string, Tone][] }[] = [
@@ -43,11 +43,13 @@ function Panel({
   self,
   next,
   live,
+  lite,
 }: {
   i: number;
   self: RefObject<HTMLElement | null>;
   next: RefObject<HTMLElement | null> | null;
   live: boolean;
+  lite: boolean;
 }) {
   const panel = PANELS[i];
   // Tilts up as it arrives…
@@ -60,11 +62,13 @@ function Panel({
   const sinkScale = useTransform(covered, [0, 1], [1, 0.92]);
   const sinkY = useTransform(covered, [0, 1], [0, -24]);
   const filter = useTransform(covered, [0, 1], ["blur(0px) brightness(1)", "blur(3px) brightness(0.5)"]);
+  // Phones dim the covered panel with opacity instead of a filter.
+  const dim = useTransform(covered, [0, 1], [1, 0.45]);
 
   return (
     <article className="panel" ref={self} style={{ top: 112 + i * 18 }}>
       <motion.div className="tilt" style={live ? { rotateX, y, scale, transformPerspective: 1400 } : undefined}>
-        <motion.div className="pbody glass" style={live && next ? { scale: sinkScale, y: sinkY, filter } : undefined}>
+        <motion.div className="pbody glass" style={live && next ? { scale: sinkScale, y: sinkY, ...(lite ? { opacity: dim } : { filter }) } : undefined}>
           <div>
             <span className="pn">0{i + 1}</span>
             <h3 className="pt">{panel.title}</h3>
@@ -87,6 +91,7 @@ function Panel({
 /** Six sticky feature panels that stack over each other as you scroll. */
 export function FeatureStack() {
   const live = useLiveMotion();
+  const lite = useLiteMotion();
   const r0 = useRef<HTMLElement>(null);
   const r1 = useRef<HTMLElement>(null);
   const r2 = useRef<HTMLElement>(null);
@@ -97,7 +102,7 @@ export function FeatureStack() {
   return (
     <div className="stack">
       {PANELS.map((_, i) => (
-        <Panel key={i} i={i} self={refs[i]} next={refs[i + 1] ?? null} live={live} />
+        <Panel key={i} i={i} self={refs[i]} next={refs[i + 1] ?? null} live={live} lite={lite} />
       ))}
     </div>
   );
