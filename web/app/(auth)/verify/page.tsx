@@ -29,7 +29,7 @@ export default async function VerifyPage({
       icon={ok ? <CheckCircle2 className="size-[26px]" /> : <XCircle className="size-[26px]" />}
       title={ok ? "Email verified" : "Link invalid or expired"}
     >
-      <p className="mb-5">
+      <p style={{ margin: "0 0 20px" }}>
         {ok
           ? "Your account is active. Log in to pick your club."
           : "This verification link is no longer valid. Try logging in to get a fresh one."}

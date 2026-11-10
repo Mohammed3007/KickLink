@@ -113,3 +113,11 @@ export type SignInInput = z.infer<typeof signInSchema>;
 export type SignUpInput = z.infer<typeof signUpSchema>;
 export type CreateGameInput = z.infer<typeof createGameSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+export const organizerLeadSchema = z.object({
+  name: text(80).pipe(z.string().min(2, "Tell us your name")),
+  email,
+  club: text(80).optional().default(""),
+  sport: text(40).optional().default(""),
+  message: text(2000).optional().default(""),
+});

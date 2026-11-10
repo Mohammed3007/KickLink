@@ -35,6 +35,9 @@ export default async function AdminApplicationsPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Link href="/admin/leads">
+              <Button variant="secondary">Leads</Button>
+            </Link>
             <Link href="/admin/analytics">
               <Button variant="secondary">Analytics</Button>
             </Link>

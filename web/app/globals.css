@@ -74,6 +74,7 @@
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
+
   --animate-fade-up: fade-up 0.6s var(--ease-out-soft) both;
   --animate-fade-in: fade-in 0.5s ease both;
   --animate-pop: pop 0.4s var(--ease-spring) both;
@@ -84,6 +85,24 @@
   --animate-soft-ping: soft-ping 1.9s ease-out infinite;
   /* Staggered entrance: pair with style={{ animationDelay }} */
   --animate-rise: rise-in 0.62s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+
+/* KickLink Glass (landing + auth pages, see app/glass.css). Static so the
+   variables exist even though only glass.css reads them. Named glass-*
+   because `ink` is already the light text colour in the app theme. */
+@theme static {
+  --color-glass-ink: #08080a;
+  --color-glass-deep: #0b1a14;
+  --color-glass-gold: #e7b95a;
+  --color-glass-gold-hi: color-mix(in oklab, #e7b95a 62%, #fff);
+  --color-glass-gold-deep: color-mix(in oklab, #e7b95a 40%, #000);
+  --color-glass-pitch: #54e0a0;
+  --color-glass-text: #f4efe3;
+  --color-glass-muted: #a9a293;
+  --color-glass-on-gold: #1a1304;
+  --ease-out-kl: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring-soft: linear(0, 0.09 3%, 0.34 8%, 0.7 15%, 0.95 22%, 1.06 29%, 1.08 34%, 1.05 42%, 1.01 54%, 0.995 66%, 1);
+  --ease-spring-pop: linear(0, 0.16 3%, 0.56 9%, 1.02 16%, 1.2 22%, 1.19 27%, 1.05 36%, 0.95 45%, 0.96 54%, 1.01 66%, 1);
 }
 
 @keyframes fade-up {

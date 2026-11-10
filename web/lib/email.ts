@@ -10,9 +10,9 @@ export function appUrl() {
   return publicAppUrl();
 }
 
-type Mail = { to: string; subject: string; html: string; text: string };
+type Mail = { to: string; subject: string; html: string; text: string; replyTo?: string };
 
-async function send({ to, subject, html, text }: Mail) {
+async function send({ to, subject, html, text, replyTo }: Mail) {
   if (!resend) {
     // Dev fallback: no email provider configured — log so the flow still works.
     console.log(
@@ -21,7 +21,7 @@ async function send({ to, subject, html, text }: Mail) {
     return;
   }
   // Resend reports failures in the result rather than throwing.
-  const { error } = await resend.emails.send({ from: FROM, to, subject, html, text });
+  const { error } = await resend.emails.send({ from: FROM, to, subject, html, text, replyTo });
   if (error) {
     console.error(JSON.stringify({ level: "error", msg: "email_send_failed", subject, error }));
     throw new Error(`Email send failed: ${error.message}`);
@@ -96,6 +96,32 @@ export async function sendSpotOfferEmail(opts: {
       "A spot opened up",
       `${escapeHtml(intro)} ${escapeHtml(deadline)}`,
       { href, label: "Claim your spot" }
+    ),
+  });
+}
+
+/** New "Organize a club?" request from the landing page, to the support inbox. */
+export async function sendOrganizerLeadEmail(
+  to: string,
+  lead: { name: string; email: string; club: string; sport: string; message: string }
+) {
+  const href = `${appUrl()}/admin/leads`;
+  const lines = [
+    `Name: ${lead.name}`,
+    `Email: ${lead.email}`,
+    `Club: ${lead.club || "-"}`,
+    `Sport: ${lead.sport || "-"}`,
+    `How the club runs today: ${lead.message || "-"}`,
+  ];
+  await send({
+    to,
+    replyTo: lead.email,
+    subject: `New organizer request: ${lead.club || lead.name}`,
+    text: `${lines.join("\n")}\n\nAll requests: ${href}`,
+    html: shell(
+      "New organizer request",
+      lines.map(escapeHtml).join("<br>"),
+      { href, label: "Open in Admin" }
     ),
   });
 }
