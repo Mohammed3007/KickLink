@@ -152,6 +152,21 @@ describe("roster: markPaid", () => {
     assert.equal(pay?.stripeId, null);
   });
 
+  test("a hold that lapsed is released, not confirmed, and the organizer is told why", async () => {
+    const g = await fx.game(orgId, { model: "PAY", capacity: 1 });
+    const [a, w] = await Promise.all(["lapa", "lapw"].map((l) => fx.member(orgId, l)));
+    const hold = await db.registration.create({
+      data: { gameId: g.id, userId: a.id, status: "PROVISIONAL", payStatus: "UNPAID", offerExpiresAt: new Date(Date.now() - 1000) },
+    });
+    await db.registration.create({ data: { gameId: g.id, userId: w.id, status: "WAITLISTED", payStatus: "UNPAID", waitlistPos: 1 } });
+    const res = await actAs(organizer.id, () => manage.markPaid(hold.id));
+    assert.equal(res.ok, false);
+    assert.match((res as { error: string }).error, /released/);
+    assert.equal((await fx.reg(g.id, w.id))?.status, "OFFERED");
+    assert.equal(await fx.occupied(g.id), 1);
+    assert.equal(await db.payment.count({ where: { gameId: g.id } }), 0);
+  });
+
   test("can't mark confirmed or waitlisted players paid", async () => {
     const g = await fx.game(orgId, { model: "LATER", capacity: 1 });
     const a = await fx.member(orgId, "mpa");
@@ -223,8 +238,8 @@ describe("roster: removePlayer", () => {
     const [p, q] = await Promise.all(["rp", "rq"].map((l) => fx.member(orgId, l)));
     await actAs(p.id, () => games.reserveSpot(g.id));
     const r = await fx.reg(g.id, p.id);
-    await assert.rejects(actAs(q.id, () => manage.removePlayer(r!.id)));
-    await assert.rejects(actAs(otherOrganizer.id, () => manage.removePlayer(r!.id)));
+    assert.deepEqual(await actAs(q.id, () => manage.removePlayer(r!.id)), { ok: false, error: "Not authorized for this club." });
+    assert.deepEqual(await actAs(otherOrganizer.id, () => manage.removePlayer(r!.id)), { ok: false, error: "Not authorized for this club." });
     assert.equal((await fx.reg(g.id, p.id))?.status, "CONFIRMED");
   });
 });
@@ -252,7 +267,8 @@ describe("roster: offerWaitlistedSpot", () => {
     await actAs(h.id, () => games.reserveSpot(g.id));
     const w = await fx.member(orgId, "fullw");
     await actAs(w.id, () => games.joinWaitlist(g.id));
-    await actAs(organizer.id, async () => manage.offerWaitlistedSpot((await fx.reg(g.id, w.id))!.id));
+    const res = await actAs(organizer.id, async () => manage.offerWaitlistedSpot((await fx.reg(g.id, w.id))!.id));
+    assert.deepEqual(res, { ok: false, error: "The game is full. Free up a spot first." });
     assert.equal((await fx.reg(g.id, w.id))?.status, "WAITLISTED");
   });
 
@@ -304,8 +320,8 @@ describe("attendance", () => {
     const p = await fx.member(orgId, "apl");
     await actAs(p.id, () => games.reserveSpot(g.id));
     const r = await fx.reg(g.id, p.id);
-    await assert.rejects(actAs(p.id, () => manage.recordAttendance(r!.id, "PRESENT")));
-    await assert.rejects(actAs(otherOrganizer.id, () => manage.recordAttendance(r!.id, "PRESENT")));
+    assert.deepEqual(await actAs(p.id, () => manage.recordAttendance(r!.id, "PRESENT")), { ok: false, error: "Not authorized for this club." });
+    assert.deepEqual(await actAs(otherOrganizer.id, () => manage.recordAttendance(r!.id, "PRESENT")), { ok: false, error: "Not authorized for this club." });
     assert.equal(await db.attendanceRecord.count({ where: { gameId: g.id } }), 0);
   });
 });

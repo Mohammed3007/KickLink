@@ -132,9 +132,7 @@ describe("player queries", () => {
     assert.deepEqual(ids(d.unpaid), [later.id]);
   });
 
-  test("getDashboard: cancelling moves a game from 'mine' back to... nowhere", async () => {
-    // A cancelled registration is neither 'mine' nor 'open', so a player who
-    // cancelled can't see the game in their dashboard to re-join it.
+  test("getDashboard: a game the player cancelled stays visible so they can rejoin", async () => {
     const o = await fx.user("dc-o", { organizerApproved: true });
     const club = await fx.club(o.id);
     const p = await fx.member(club.id, "dc-p");
@@ -145,6 +143,21 @@ describe("player queries", () => {
     const visible = d.mine.some((x) => x.id === g.id) || d.open.some((x) => x.id === g.id);
     assert.ok(visible, "game disappears from the home dashboard after cancelling");
   });
+});
+
+test("profile 'games' counts games actually played, not upcoming ones or no-shows", async () => {
+  const o = await fx.user("pf-o", { organizerApproved: true });
+  const club = await fx.club(o.id);
+  const p = await fx.member(club.id, "pf-p");
+  const played = await fx.game(club.id, { startsInHours: -48 });
+  const noShow = await fx.game(club.id, { startsInHours: -24 });
+  const upcoming = await fx.game(club.id);
+  for (const g of [played, noShow, upcoming]) {
+    await db.registration.create({ data: { gameId: g.id, userId: p.id, status: "CONFIRMED", payStatus: "FREE" } });
+  }
+  const r = await fx.reg(noShow.id, p.id);
+  await db.attendanceRecord.create({ data: { registrationId: r!.id, gameId: noShow.id, userId: p.id, status: "NO_SHOW" } });
+  assert.equal((await queries.getProfileData(p.id)).attended, 1);
 });
 
 describe("organizer dashboards", () => {

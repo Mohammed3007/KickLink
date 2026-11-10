@@ -230,7 +230,8 @@ export async function getDashboard(userId: string) {
   const games = await listClubGames(userId);
 
   const mine = games.filter((g) => g.myStatus && g.myStatus !== "CANCELLED");
-  const open = games.filter((g) => !g.myStatus);
+  // Games the player cancelled stay listed here so they can rejoin.
+  const open = games.filter((g) => !g.myStatus || g.myStatus === "CANCELLED");
 
   const offers = await db.registration.findMany({
     where: { userId, status: { in: ["OFFERED", "WAITLISTED"] } },
@@ -301,7 +302,15 @@ export async function getUnreadCount(userId: string) {
 
 export async function getProfileData(userId: string) {
   const [attended, payments, memberships] = await Promise.all([
-    db.registration.count({ where: { userId, status: "CONFIRMED" } }),
+    // Games played: confirmed, already kicked off, and not marked a no-show.
+    db.registration.count({
+      where: {
+        userId,
+        status: "CONFIRMED",
+        game: { startsAt: { lt: new Date() } },
+        OR: [{ attendance: null }, { attendance: { status: "PRESENT" } }],
+      },
+    }),
     db.payment.findMany({
       where: { userId },
       include: { game: { select: { title: true } } },

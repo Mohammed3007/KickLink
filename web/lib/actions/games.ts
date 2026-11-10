@@ -162,8 +162,14 @@ export async function cancelRegistration(gameId: string): Promise<ActionResult> 
   }
 
   const freedSpot = ["CONFIRMED", "PROVISIONAL", "OFFERED"].includes(reg.status);
-  await db.$transaction(async (tx) => {
+  const outcome = await db.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${gameId} FOR UPDATE`;
+    // Re-read under the lock: a repeated tap or the organizer may have
+    // changed the registration since it was read above.
+    const current = await tx.registration.findUnique({ where: { id: reg.id } });
+    if (!current || current.status === "CANCELLED") return "gone" as const;
+    if (current.status !== reg.status || current.payStatus !== reg.payStatus) return "changed" as const;
+
     await tx.registration.update({
       where: { id: reg.id },
       data: {
@@ -173,9 +179,21 @@ export async function cancelRegistration(gameId: string): Promise<ActionResult> 
         offerExpiresAt: null,
       },
     });
+    if (reg.payStatus === "PAID" && !refunded) {
+      // Late cancellation: the club keeps this fee, so a later refund for a
+      // new registration (e.g. if the organizer removes them) must skip it.
+      await tx.payment.updateMany({
+        where: { userId: user.id, gameId, status: "SUCCEEDED", keptAt: null },
+        data: { keptAt: new Date() },
+      });
+    }
     if (reg.status === "WAITLISTED") await compactWaitlist(tx, gameId);
     if (freedSpot) await promoteWaitlist(tx, gameId);
+    return "cancelled" as const;
   });
+  if (outcome === "changed") {
+    return { ok: false, error: "Your registration just changed. Refresh and try again." };
+  }
 
   revalidateAll(gameId);
   return { ok: true };
@@ -207,7 +225,7 @@ export async function acceptOffer(gameId: string): Promise<ActionResult> {
   const user = await requireUser();
 
   try {
-    await db.$transaction(async (tx) => {
+    const outcome = await db.$transaction(async (tx) => {
       const game = await lockGameForRegistration(tx, gameId);
       if (game.model === "PAY") {
         throw new Error("Checkout is required for this spot.");
@@ -220,12 +238,14 @@ export async function acceptOffer(gameId: string): Promise<ActionResult> {
         throw new Error("No active offer.");
       }
       if (reg.offerExpiresAt && reg.offerExpiresAt <= new Date()) {
+        // Release the lapsed offer and pass it on. Returned rather than
+        // thrown, so the transaction commits instead of rolling this back.
         await tx.registration.update({
           where: { id: reg.id },
           data: { status: "CANCELLED", offerExpiresAt: null },
         });
         await promoteWaitlist(tx, gameId);
-        throw new Error("This offer expired.");
+        return "expired" as const;
       }
 
       await tx.registration.update({
@@ -237,7 +257,12 @@ export async function acceptOffer(gameId: string): Promise<ActionResult> {
           offerExpiresAt: null,
         },
       });
+      return "accepted" as const;
     });
+    if (outcome === "expired") {
+      revalidateAll(gameId);
+      return { ok: false, error: "This offer expired." };
+    }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not accept offer." };
   }

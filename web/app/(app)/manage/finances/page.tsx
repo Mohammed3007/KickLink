@@ -35,7 +35,7 @@ export default async function ManageFinancesPage({
             },
             orderBy: { createdAt: "desc" },
           },
-          registrations: { select: { status: true, payStatus: true } },
+          registrations: { select: { status: true, payStatus: true, offerExpiresAt: true } },
         },
         orderBy: { startsAt: "desc" },
       },
@@ -43,6 +43,7 @@ export default async function ManageFinancesPage({
     orderBy: { name: "asc" },
   });
 
+  const now = new Date();
   const allPayments = orgs
     .flatMap((org) =>
       org.games.flatMap((game) =>
@@ -67,7 +68,7 @@ export default async function ManageFinancesPage({
       org.games.reduce(
         (gameSum, game) =>
           gameSum +
-          game.registrations.filter((registration) => registration.payStatus === "UNPAID").length *
+          game.registrations.filter((registration) => owesPayment(registration, now)).length *
             game.priceCents,
         0
       ),
@@ -175,4 +176,17 @@ function Stat({
       <p className="mt-1 text-xl font-bold text-ink">{value}</p>
     </Card>
   );
+}
+
+/**
+ * A player owes the game fee while they hold a reserved, unpaid spot.
+ * Waitlisted and offered players haven't committed to anything yet, and a
+ * hold whose window has lapsed is about to be released.
+ */
+function owesPayment(
+  registration: { status: string; payStatus: string; offerExpiresAt: Date | null },
+  now: Date
+) {
+  if (registration.status !== "PROVISIONAL" || registration.payStatus !== "UNPAID") return false;
+  return !registration.offerExpiresAt || registration.offerExpiresAt > now;
 }
