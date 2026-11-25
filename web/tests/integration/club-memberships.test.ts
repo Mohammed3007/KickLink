@@ -166,6 +166,73 @@ test("only verified paid invoices grant access; duplicate and old events cannot 
   await assert.rejects(sync(provider, subscription.id, 300), /payout account/);
 });
 
+function checkoutProvider() {
+  const sessions = new Map<string, { id: string; status: string; url: string; expires_at: number }>();
+  const attempts = new Map<string, string>();
+  const amounts: number[] = [];
+  let loseNextReply = false;
+  let completeDuringExpiry = false;
+  const provider = { checkout: { sessions: {
+    create: async (params: Stripe.Checkout.SessionCreateParams, options: Stripe.RequestOptions) => {
+      const key = options.idempotencyKey!;
+      if (!attempts.has(key)) {
+        const id = `cs_${randomUUID()}`;
+        attempts.set(key, id);
+        amounts.push(params.line_items![0].price_data!.unit_amount!);
+        sessions.set(id, { id, status: "open", url: `https://checkout.stripe.com/${id}`, expires_at: Math.floor(Date.now() / 1000) + 1800 });
+      }
+      if (loseNextReply) { loseNextReply = false; throw new Error("Provider reply lost"); }
+      return sessions.get(attempts.get(key)!)!;
+    },
+    retrieve: async (id: string) => sessions.get(id)!,
+    expire: async (id: string) => {
+      const session = sessions.get(id)!;
+      if (completeDuringExpiry) { session.status = "complete"; throw new Error("Checkout already completed"); }
+      session.status = "expired";
+      return session;
+    },
+  } } } as unknown as Stripe;
+  return { provider, sessions, amounts, loseReply: () => { loseNextReply = true; }, racePayment: () => { completeDuringExpiry = true; } };
+}
+
+test("changing an unpaid membership plan expires the old checkout and charges the selected plan", async () => {
+  const { user, member } = await player();
+  const fake = checkoutProvider();
+  const monthly = await checkout(fake.provider, user, orgId, "MONTHLY");
+  assert.equal((await checkout(fake.provider, user, orgId, "MONTHLY")).url, monthly.url, "same-plan retry reuses checkout");
+  const yearly = await checkout(fake.provider, user, orgId, "YEARLY");
+  assert.notEqual(yearly.url, monthly.url);
+  assert.deepEqual(fake.amounts, [500, 5000]);
+  assert.equal([...fake.sessions.values()][0].status, "expired");
+  const current = await db.clubSubscription.findUniqueOrThrow({ where: { membershipId: member.id } });
+  assert.equal(current.plan, "YEARLY");
+  assert.equal(current.amountCents, 5000);
+  assert.equal(current.paidThrough, null);
+});
+
+test("switching plans recovers an ambiguous provider reply before retiring the previous attempt", async () => {
+  const { user } = await player();
+  const fake = checkoutProvider(); fake.loseReply();
+  await assert.rejects(checkout(fake.provider, user, orgId, "MONTHLY"), /reply lost/);
+  const yearly = await checkout(fake.provider, user, orgId, "YEARLY");
+  assert.ok(yearly.url);
+  assert.deepEqual(fake.amounts, [500, 5000], "recovering an attempt must not create a second monthly checkout");
+  assert.deepEqual([...fake.sessions.values()].map((session) => session.status), ["expired", "open"]);
+});
+
+test("completed checkouts and payment races cannot be replaced with a second subscription", async () => {
+  const { user, member } = await player();
+  const fake = checkoutProvider();
+  await checkout(fake.provider, user, orgId, "MONTHLY");
+  fake.racePayment();
+  await assert.rejects(checkout(fake.provider, user, orgId, "YEARLY"), /already completed/);
+  assert.deepEqual(fake.amounts, [500]);
+  assert.equal((await db.clubSubscription.findUniqueOrThrow({ where: { membershipId: member.id } })).plan, "MONTHLY");
+  const result = await checkout(fake.provider, user, orgId, "YEARLY");
+  assert.match(result.error!, /being confirmed/);
+  assert.deepEqual(fake.amounts, [500]);
+});
+
 test("starting checkout does not grant invite-only club access or expose a private roster", async () => {
   const user = await db.user.create({ data: { name: "Visitor", email: `${randomUUID()}@example.test` } });
   userIds.push(user.id);

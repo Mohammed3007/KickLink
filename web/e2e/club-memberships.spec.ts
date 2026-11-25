@@ -114,3 +114,42 @@ test("organizers create weekly league sessions with member access and pricing", 
   const games = await ros.pool.query('SELECT access,"priceCents","memberPriceCents","leagueId" FROM "Game" WHERE "orgId"=$1 AND title=$2', [ros.orgId, "ROS recurring members"]);
   expect(games.rows).toEqual(Array.from({ length: 2 }, () => ({ access: "MEMBERS", priceCents: 1200, memberPriceCents: 750, leagueId: ros.leagueId })));
 });
+
+test("a later paid member receives the next waitlist offer and accepts it without displacing the earlier non-member", async ({ page, browser, ros }) => {
+  const bookedUserId = randomUUID(), regularUserId = randomUUID();
+  const bookedEmail = `${bookedUserId}@example.test`;
+  const bookedContext = await browser.newContext();
+  try {
+    for (const [id, name] of [[bookedUserId, "Booked player"], [regularUserId, "Earlier non-member"]]) {
+      await ros.pool.query('INSERT INTO "User" (id,name,email,"passwordHash","emailVerified") VALUES ($1,$2,$3,$4,now())', [id, name, `${id}@example.test`, await bcrypt.hash("test-password", 4)]);
+      await ros.pool.query('INSERT INTO "Membership" (id,"orgId","userId") VALUES ($1,$2,$3)', [randomUUID(), ros.orgId, id]);
+    }
+    await ros.pool.query('UPDATE "Game" SET capacity=1,model=$1,"priceCents"=0,"memberPriceCents"=0 WHERE id=$2', ["FREE", ros.openGameId]);
+    await ros.pool.query('INSERT INTO "Registration" (id,"userId","gameId",status,"payStatus","priceCents","updatedAt") VALUES ($1,$2,$3,$4,$5,0,now())', [randomUUID(), bookedUserId, ros.openGameId, "CONFIRMED", "FREE"]);
+    await ros.pool.query('INSERT INTO "Registration" (id,"userId","gameId",status,"waitlistPos","waitlistedAt","updatedAt") VALUES ($1,$2,$3,$4,1,$5,now())', [randomUUID(), regularUserId, ros.openGameId, "WAITLISTED", new Date(Date.now() - 60_000)]);
+    await login(page, ros.email);
+    await page.goto(`/games/${ros.openGameId}`);
+    await page.getByRole("button", { name: "Join waitlist", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Leave waitlist", exact: true })).toBeVisible();
+    const queue = await ros.pool.query('SELECT "userId" FROM "Registration" WHERE "gameId"=$1 AND status=$2 ORDER BY "waitlistPos"', [ros.openGameId, "WAITLISTED"]);
+    expect(queue.rows.map((row) => row.userId)).toEqual([ros.userId, regularUserId]);
+
+    const bookedPage = await bookedContext.newPage();
+    await login(bookedPage, bookedEmail);
+    await bookedPage.goto(`/games/${ros.openGameId}`);
+    bookedPage.once("dialog", (dialog) => dialog.accept());
+    await bookedPage.getByRole("button", { name: "Cancel registration", exact: true }).click();
+    await expect(bookedPage.getByRole("button", { name: "Join waitlist", exact: true })).toBeVisible();
+    await page.reload();
+    await page.getByRole("button", { name: "Accept free spot", exact: true }).click();
+    await expect(page.getByText("You're confirmed", { exact: false })).toBeVisible();
+    const states = await ros.pool.query('SELECT "userId",status,"payStatus" FROM "Registration" WHERE "gameId"=$1 AND "userId"=ANY($2)', [ros.openGameId, [ros.userId, regularUserId]]);
+    expect(states.rows).toEqual(expect.arrayContaining([
+      { userId: ros.userId, status: "CONFIRMED", payStatus: "FREE" },
+      { userId: regularUserId, status: "WAITLISTED", payStatus: "UNPAID" },
+    ]));
+  } finally {
+    await bookedContext.close();
+    await ros.pool.query('DELETE FROM "User" WHERE id=ANY($1)', [[bookedUserId, regularUserId]]);
+  }
+});
