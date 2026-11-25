@@ -73,6 +73,13 @@ export default async function GameDetailPage({
           </div>
         </div>
 
+        {(game.memberPriceCents != null || game.access === "MEMBERS") && <Card className="space-y-2 p-4">
+          <p className="font-semibold">{game.access === "MEMBERS" ? "Paid members only" : "Open pickup · member pricing"}</p>
+          {game.memberPriceCents != null && <p className="text-sm text-ink-2">{game.access === "MEMBERS" ? `Member session fee: ${formatPrice(game.memberPriceCents)} CAD` : `Members ${formatPrice(game.memberPriceCents)} · Non-members ${formatPrice(game.regularPriceCents)} CAD`}</p>}
+          {!game.accessError && <p className="text-sm text-ink-2">Your price: {formatPrice(game.priceCents)}{game.paidMember ? " · Active member" : ""}</p>}
+          <Link className="text-sm text-brand-700 underline" href={`/clubs/${game.org.handle}/membership`}>Memberships & leagues</Link>
+        </Card>}
+
         {/* Details */}
         <Card className="divide-y divide-line-2">
           <Detail icon={<CalendarDays className="size-5" />} label="Date" value={formatGameDate(game.startsAt)} />
@@ -102,7 +109,7 @@ export default async function GameDetailPage({
         )}
 
         {/* Roster */}
-        <Link href={`/games/${game.id}/participants`}>
+        {game.canSeeRoster && <Link href={`/games/${game.id}/participants`}>
           <Card className="p-4 transition-colors hover:bg-surface-2">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-ink">
@@ -128,9 +135,10 @@ export default async function GameDetailPage({
               </div>
             )}
           </Card>
-        </Link>
+        </Link>}
 
         {/* Viewer registration state */}
+        {game.org.membershipEnabled && game.org.memberWaitlistPriority && <p className="px-1 text-sm text-ink-2">Active paid members have waitlist priority. Arrival order is preserved within each group; existing spot offers are kept.</p>}
         <RegistrationSummary
           registration={game.myReg}
           game={{
@@ -157,16 +165,18 @@ export default async function GameDetailPage({
 
         {/* CTA */}
         <div className="pt-2">
-          <GameCta
+          {game.accessError && (!game.myReg || game.myReg.status === "CANCELLED") ? <Card className="space-y-3 p-4">
+            <p>{game.accessError}</p><Link className="text-brand-700 underline" href={`/clubs/${game.org.handle}/membership`}>View membership and leagues</Link>
+          </Card> : <GameCta
             gameId={game.id}
-            model={game.model}
+            model={game.effectiveModel}
             priceLabel={priceLabel}
             isFull={game.isFull}
             myStatus={game.myReg?.status ?? null}
             refundable={
               game.myReg?.payStatus === "PAID" ? isRefundable(game.startsAt) : null
             }
-          />
+          />}
         </div>
       </div>
     </div>

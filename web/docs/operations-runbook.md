@@ -24,6 +24,12 @@ check the first log lines of every new deployment.
   "Your account" (`checkout.session.completed`, `checkout.session.expired`)
   with secret `STRIPE_WEBHOOK_SECRET`, and "Connected accounts"
   (`account.updated`) with secret `STRIPE_CONNECT_WEBHOOK_SECRET`.
+- For paid club memberships, add `invoice.paid`, `invoice.payment_failed`,
+  `customer.subscription.created`, `customer.subscription.updated`, and
+  `customer.subscription.deleted` to the platform webhook. Enable the platform
+  Customer Portal for billing management. ROS's organizer then enables the
+  $5/month and $50/year plans under Memberships & leagues. Existing club programs
+  default to disabled; never enable production test payments.
 - `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_SUPPORT_EMAIL` and
   `NEXT_PUBLIC_PRIVACY_OFFICER` for the legal pages.
 - `ALLOW_ADMIN_EMAIL_BOOTSTRAP=false` after the first DB admin has been assigned.

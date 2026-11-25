@@ -1,3 +1,4 @@
+import { collectedPayments } from "@/lib/payment-totals";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -52,6 +53,7 @@ export default async function ManagePage({
       games: {
         where: { startsAt: { gte: upcomingCutoff } },
         include: {
+          payments: { select: { status: true, amountCents: true, refundDue: true } },
           registrations: { select: { status: true, payStatus: true } },
         },
         orderBy: { startsAt: "asc" },
@@ -74,8 +76,7 @@ export default async function ManagePage({
       const paidCents = org.games.reduce(
         (sum, game) =>
           sum +
-          game.registrations.filter((registration) => registration.payStatus === "PAID").length *
-            game.priceCents,
+          collectedPayments(game.payments),
         0
       );
       const unpaid = org.games.reduce(
@@ -184,6 +185,12 @@ export default async function ManagePage({
               icon={<ShieldCheck className="size-5" />}
               title="Members and invites"
               body="See who belongs to each club and share the invite code testers need."
+            />
+            <ToolLink
+              href="/manage/memberships"
+              icon={<CreditCard className="size-5" />}
+              title="Memberships and leagues"
+              body="Set monthly and yearly club fees, member benefits, and league enrollment."
             />
             <ToolLink
               href="/manage/announcements"
@@ -316,6 +323,7 @@ function ClubPanel({
       capacity: number;
       priceCents: number;
       registrations: Array<{ status: string; payStatus: string }>;
+      payments: Array<{ status: string; amountCents: number; refundDue: boolean }>;
     }>;
     recurringSeries: Array<{
       id: string;
@@ -335,7 +343,7 @@ function ClubPanel({
   const revenueCents = org.games.reduce(
     (sum, game) =>
       sum +
-      game.registrations.filter((registration) => registration.payStatus === "PAID").length * game.priceCents,
+      collectedPayments(game.payments),
     0
   );
   const nextTwoGames = org.games.slice(0, 2);

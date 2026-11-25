@@ -1,3 +1,5 @@
+import { hasPaidMembership, sessionPrice } from "@/lib/membership-policy";
+import type { Game } from "@/lib/generated/prisma/client";
 import { after } from "next/server";
 import { db } from "@/lib/db";
 import { sendSpotOfferEmail } from "@/lib/email";
@@ -26,6 +28,29 @@ export const CHECKOUT_HOLD_MINUTES = CHECKOUT_SESSION_MINUTES + 5;
 
 type Tx = Parameters<Parameters<typeof db.$transaction>[0]>[0];
 
+/** Live membership tiers; FIFO is preserved within each tier. Never displace an existing offer. */
+export async function orderedWaitlist(tx: Tx, game: Game) {
+  const org = await tx.organization.findUniqueOrThrow({ where: { id: game.orgId } });
+  const entries = await tx.registration.findMany({
+    where: { gameId: game.id, status: "WAITLISTED" },
+    include: { user: { include: {
+      memberships: { where: { orgId: game.orgId }, include: { subscription: true } },
+      leagueEnrollments: { where: game.leagueId ? { leagueId: game.leagueId } : { id: "" } },
+    } } },
+    orderBy: [{ waitlistPos: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+  });
+  return entries.map((entry) => {
+    const member = entry.user.memberships[0];
+    const paidMember = org.membershipEnabled && hasPaidMembership(member?.subscription);
+    const eligible = (game.access === "OPEN" || !!member?.clubAccess || paidMember) &&
+      (game.access !== "MEMBERS" || paidMember) &&
+      (!game.leagueId || (paidMember && entry.user.leagueEnrollments.length > 0));
+    return { ...entry, paidMember, eligible, priority: eligible && org.membershipEnabled && org.memberWaitlistPriority && paidMember };
+  }).sort((a, b) => Number(b.eligible) - Number(a.eligible) || Number(b.priority) - Number(a.priority) ||
+    (a.waitlistedAt ?? a.createdAt).getTime() - (b.waitlistedAt ?? b.createdAt).getTime() ||
+    (a.waitlistPos ?? Number.MAX_SAFE_INTEGER) - (b.waitlistPos ?? Number.MAX_SAFE_INTEGER));
+}
+
 /**
  * Offer freed spots to the next people on the waitlist (status → OFFERED
  * with a time-limited window) and notify them. Fills every open spot.
@@ -34,7 +59,7 @@ type Tx = Parameters<Parameters<typeof db.$transaction>[0]>[0];
 export async function promoteWaitlist(tx: Tx, gameId: string) {
   const game = await tx.game.findUnique({
     where: { id: gameId },
-    select: { capacity: true, title: true, model: true, startsAt: true },
+
   });
   if (!game || game.startsAt <= new Date()) return;
 
@@ -44,18 +69,15 @@ export async function promoteWaitlist(tx: Tx, gameId: string) {
   const open = game.capacity - taken;
   if (open <= 0) return; // still full, nothing to offer
 
-  const next = await tx.registration.findMany({
-    where: { gameId, status: "WAITLISTED" },
-    orderBy: [{ waitlistPos: "asc" }, { createdAt: "asc" }],
-    take: open,
-  });
+  const next = (await orderedWaitlist(tx, game)).filter((entry) => entry.eligible).slice(0, open);
 
   for (const entry of next) {
     await tx.registration.update({
       where: { id: entry.id },
       data: {
         status: "OFFERED",
-        payStatus: game.model === "FREE" ? "FREE" : "UNPAID",
+        payStatus: sessionPrice(game, entry.paidMember) === 0 ? "FREE" : "UNPAID",
+        priceCents: null,
         waitlistPos: null,
         offerExpiresAt: offerExpiry(game.startsAt),
         offerEmailedAt: null,
@@ -135,12 +157,11 @@ export async function sendOfferEmails(gameId?: string) {
 
 /** Renumber waitlist positions 1..n after someone leaves it. */
 export async function compactWaitlist(tx: Tx, gameId: string) {
-  const waitlist = await tx.registration.findMany({
-    where: { gameId, status: "WAITLISTED" },
-    orderBy: [{ waitlistPos: "asc" }, { createdAt: "asc" }],
-    select: { id: true },
-  });
+  const game = await tx.game.findUnique({ where: { id: gameId } });
+  if (!game) return;
+  const waitlist = await orderedWaitlist(tx, game);
   for (const [index, entry] of waitlist.entries()) {
+    if (entry.waitlistPos === index + 1) continue;
     await tx.registration.update({
       where: { id: entry.id },
       data: { waitlistPos: index + 1 },
@@ -163,7 +184,10 @@ export async function expireStaleHolds(tx: Tx, gameId: string) {
     },
     select: { id: true, userId: true, status: true },
   });
-  if (stale.length === 0) return 0;
+  if (stale.length === 0) {
+    await promoteWaitlist(tx, gameId);
+    return 0;
+  }
 
   await tx.registration.updateMany({
     where: { id: { in: stale.map((r) => r.id) } },
@@ -192,7 +216,9 @@ export async function expireStaleHolds(tx: Tx, gameId: string) {
 export async function sweepGameHolds(gameId: string) {
   return db.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${gameId} FOR UPDATE`;
-    return expireStaleHolds(tx, gameId);
+    const expired = await expireStaleHolds(tx, gameId);
+    await compactWaitlist(tx, gameId);
+    return expired;
   });
 }
 

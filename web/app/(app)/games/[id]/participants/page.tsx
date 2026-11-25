@@ -14,7 +14,7 @@ export default async function ParticipantsPage({
   const { id } = await params;
   const user = await requireUser();
   const game = await getGame(id, user.id);
-  if (!game) notFound();
+  if (!game || !game.canSeeRoster) notFound();
 
   return (
     <div className="mx-auto max-w-2xl pb-10">

@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Check, CalendarPlus, MapPin, Share2, Clock3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +19,28 @@ export function PaymentSuccess({
   registrationStatus: string | null;
   paymentStatus: string | null;
 }) {
+  const router = useRouter();
+  const [checking, startCheck] = useTransition();
+  const [automaticChecksEnded, setAutomaticChecksEnded] = useState(false);
   const isPaid = registrationStatus === "CONFIRMED" && paymentStatus === "PAID";
+  const isRefunded = paymentStatus === "REFUNDED";
+  const isCancelled = registrationStatus === "CANCELLED";
+  const pending = !isPaid && !isRefunded && !isCancelled;
+
+  useEffect(() => {
+    if (!pending) return;
+    let attempts = 0;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      startCheck(() => router.refresh());
+      attempts += 1;
+      if (attempts >= 20) {
+        window.clearInterval(timer);
+        setAutomaticChecksEnded(true);
+      }
+    }, 3_000);
+    return () => window.clearInterval(timer);
+  }, [pending, router, startCheck]);
 
   return (
     <div className="mx-auto flex min-h-[70dvh] max-w-md flex-col items-center justify-center px-6 text-center">
@@ -44,7 +67,7 @@ export function PaymentSuccess({
         transition={{ delay: 0.15 }}
       >
         <h1 className="mt-6 text-3xl font-bold tracking-[-0.02em] text-ink">
-          {isPaid ? "You're in!" : "Payment processing"}
+          {isPaid ? "You're in!" : isRefunded ? "Payment refunded" : isCancelled ? "Registration cancelled" : "Payment processing"}
         </h1>
         <p className="mt-2 text-ink-2">
           {isPaid ? (
@@ -52,22 +75,38 @@ export function PaymentSuccess({
               Your spot for <span className="font-semibold text-ink">{title}</span> is
               confirmed and paid.
             </>
+          ) : isRefunded ? (
+            <>Your payment for <span className="font-semibold text-ink">{title}</span> has been refunded.</>
+          ) : isCancelled ? (
+            <>Your spot for <span className="font-semibold text-ink">{title}</span> is no longer reserved. View your registration for details.</>
           ) : (
             <>
               Stripe is confirming your payment for{" "}
               <span className="font-semibold text-ink">{title}</span>. Your registration
-              will update automatically when the webhook completes.
+              {automaticChecksEnded
+                ? " is taking longer than expected. Check again below or return to your registration later."
+                : " will update here as soon as confirmation arrives."}
             </>
           )}
         </p>
         <div className="mt-4 flex justify-center gap-2">
-          <Badge tone={isPaid ? "ok" : "warn"} dot>
+          <Badge tone={isPaid ? "ok" : pending ? "warn" : "neutral"} dot>
             {isPaid ? "Confirmed" : registrationStatus ?? "Pending"}
           </Badge>
-          <Badge tone={isPaid ? "ok" : "warn"} dot>
+          <Badge tone={isPaid ? "ok" : pending ? "warn" : "neutral"} dot>
             {isPaid ? "Paid" : paymentStatus ?? "Processing"}
           </Badge>
         </div>
+        {pending && (
+          <Button
+            className="mt-4"
+            variant="secondary"
+            loading={checking}
+            onClick={() => startCheck(() => router.refresh())}
+          >
+            Check payment status
+          </Button>
+        )}
       </motion.div>
 
       <motion.div

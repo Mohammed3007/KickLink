@@ -24,6 +24,17 @@ enum GameModel {
   FREE // no charge
 }
 
+enum GameAccess {
+  CLUB
+  OPEN
+  MEMBERS
+}
+
+enum MembershipPlan {
+  MONTHLY
+  YEARLY
+}
+
 enum TransferPolicy {
   ALLOWED
   NONE
@@ -99,55 +110,56 @@ enum AnalyticsEventType {
 // ─── Models ─────────────────────────────────────────────────────
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String
-  passwordHash  String? // null for OAuth-only accounts
-  emailVerified DateTime? // set once the email is confirmed
-  image         String? // avatar URL from OAuth
-  avatarColor   String    @default("#6E3BD8")
-  skill         String    @default("Intermediate")
-  city          String    @default("Ottawa")
-  createdAt     DateTime  @default(now())
-  platformRole  PlatformRole @default(USER)
-  organizerApproved Boolean @default(false)
+  id                String       @id @default(cuid())
+  email             String       @unique
+  name              String
+  passwordHash      String? // null for OAuth-only accounts
+  emailVerified     DateTime? // set once the email is confirmed
+  image             String? // avatar URL from OAuth
+  avatarColor       String       @default("#6E3BD8")
+  skill             String       @default("Intermediate")
+  city              String       @default("Ottawa")
+  createdAt         DateTime     @default(now())
+  platformRole      PlatformRole @default(USER)
+  organizerApproved Boolean      @default(false)
   // Bumped to revoke every outstanding session (e.g. after a password reset).
-  sessionVersion Int @default(0)
+  sessionVersion    Int          @default(0)
 
-  accounts      Account[]
-  memberships   Membership[]
-  registrations Registration[]
-  payments      Payment[]
-  notifications Notification[]
-  announcements Announcement[] @relation("AnnouncementAuthor")
-  ownedOrgs     Organization[] @relation("OrgOwner")
-  organizerApplications OrganizerApplication[]
+  leagueEnrollments             LeagueEnrollment[]
+  accounts                      Account[]
+  memberships                   Membership[]
+  registrations                 Registration[]
+  payments                      Payment[]
+  notifications                 Notification[]
+  announcements                 Announcement[]         @relation("AnnouncementAuthor")
+  ownedOrgs                     Organization[]         @relation("OrgOwner")
+  organizerApplications         OrganizerApplication[]
   reviewedOrganizerApplications OrganizerApplication[] @relation("OrganizerApplicationReviewedBy")
-  auditLogEntries AuditLogEntry[] @relation("AuditActor")
-  attendanceRecords AttendanceRecord[] @relation("AttendanceUser")
-  recordedAttendanceRecords AttendanceRecord[] @relation("AttendanceRecorder")
-  recurringSeries RecurringEventSeries[] @relation("SeriesCreator")
-  analyticsEvents AnalyticsEvent[]
+  auditLogEntries               AuditLogEntry[]        @relation("AuditActor")
+  attendanceRecords             AttendanceRecord[]     @relation("AttendanceUser")
+  recordedAttendanceRecords     AttendanceRecord[]     @relation("AttendanceRecorder")
+  recurringSeries               RecurringEventSeries[] @relation("SeriesCreator")
+  analyticsEvents               AnalyticsEvent[]
 
   verificationTokens EmailVerificationToken[]
   passwordResets     PasswordResetToken[]
 }
 
 model OrganizerApplication {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  clubName  String
-  city      String
-  experience String
+  id              String                     @id @default(cuid())
+  userId          String
+  user            User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clubName        String
+  city            String
+  experience      String
   expectedPlayers Int
-  status    OrganizerApplicationStatus @default(PENDING)
-  adminNote String?
-  reviewedAt DateTime?
-  reviewedById String?
-  reviewedBy User? @relation("OrganizerApplicationReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status          OrganizerApplicationStatus @default(PENDING)
+  adminNote       String?
+  reviewedAt      DateTime?
+  reviewedById    String?
+  reviewedBy      User?                      @relation("OrganizerApplicationReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
 
   @@index([userId])
   @@index([status])
@@ -177,7 +189,7 @@ model AuditLogEntry {
 
 // Linked OAuth providers (e.g. Google).
 model Account {
-  id                String  @id @default(cuid())
+  id                String @id @default(cuid())
   userId            String
   provider          String
   providerAccountId String
@@ -209,13 +221,13 @@ model PasswordResetToken {
 }
 
 model RateLimitBucket {
-  id         String   @id @default(cuid())
-  scope      String
-  identifier String
-  attempts   Int      @default(0)
+  id           String    @id @default(cuid())
+  scope        String
+  identifier   String
+  attempts     Int       @default(0)
   blockedUntil DateTime?
-  windowStart DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  windowStart  DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@unique([scope, identifier])
   @@index([blockedUntil])
@@ -235,22 +247,29 @@ model Organization {
   createdAt  DateTime @default(now())
 
   // Stripe Connect — payments go to the club's connected account.
-  stripeAccountId String?
-  chargesEnabled  Boolean @default(false)
+  stripeAccountId        String?
+  chargesEnabled         Boolean @default(false)
+  membershipEnabled      Boolean @default(false)
+  monthlyMembershipCents Int     @default(500)
+  yearlyMembershipCents  Int     @default(5000)
+  memberWaitlistPriority Boolean @default(true)
 
   ownerId String
   owner   User   @relation("OrgOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  memberships   Membership[]
-  games         Game[]
-  announcements Announcement[]
+  leagues         League[]
+  memberships     Membership[]
+  games           Game[]
+  announcements   Announcement[]
   recurringSeries RecurringEventSeries[]
 }
 
 model Membership {
-  id       String     @id @default(cuid())
-  role     MemberRole @default(PLAYER)
-  joinedAt DateTime   @default(now())
+  clubAccess Boolean @default(true)
+  subscription ClubSubscription?
+  id           String            @id @default(cuid())
+  role         MemberRole        @default(PLAYER)
+  joinedAt     DateTime          @default(now())
 
   userId String
   user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -259,6 +278,62 @@ model Membership {
 
   @@unique([userId, orgId])
   @@index([orgId])
+}
+
+model ClubSubscription {
+  amountCents Int @default(500)
+  checkoutAttemptId String?
+  lastEventCreated Int @default(0)
+  id                   String              @id @default(cuid())
+  membershipId         String              @unique
+  membership           Membership          @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  plan                 MembershipPlan
+  stripeSubscriptionId String?             @unique
+  stripeCustomerId     String?
+  checkoutSessionId    String?             @unique
+  checkoutExpiresAt    DateTime?
+  paidThrough          DateTime?
+  status               String              @default("incomplete")
+  cancelAtPeriodEnd    Boolean             @default(false)
+  updatedAt            DateTime            @updatedAt
+  invoices             MembershipInvoice[]
+}
+
+model MembershipInvoice {
+  id              String           @id @default(cuid())
+  stripeInvoiceId String           @unique
+  subscriptionId  String
+  subscription    ClubSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  amountCents     Int
+  currency        String           @default("cad")
+  periodEnd       DateTime
+  paidAt          DateTime         @default(now())
+}
+
+model League {
+  id          String                 @id @default(cuid())
+  orgId       String
+  org         Organization           @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name        String
+  description String                 @default("")
+  createdAt   DateTime               @default(now())
+  enrollments LeagueEnrollment[]
+  games       Game[]
+  series      RecurringEventSeries[]
+
+  @@index([orgId])
+}
+
+model LeagueEnrollment {
+  id       String   @id @default(cuid())
+  leagueId String
+  league   League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt DateTime @default(now())
+
+  @@unique([leagueId, userId])
+  @@index([userId])
 }
 
 model Game {
@@ -271,6 +346,10 @@ model Game {
   durationMins     Int            @default(90)
   format           String         @default("7-a-side")
   skill            String         @default("Intermediate")
+  access           GameAccess     @default(CLUB)
+  memberPriceCents Int?
+  leagueId         String?
+  league           League?        @relation(fields: [leagueId], references: [id], onDelete: SetNull)
   priceCents       Int            @default(0)
   capacity         Int            @default(14)
   model            GameModel      @default(PAY)
@@ -283,19 +362,19 @@ model Game {
   seriesId         String?
   occurrenceIndex  Int?
 
-  orgId String
-  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  orgId  String
+  org    Organization          @relation(fields: [orgId], references: [id], onDelete: Cascade)
   series RecurringEventSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
 
-  registrations Registration[]
-  payments      Payment[]
+  registrations     Registration[]
+  payments          Payment[]
   attendanceRecords AttendanceRecord[]
 
+  @@unique([seriesId, occurrenceIndex])
   @@index([orgId])
   @@index([seriesId])
   @@index([sport])
   @@index([startsAt])
-  @@unique([seriesId, occurrenceIndex])
 }
 
 model RecurringEventSeries {
@@ -312,6 +391,10 @@ model RecurringEventSeries {
   durationMins     Int               @default(90)
   format           String            @default("7-a-side")
   skill            String            @default("Intermediate")
+  access           GameAccess        @default(CLUB)
+  memberPriceCents Int?
+  leagueId         String?
+  league           League?           @relation(fields: [leagueId], references: [id], onDelete: SetNull)
   priceCents       Int               @default(0)
   capacity         Int               @default(14)
   model            GameModel         @default(PAY)
@@ -337,7 +420,9 @@ model RecurringEventSeries {
 }
 
 model Registration {
+  waitlistedAt DateTime?
   id             String    @id @default(cuid())
+  priceCents     Int? // Server-quoted session price, frozen when a place is reserved.
   status         RegStatus @default(CONFIRMED)
   payStatus      PayStatus @default(UNPAID)
   waitlistPos    Int?
@@ -348,10 +433,10 @@ model Registration {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gameId String
-  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId     String
+  game       Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
   attendance AttendanceRecord?
 
   @@unique([userId, gameId])
@@ -359,21 +444,21 @@ model Registration {
 }
 
 model AttendanceRecord {
-  id             String           @id @default(cuid())
-  status         AttendanceStatus
-  note           String           @default("")
-  recordedAt     DateTime         @default(now())
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id         String           @id @default(cuid())
+  status     AttendanceStatus
+  note       String           @default("")
+  recordedAt DateTime         @default(now())
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
-  registrationId String           @unique
-  registration   Registration     @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  registrationId String       @unique
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
   gameId         String
-  game           Game             @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  game           Game         @relation(fields: [gameId], references: [id], onDelete: Cascade)
   userId         String
-  user           User             @relation("AttendanceUser", fields: [userId], references: [id], onDelete: Cascade)
+  user           User         @relation("AttendanceUser", fields: [userId], references: [id], onDelete: Cascade)
   recordedById   String?
-  recordedBy     User?            @relation("AttendanceRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+  recordedBy     User?        @relation("AttendanceRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
 
   @@index([gameId])
   @@index([userId])
@@ -382,8 +467,8 @@ model AttendanceRecord {
 }
 
 model Payment {
-  id          String        @id @default(cuid())
-  amountCents Int
+  id              String        @id @default(cuid())
+  amountCents     Int
   method          String        @default("Card")
   status          PaymentStatus @default(PENDING)
   stripeId        String? // payment intent id
@@ -437,24 +522,24 @@ model Notification {
 // linked to an account. userId, sessionId, userAgent and ipHash are legacy
 // columns that are no longer written.
 model AnalyticsEvent {
-  id          String             @id @default(cuid())
-  type        AnalyticsEventType
-  name        String
-  path        String
-  referrer    String             @default("") // referring site's host only
-  title       String             @default("")
-  visitorId   String
-  sessionId   String?
-  metadata    Json               @default("{}")
-  userAgent   String             @default("")
-  ipHash      String?
-  device      String             @default("") // mobile, tablet or desktop
-  country     String             @default("")
-  region      String             @default("")
-  createdAt   DateTime           @default(now())
+  id        String             @id @default(cuid())
+  type      AnalyticsEventType
+  name      String
+  path      String
+  referrer  String             @default("") // referring site's host only
+  title     String             @default("")
+  visitorId String
+  sessionId String?
+  metadata  Json               @default("{}")
+  userAgent String             @default("")
+  ipHash    String?
+  device    String             @default("") // mobile, tablet or desktop
+  country   String             @default("")
+  region    String             @default("")
+  createdAt DateTime           @default(now())
 
   userId String?
-  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([type])
   @@index([name])
@@ -471,7 +556,6 @@ model AnalyticsSalt {
   salt      String
   createdAt DateTime @default(now())
 }
-
 
 // "Organize a club?" form on the landing page. Shown in Admin → Leads and
 // emailed to the support address.

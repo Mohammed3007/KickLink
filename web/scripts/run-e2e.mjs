@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { prepareStandalone } from "./prepare-standalone.mjs";
 
 const port = process.env.PLAYWRIGHT_PORT ?? "3100";
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${port}`;
@@ -21,11 +22,15 @@ const serverEnv = cleanEnv({
   NEXT_PUBLIC_APP_URL: baseURL,
   NEXT_PUBLIC_DISABLE_ANALYTICS: "true",
   PLAYWRIGHT_TEST: "true",
+  STRIPE_SECRET_KEY: "",
+  ALLOW_DEV_PAYMENTS: "true",
   PORT: port,
   DATABASE_URL:
-    process.env.DATABASE_URL ??
+    process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL ??
     "postgresql://postgres:postgres@127.0.0.1:5432/kicklink?schema=public",
 });
+
+await prepareStandalone();
 
 const server = spawn(process.execPath, [".next/standalone/server.js"], {
   env: serverEnv,

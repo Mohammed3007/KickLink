@@ -1,7 +1,55 @@
 # KickLink — web app
 
-Pickup-soccer club management: private clubs, games, payments, waitlists and
-spot transfers. Next.js 16 (App Router) · Postgres + Prisma · Auth.js · Tailwind v4.
+Pickup-sports club management: private clubs, games, payments, waitlists and
+weekly per-game series. Next.js 16 (App Router) · Postgres + Prisma · Auth.js · Tailwind v4.
+
+Recurring club memberships are supported. Spot transfers, upfront series passes,
+and recurring billing for game series are not implemented.
+
+## ROS memberships and member benefits
+
+From **Organize → Memberships & leagues**, enable memberships for ROS. The
+default prices are **$5 CAD/month** and **$50 CAD/year**. One subscription covers
+all leagues and members-only sessions within that organization. Existing clubs
+remain unchanged until their organizer enables the program.
+
+- Players subscribe from `/clubs/<handle>/membership`. Stripe handles automatic
+  renewals; cancellation at period end retains access through the paid period.
+  The billing portal lets subscribers manage their payment methods and invoices.
+- Connect the club's Stripe account from Finances before accepting subscriptions.
+  Membership fees use Connect destination charges, like game payments.
+- Add `invoice.paid`, `invoice.payment_failed`, `customer.subscription.created`,
+  `customer.subscription.updated`, and `customer.subscription.deleted` to the
+  platform webhook, alongside the existing Checkout events. Enable the Stripe
+  Customer Portal in the platform account's Billing settings for payment methods,
+  invoices, and cancellations at the end of the billing period. Keep plan
+  switching disabled; active monthly/yearly plan changes are not implemented.
+- Organizers can create leagues, and active paid members can enroll. League
+  sessions require paid membership and enrollment in that league.
+- New-game controls offer **Club roster only** (existing invite behavior),
+  **Open to members and non-members**, or **Active paid members only**. Set a
+  separate member price, including zero, or leave it blank to keep one price.
+  Weekly series inherit the same access and price settings.
+- Active paid members move ahead of regular players in the waitlist when club
+  priority is enabled. Arrival order is preserved within each tier. Expired
+  memberships lose priority; existing offers are never displaced. Ineligible
+  member-only waitlisters are skipped until eligible again.
+- Membership is checked at booking/offer acceptance. A session quote is stored
+  when a place is reserved; existing confirmed bookings are not automatically
+  cancelled when a subscription ends. Session fees remain separate from the
+  membership fee. Open-session bookings and unpaid membership checkouts do not
+  grant access to invite-only games or club announcements.
+- Invoice-confirmed paid periods control benefits. Returning from Checkout,
+  failed renewals, and unsigned/unrelated events do not grant access. Checkout
+  attempts and invoice processing support safe retries.
+
+Apply the `20261124120000_club_memberships` migration before running the new
+code. The default monthly/yearly prices are configurable; changes affect new
+subscriptions, while existing Stripe subscriptions keep their agreed rate.
+The test server uses simulated session payments with a disposable database;
+membership provider calls are mocked in integration tests. Live subscription
+purchase/renewal should also be exercised with Stripe test-mode webhooks before
+production rollout. No real subscription is activated by development flags.
 
 **Demo accounts** (after seeding): `player@kicklink.app` / `organizer@kicklink.app`,
 password `password`.
@@ -78,9 +126,15 @@ npm run build
 npm run test:e2e
 ```
 
-The E2E suite starts its own local production server on port `3100` by default.
+The E2E suite prepares static/public assets for the standalone build and starts
+its own local production server on port `3100` by default.
 Override with `PLAYWRIGHT_PORT` or point at an existing deployment with
 `PLAYWRIGHT_BASE_URL`.
+
+Set `TEST_DATABASE_URL` to a disposable, migrated Postgres database to also run
+signed-in payment-status regressions (delayed confirmation, cancellation and
+refund display). The local browser-test server uses that database too. Without
+it, those database-backed cases are skipped; public/auth/asset smoke tests run.
 
 ### Environment variables
 

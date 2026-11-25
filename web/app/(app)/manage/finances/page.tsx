@@ -1,3 +1,4 @@
+import { collectedPayments, pendingSessionPayments } from "@/lib/payment-totals";
 import Link from "next/link";
 import { ArrowRight, CreditCard, Receipt, Wallet } from "lucide-react";
 import { requireUser } from "@/lib/session";
@@ -35,7 +36,7 @@ export default async function ManageFinancesPage({
             },
             orderBy: { createdAt: "desc" },
           },
-          registrations: { select: { status: true, payStatus: true } },
+          registrations: { select: { status: true, payStatus: true, priceCents: true } },
         },
         orderBy: { startsAt: "desc" },
       },
@@ -55,9 +56,7 @@ export default async function ManageFinancesPage({
     )
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-  const collected = allPayments
-    .filter((payment) => payment.status === "SUCCEEDED")
-    .reduce((sum, payment) => sum + payment.amountCents, 0);
+  const collected = collectedPayments(allPayments);
   const refunded = allPayments
     .filter((payment) => payment.status === "REFUNDED")
     .reduce((sum, payment) => sum + payment.amountCents, 0);
@@ -67,8 +66,7 @@ export default async function ManageFinancesPage({
       org.games.reduce(
         (gameSum, game) =>
           gameSum +
-          game.registrations.filter((registration) => registration.payStatus === "UNPAID").length *
-            game.priceCents,
+          pendingSessionPayments(game.registrations, game.priceCents),
         0
       ),
     0

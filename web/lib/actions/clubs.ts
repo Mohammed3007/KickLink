@@ -63,10 +63,12 @@ export async function joinClub(
   const existing = await db.membership.findUnique({
     where: { userId_orgId: { userId: user.id, orgId: org.id } },
   });
-  if (existing) return { error: "You're already in this club." };
+  if (existing?.clubAccess) return { error: "You're already in this club." };
 
-  await db.membership.create({
-    data: { userId: user.id, orgId: org.id, role: "PLAYER" },
+  await db.membership.upsert({
+    where: { userId_orgId: { userId: user.id, orgId: org.id } },
+    update: { clubAccess: true },
+    create: { userId: user.id, orgId: org.id, role: "PLAYER" },
   });
 
   revalidatePath("/clubs");
