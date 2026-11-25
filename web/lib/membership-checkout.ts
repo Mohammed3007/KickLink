@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type Stripe from "stripe";
+import type { ClubSubscription, Organization } from "@/lib/generated/prisma/client";
 import { db } from "@/lib/db";
 import { appUrl, platformFeeBps } from "@/lib/stripe";
 import { hasPaidMembership } from "@/lib/membership-policy";
@@ -24,10 +25,21 @@ export async function beginMembershipCheckout(stripe: Stripe, user: { id: string
       }
     }
     if (current?.checkoutExpiresAt && current.checkoutExpiresAt > new Date()) {
-      if (current.checkoutSessionId) {
-        const pending = await stripe.checkout.sessions.retrieve(current.checkoutSessionId);
-        if (pending.status === "open" && pending.url) return { url: pending.url };
+      if (current.checkoutSessionId || (current.checkoutAttemptId && current.plan !== plan)) {
+        // Recover an ambiguous creation with its original idempotency key before
+        // switching plans, so no abandoned checkout can still accept payment.
+        const pending = current.checkoutSessionId
+          ? await stripe.checkout.sessions.retrieve(current.checkoutSessionId)
+          : await createMembershipSession(stripe, user, org, current);
         if (pending.status === "complete") return { error: "Your payment is being confirmed. Check membership status below." };
+        if (pending.status === "open") {
+          if (current.plan === plan) return pending.url ? { url: pending.url } : { error: "Your checkout is not available yet. Please try again." };
+          // If payment wins this race Stripe refuses expiry; leave the old
+          // attempt intact and never create a second subscription.
+          await stripe.checkout.sessions.expire(pending.id);
+        } else if (pending.status !== "expired") {
+          return { error: "Your checkout is being updated. Please try again." };
+        }
       } else if (current.checkoutAttemptId) {
         return { record: current }; // Recover a failed/ambiguous provider call using the same key.
       }
@@ -41,11 +53,21 @@ export async function beginMembershipCheckout(stripe: Stripe, user: { id: string
   }, { timeout: 30_000 });
   if (!("record" in prepared) || !prepared.record) return prepared;
   const record = prepared.record;
-  const session = await stripe.checkout.sessions.create({
+  const session = await createMembershipSession(stripe, user, org, record);
+  await db.clubSubscription.updateMany({
+    where: { id: record.id, checkoutAttemptId: record.checkoutAttemptId },
+    data: { checkoutSessionId: session.id, checkoutExpiresAt: new Date(session.expires_at * 1000) },
+  });
+  return { url: session.url ?? undefined };
+}
+
+function createMembershipSession(stripe: Stripe, user: { email: string }, org: Organization, record: ClubSubscription) {
+  if (!org.stripeAccountId) throw new Error("Membership payout account is not configured.");
+  return stripe.checkout.sessions.create({
     mode: "subscription", payment_method_types: ["card"],
     customer: record.stripeCustomerId ?? undefined,
     customer_email: record.stripeCustomerId ? undefined : user.email,
-    client_reference_id: membership.id,
+    client_reference_id: record.membershipId,
     line_items: [{ quantity: 1, price_data: {
       currency: "cad", unit_amount: record.amountCents,
       recurring: { interval: record.plan === "MONTHLY" ? "month" : "year" },
@@ -60,9 +82,4 @@ export async function beginMembershipCheckout(stripe: Stripe, user: { id: string
     success_url: `${appUrl()}/clubs/${org.handle}/membership?checkout=success`,
     cancel_url: `${appUrl()}/clubs/${org.handle}/membership`,
   }, { idempotencyKey: `membership_${record.id}_${record.checkoutAttemptId}` });
-  await db.clubSubscription.updateMany({
-    where: { id: record.id, checkoutAttemptId: record.checkoutAttemptId },
-    data: { checkoutSessionId: session.id, checkoutExpiresAt: new Date(session.expires_at * 1000) },
-  });
-  return { url: session.url ?? undefined };
 }
