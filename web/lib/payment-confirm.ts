@@ -1,3 +1,4 @@
+import { sessionTerms } from "@/lib/session-terms";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { db } from "@/lib/db";
 
@@ -38,7 +39,7 @@ export async function confirmPaidRegistration(opts: {
       await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${gameId} FOR UPDATE`;
       const game = await tx.game.findUnique({
         where: { id: gameId },
-        select: { title: true, capacity: true },
+
       });
 
       const existing = await tx.registration.findUnique({
@@ -51,6 +52,13 @@ export async function confirmPaidRegistration(opts: {
         });
         hasSpot = taken < game.capacity;
       }
+
+      const terms = game ? await sessionTerms(tx, userId, game) : null;
+      const expectedPrice = existing?.priceCents ?? terms?.priceCents;
+      const quotedHold = existing?.status === "PROVISIONAL" && existing.priceCents != null &&
+        (!existing.offerExpiresAt || existing.offerExpiresAt > new Date());
+      if (!game || game.startsAt <= new Date() || amountCents !== expectedPrice ||
+          (terms?.error && !quotedHold) || existing?.status === "CANCELLED" || existing?.payStatus === "PAID") hasSpot = false;
 
       const payment = await tx.payment.create({
         data: {
@@ -72,7 +80,7 @@ export async function confirmPaidRegistration(opts: {
             userId,
             kind: "RECEIPT",
             title: `Refund on the way - ${title}`,
-            body: `The game filled before your payment went through, so your $${(amountCents / 100).toFixed(2)} is being refunded.`,
+            body: `We could not confirm this registration, so your $${(amountCents / 100).toFixed(2)} is being refunded.`,
             href: `/games/${gameId}`,
           },
         });
@@ -81,8 +89,9 @@ export async function confirmPaidRegistration(opts: {
 
       await tx.registration.upsert({
         where: { userId_gameId: { userId, gameId } },
-        create: { userId, gameId, status: "CONFIRMED", payStatus: "PAID" },
+        create: { userId, gameId, status: "CONFIRMED", payStatus: "PAID", priceCents: amountCents },
         update: {
+          priceCents: amountCents,
           status: "CONFIRMED",
           payStatus: "PAID",
           waitlistPos: null,

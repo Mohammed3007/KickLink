@@ -1,3 +1,4 @@
+import { collectedPayments } from "@/lib/payment-totals";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Clock3, DollarSign, ListFilter, Repeat2, Users } from "lucide-react";
 import { requireUser } from "@/lib/session";
@@ -31,6 +32,7 @@ export default async function ManageGamesPage({
     },
     include: {
       org: { select: { id: true, name: true, color: true, handle: true, chargesEnabled: true } },
+      payments: { select: { status: true, amountCents: true, refundDue: true } },
       registrations: {
         include: {
           attendance: { select: { status: true } },
@@ -46,13 +48,12 @@ export default async function ManageGamesPage({
       const filled = game.registrations.filter((registration) => OCCUPYING.includes(registration.status)).length;
       const unpaid = game.registrations.filter((registration) => registration.payStatus === "UNPAID").length;
       const waitlisted = game.registrations.filter((registration) => registration.status === "WAITLISTED").length;
-      const paid = game.registrations.filter((registration) => registration.payStatus === "PAID").length;
       return {
         games: acc.games + 1,
         filled: acc.filled + filled,
         unpaid: acc.unpaid + unpaid,
         waitlisted: acc.waitlisted + waitlisted,
-        collected: acc.collected + paid * game.priceCents,
+        collected: acc.collected + collectedPayments(game.payments),
       };
     },
     { games: 0, filled: 0, unpaid: 0, waitlisted: 0, collected: 0 }

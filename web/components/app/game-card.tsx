@@ -11,6 +11,10 @@ type GameCardData = {
   venue: string;
   startsAt: Date;
   priceCents: number;
+  memberPriceCents?: number | null;
+  regularPriceCents?: number;
+  paidMember?: boolean;
+  access?: string;
   capacity: number;
   spotsLeft: number;
   isFull: boolean;
@@ -53,6 +57,8 @@ export function GameCard({ game }: { game: GameCardData }) {
           </div>
 
           <div className="mt-2.5">
+            {game.access === "MEMBERS" && <Badge tone="brand">Paid members only</Badge>}
+            {game.memberPriceCents != null && <p className="mb-2 text-xs text-ink-3">{game.access === "MEMBERS" ? `Member session fee: ${formatPrice(game.memberPriceCents)}` : `Members ${formatPrice(game.memberPriceCents)} · Non-members ${formatPrice(game.regularPriceCents ?? game.priceCents)}`}</p>}
             {game.myStatus ? (
               <RegBadge status={game.myStatus} />
             ) : game.isFull ? (

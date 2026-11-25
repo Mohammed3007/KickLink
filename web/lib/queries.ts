@@ -1,8 +1,14 @@
 import { db } from "@/lib/db";
 import { sportSlug } from "@/lib/sports";
-import { hasStaleHolds, sweepGameHolds } from "@/lib/waitlist";
+import { hasPaidMembership, sessionPrice } from "@/lib/membership-policy";
+import { sessionTerms } from "@/lib/session-terms";
+import { sweepGameHolds } from "@/lib/waitlist";
 
 // Registration statuses that occupy a spot in the game.
+export function clubVisibility(userId: string) {
+  return { userId, OR: [{ clubAccess: true }, { subscription: { is: { paidThrough: { gt: new Date() } } } }] };
+}
+
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"] as const;
 
 export type GameMeta = Awaited<ReturnType<typeof getGame>>;
@@ -15,9 +21,9 @@ export type GameMeta = Awaited<ReturnType<typeof getGame>>;
 export async function getGame(gameId: string, viewerId: string) {
   // Release lapsed offers/holds first so the roster and CTA are accurate even
   // between scheduled sweeps.
-  if (await hasStaleHolds(gameId)) await sweepGameHolds(gameId);
+  await sweepGameHolds(gameId);
   const game = await db.game.findFirst({
-    where: { id: gameId, org: { memberships: { some: { userId: viewerId } } } },
+    where: { id: gameId, OR: [{ org: { memberships: { some: clubVisibility(viewerId) } } }, { access: { in: ["OPEN", "MEMBERS"] } }, { registrations: { some: { userId: viewerId } } }] },
     include: {
       org: true,
       series: {
@@ -39,6 +45,14 @@ export async function getGame(gameId: string, viewerId: string) {
   });
   if (!game) return null;
 
+  const terms = await sessionTerms(db, viewerId, game);
+  const ownRegistration = game.registrations.find((entry) => entry.userId === viewerId);
+  const organizer = await db.membership.findFirst({ where: { orgId: game.orgId, userId: viewerId, role: "ORGANIZER" } });
+  const collected = organizer ? await db.payment.aggregate({ where: { gameId, status: "SUCCEEDED", refundDue: false }, _sum: { amountCents: true } }) : null;
+  const canSeeRoster = !terms.error || !!organizer || (ownRegistration && ["CONFIRMED", "PROVISIONAL"].includes(ownRegistration.status));
+  const visibleRegistrations = canSeeRoster ? game.registrations : game.registrations.filter((entry) => entry.userId === viewerId);
+  const occupied = game.registrations.filter((entry) => OCCUPYING.includes(entry.status as typeof OCCUPYING[number])).length;
+
   let attendanceByRegistrationId = new Map<
     string,
     { status: "PRESENT" | "NO_SHOW" }
@@ -56,7 +70,7 @@ export async function getGame(gameId: string, viewerId: string) {
     console.warn("Attendance records unavailable", error);
   }
 
-  const registrations = game.registrations.map((registration) => ({
+  const registrations = visibleRegistrations.map((registration) => ({
     ...registration,
     attendance: attendanceByRegistrationId.get(registration.id) ?? null,
   }));
@@ -68,13 +82,21 @@ export async function getGame(gameId: string, viewerId: string) {
     .filter((r) => r.status === "WAITLISTED")
     .sort((a, b) => (a.waitlistPos ?? 999) - (b.waitlistPos ?? 999));
 
-  const taken = confirmed.length;
+  const taken = occupied;
   const spotsLeft = Math.max(0, game.capacity - taken);
   const isFull = spotsLeft <= 0;
   const myReg = registrations.find((r) => r.userId === viewerId) ?? null;
+  const viewerPrice = myReg && ["CONFIRMED", "PROVISIONAL"].includes(myReg.status) && myReg.priceCents != null ? myReg.priceCents : terms.priceCents;
 
   return {
     ...game,
+    priceCents: viewerPrice,
+    regularPriceCents: game.priceCents,
+    collectedCents: collected?._sum.amountCents ?? 0,
+    paidMember: terms.paidMember,
+    accessError: terms.error,
+    canSeeRoster: !!canSeeRoster,
+    effectiveModel: viewerPrice === 0 ? "FREE" as const : game.model,
     registrations,
     confirmed,
     waitlist,
@@ -91,15 +113,16 @@ export async function listClubGames(
   filters: { sport?: string; query?: string } = {}
 ) {
   const memberships = await db.membership.findMany({
-    where: { userId },
-    select: { orgId: true },
+    where: clubVisibility(userId),
+    select: { orgId: true, org: { select: { membershipEnabled: true } }, subscription: true },
   });
   const orgIds = memberships.map((m) => m.orgId);
+  const paidOrgIds = new Set(memberships.filter((m) => m.org.membershipEnabled && hasPaidMembership(m.subscription)).map((m) => m.orgId));
 
   const query = filters.query?.trim();
   const games = await db.game.findMany({
     where: {
-      orgId: { in: orgIds },
+      AND: [{ OR: [{ orgId: { in: orgIds } }, { access: "OPEN" }, { registrations: { some: { userId } } }] }],
       startsAt: { gte: new Date(Date.now() - 3600_000) },
       ...(filters.sport && filters.sport !== "all"
         ? { sport: { equals: filters.sport, mode: "insensitive" as const } }
@@ -117,12 +140,12 @@ export async function listClubGames(
     },
     include: {
       org: { select: { name: true, handle: true, color: true } },
-      registrations: { select: { userId: true, status: true } },
+      registrations: { select: { userId: true, status: true, priceCents: true } },
     },
     orderBy: { startsAt: "asc" },
   });
 
-  return games.map((g) => decorate(g, userId));
+  return games.map((g) => decorate(g, userId, paidOrgIds.has(g.orgId)));
 }
 
 /** Player registration history, including past and cancelled registrations. */
@@ -155,7 +178,7 @@ export async function listPlayerGameHistory(
       game: {
         include: {
           org: { select: { name: true, handle: true, color: true } },
-          registrations: { select: { userId: true, status: true } },
+          registrations: { select: { userId: true, status: true, priceCents: true } },
         },
       },
     },
@@ -179,13 +202,13 @@ export async function listPlayerGameHistory(
 
 export async function listAvailableSports(userId: string) {
   const memberships = await db.membership.findMany({
-    where: { userId },
-    select: { orgId: true },
+    where: clubVisibility(userId),
+    select: { orgId: true, org: { select: { membershipEnabled: true } }, subscription: true },
   });
   const orgIds = memberships.map((m) => m.orgId);
   const [gameSports, orgSports] = await Promise.all([
     db.game.findMany({
-      where: { orgId: { in: orgIds } },
+      where: { OR: [{ orgId: { in: orgIds } }, { access: "OPEN" }] },
       distinct: ["sport"],
       select: { sport: true },
       orderBy: { sport: "asc" },
@@ -208,9 +231,10 @@ export async function listAvailableSports(userId: string) {
 function decorate<
   T extends {
     capacity: number;
-    registrations: { userId: string; status: string }[];
+    registrations: { userId: string; status: string; priceCents?: number | null }[];
+    model: string; priceCents: number; memberPriceCents: number | null;
   }
->(g: T, userId: string) {
+>(g: T, userId: string, paidMember = false) {
   const taken = g.registrations.filter((r) =>
     OCCUPYING.includes(r.status as (typeof OCCUPYING)[number])
   ).length;
@@ -218,6 +242,9 @@ function decorate<
   const myReg = g.registrations.find((r) => r.userId === userId) ?? null;
   return {
     ...g,
+    regularPriceCents: g.priceCents,
+    priceCents: myReg && ["CONFIRMED", "PROVISIONAL"].includes(myReg.status) && myReg.priceCents != null ? myReg.priceCents : sessionPrice(g, paidMember),
+    paidMember,
     taken,
     spotsLeft,
     isFull: spotsLeft <= 0,
@@ -242,7 +269,7 @@ export async function getDashboard(userId: string) {
   );
 
   const announcements = await db.announcement.findMany({
-    where: { org: { memberships: { some: { userId } } } },
+    where: { org: { memberships: { some: clubVisibility(userId) } } },
     include: { org: { select: { name: true, handle: true, color: true } } },
     orderBy: { createdAt: "desc" },
     take: 3,
@@ -253,10 +280,11 @@ export async function getDashboard(userId: string) {
 
 export async function listClubs(userId: string) {
   return db.organization.findMany({
+    // Keep a subscribed club discoverable for renewal after paid access expires.
     where: { memberships: { some: { userId } } },
     include: {
       _count: { select: { memberships: true, games: true } },
-      memberships: { where: { userId }, select: { role: true } },
+      memberships: { where: { userId }, include: { subscription: true } },
     },
     orderBy: { name: "asc" },
   });
@@ -267,25 +295,25 @@ export async function getClub(handle: string, userId: string) {
     where: { handle },
     include: {
       _count: { select: { memberships: true } },
-      memberships: { where: { userId }, select: { role: true } },
+      memberships: { where: { userId }, include: { subscription: true } },
     },
   });
   if (!club) return null;
   // Non-members only get the public card (name, sport, blurb) and a join form.
-  const isMember = club.memberships.length > 0;
-  if (!isMember) return { ...club, isMember, games: [], announcements: [] };
+  const paidMember = club.membershipEnabled && hasPaidMembership(club.memberships[0]?.subscription);
+  const isMember = !!club.memberships[0]?.clubAccess || paidMember;
 
   const announcements = await db.announcement.findMany({
-    where: { orgId: club.id },
+    where: { orgId: club.id, ...(isMember ? {} : { id: "" }) },
     include: { author: { select: { name: true } } },
     orderBy: { createdAt: "desc" },
   });
   const games = await db.game.findMany({
-    where: { orgId: club.id, startsAt: { gte: new Date(Date.now() - 3600_000) } },
-    include: { registrations: { select: { userId: true, status: true } } },
+    where: { orgId: club.id, ...(isMember ? {} : { access: { in: ["OPEN" as const, "MEMBERS" as const] } }), startsAt: { gte: new Date(Date.now() - 3600_000) } },
+    include: { registrations: { select: { userId: true, status: true, priceCents: true } } },
     orderBy: { startsAt: "asc" },
   });
-  return { ...club, isMember, announcements, games: games.map((g) => decorate(g, userId)) };
+  return { ...club, isMember, announcements, paidMember, games: games.map((g) => decorate(g, userId, paidMember)) };
 }
 
 export async function getNotifications(userId: string) {

@@ -6,6 +6,8 @@ import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { compactWaitlist, expireStaleHolds, promoteWaitlist } from "@/lib/waitlist";
 import { isRefundable, refundGamePayments } from "@/lib/refunds";
+import { sessionTerms } from "@/lib/session-terms";
+import { acceptSpotOffer } from "@/lib/registration-updates";
 
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"] as const;
 
@@ -27,10 +29,8 @@ async function loadGameForUser(gameId: string, userId: string): Promise<Loaded> 
   const game = await db.game.findUnique({ where: { id: gameId } });
   if (!game) return { ok: false, error: "Game not found." };
 
-  const membership = await db.membership.findUnique({
-    where: { userId_orgId: { userId, orgId: game.orgId } },
-  });
-  if (!membership) return { ok: false, error: "Join the club to register." };
+  const terms = await sessionTerms(db, userId, game);
+  if (terms.error) return { ok: false, error: terms.error };
 
   return { ok: true, game };
 }
@@ -44,10 +44,12 @@ async function lockGameForRegistration(tx: Prisma.TransactionClient, gameId: str
 }
 
 /** Lock the game and release any lapsed holds before counting spots. */
-async function lockGameAndSweep(tx: Prisma.TransactionClient, gameId: string) {
+async function lockGameAndSweep(tx: Prisma.TransactionClient, gameId: string, userId: string) {
   const game = await lockGameForRegistration(tx, gameId);
+  const terms = await sessionTerms(tx, userId, game);
+  if (terms.error) throw new Error(terms.error);
   await expireStaleHolds(tx, gameId);
-  return game;
+  return { ...game, effectivePriceCents: terms.priceCents };
 }
 
 /** Reserve a spot for FREE or pay-later (LATER) games. */
@@ -58,8 +60,8 @@ export async function reserveSpot(gameId: string): Promise<ActionResult> {
 
   try {
     await db.$transaction(async (tx) => {
-      const game = await lockGameAndSweep(tx, gameId);
-      if (game.model === "PAY") {
+      const game = await lockGameAndSweep(tx, gameId, user.id);
+      if (game.model === "PAY" && game.effectivePriceCents > 0) {
         throw new Error("This game requires payment to reserve.");
       }
 
@@ -75,8 +77,9 @@ export async function reserveSpot(gameId: string): Promise<ActionResult> {
       if (taken >= game.capacity) throw new Error("This game is full.");
 
       const data = {
-        status: game.model === "FREE" ? ("CONFIRMED" as const) : ("PROVISIONAL" as const),
-        payStatus: game.model === "FREE" ? ("FREE" as const) : ("UNPAID" as const),
+        priceCents: game.effectivePriceCents,
+        status: game.effectivePriceCents === 0 ? ("CONFIRMED" as const) : ("PROVISIONAL" as const),
+        payStatus: game.effectivePriceCents === 0 ? ("FREE" as const) : ("UNPAID" as const),
         waitlistPos: null,
         offerExpiresAt: null,
       };
@@ -85,6 +88,7 @@ export async function reserveSpot(gameId: string): Promise<ActionResult> {
         create: { userId: user.id, gameId, ...data },
         update: data,
       });
+      await compactWaitlist(tx, gameId);
     });
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not reserve." };
@@ -102,7 +106,7 @@ export async function joinWaitlist(gameId: string): Promise<ActionResult> {
 
   try {
     await db.$transaction(async (tx) => {
-      const game = await lockGameAndSweep(tx, gameId);
+      const game = await lockGameAndSweep(tx, gameId, user.id);
       const existing = await tx.registration.findUnique({
         where: { userId_gameId: { userId: user.id, gameId } },
       });
@@ -122,12 +126,15 @@ export async function joinWaitlist(gameId: string): Promise<ActionResult> {
         status: "WAITLISTED" as const,
         payStatus: "UNPAID" as const,
         waitlistPos: count + 1,
+        waitlistedAt: new Date(),
+        priceCents: null,
       };
       await tx.registration.upsert({
         where: { userId_gameId: { userId: user.id, gameId } },
         create: { userId: user.id, gameId, ...data },
         update: data,
       });
+      await compactWaitlist(tx, gameId);
     });
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not join." };
@@ -207,41 +214,10 @@ export async function acceptOffer(gameId: string): Promise<ActionResult> {
   const user = await requireUser();
 
   try {
-    await db.$transaction(async (tx) => {
-      const game = await lockGameForRegistration(tx, gameId);
-      if (game.model === "PAY") {
-        throw new Error("Checkout is required for this spot.");
-      }
-
-      const reg = await tx.registration.findUnique({
-        where: { userId_gameId: { userId: user.id, gameId } },
-      });
-      if (!reg || reg.status !== "OFFERED") {
-        throw new Error("No active offer.");
-      }
-      if (reg.offerExpiresAt && reg.offerExpiresAt <= new Date()) {
-        await tx.registration.update({
-          where: { id: reg.id },
-          data: { status: "CANCELLED", offerExpiresAt: null },
-        });
-        await promoteWaitlist(tx, gameId);
-        throw new Error("This offer expired.");
-      }
-
-      await tx.registration.update({
-        where: { id: reg.id },
-        data: {
-          status: game.model === "FREE" ? "CONFIRMED" : "PROVISIONAL",
-          payStatus: game.model === "FREE" ? "FREE" : "UNPAID",
-          waitlistPos: null,
-          offerExpiresAt: null,
-        },
-      });
-    });
+    const result = await acceptSpotOffer(gameId, user.id);
+    revalidateAll(gameId);
+    return result;
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not accept offer." };
   }
-
-  revalidateAll(gameId);
-  return { ok: true };
 }

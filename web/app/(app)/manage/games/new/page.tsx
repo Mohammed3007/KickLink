@@ -8,7 +8,7 @@ export default async function NewGamePage() {
   const user = await requireUser();
   const orgs = await db.organization.findMany({
     where: { memberships: { some: { userId: user.id, role: "ORGANIZER" } } },
-    select: { id: true, name: true, sport: true },
+    select: { id: true, name: true, sport: true, membershipEnabled: true, leagues: { select: { id: true, name: true } } },
     orderBy: { name: "asc" },
   });
 

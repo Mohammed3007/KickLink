@@ -8,6 +8,7 @@ const ORGANIZER_TABS = [
   { href: "/manage/games", label: "Games", icon: CalendarDays },
   { href: "/manage/games/new", label: "New game", icon: CalendarDays },
   { href: "/manage/members", label: "Members", icon: Users },
+  { href: "/manage/memberships", label: "Memberships & leagues", icon: CreditCard },
   { href: "/manage/announcements", label: "Announcements", icon: Megaphone },
   { href: "/manage/finances", label: "Finances", icon: CreditCard },
 ];

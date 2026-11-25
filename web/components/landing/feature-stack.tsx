@@ -33,8 +33,8 @@ const PANELS: { title: string; body: string; rows: [string, string, Tone][] }[] 
   },
   {
     title: "Weekly pickup ready",
-    body: "Create one-off games today, with recurring pickup series becoming the foundation for weekly clubs.",
-    rows: [["Sunday Night 7s", "This week", "ok"], ["Recurring series", "Coming", "gd"]],
+    body: "Create one-off games or schedule a weekly pickup series, with players reserving and paying for each game separately.",
+    rows: [["Sunday Night 7s", "This week", "ok"], ["Recurring series", "Weekly", "gd"]],
   },
 ];
 

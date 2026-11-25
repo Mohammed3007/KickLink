@@ -22,8 +22,7 @@ export default async function ManageGamePage({
   if (!game) notFound();
   if (!(await isOrganizer(user.id, game.orgId))) redirect(`/games/${id}`);
 
-  const paidCount = game.registrations.filter((registration) => registration.payStatus === "PAID").length;
-  const revenue = paidCount * game.priceCents;
+  const revenue = game.collectedCents;
   const unpaid = game.confirmed.filter((registration) => registration.status === "PROVISIONAL");
   const presentCount = game.confirmed.filter((registration) => registration.attendance?.status === "PRESENT").length;
   const noShowCount = game.confirmed.filter((registration) => registration.attendance?.status === "NO_SHOW").length;
@@ -70,6 +69,7 @@ export default async function ManageGamePage({
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-ink">{registration.user.name}</p>
                   <PayBadge status={registration.payStatus} />
+                  <p className="mt-1 text-xs text-ink-3">Session fee {formatPrice(registration.priceCents ?? game.regularPriceCents)}</p>
                 </div>
                 <RosterActions
                   registrationId={registration.id}

@@ -21,4 +21,5 @@ jobs:
         env:
           APP_URL: ${{ vars.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-        run: curl --fail-with-body -sS -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL%/}/api/cron/sweep"
+        run: |
+          curl --fail-with-body -sS -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL%/}/api/cron/sweep"

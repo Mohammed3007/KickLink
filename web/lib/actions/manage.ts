@@ -12,11 +12,15 @@ import {
   offerExpiry,
   promoteWaitlist,
   queueOfferEmails,
+  orderedWaitlist,
 } from "@/lib/waitlist";
 import { refundGamePayments } from "@/lib/refunds";
 import { formDataToSafeObject } from "@/lib/input";
 import { addWeeksInZone, parseLocalDateTime } from "@/lib/timezone";
 import { APP_TIME_ZONE } from "@/lib/utils";
+import { clubVisibility } from "@/lib/queries";
+import { sessionTerms } from "@/lib/session-terms";
+import { markOfflinePayment } from "@/lib/registration-updates";
 
 const OCCUPYING = ["CONFIRMED", "PROVISIONAL", "OFFERED"] as const;
 
@@ -42,7 +46,7 @@ export async function createGame(
   // price comes in as dollars from the form
   const priceCents = Math.round(parseFloat(String(raw.price || "0")) * 100);
 
-  const parsed = createGameSchema.safeParse({ ...raw, priceCents });
+  const parsed = createGameSchema.safeParse({ ...raw, priceCents, memberPriceCents: raw.memberPrice === "" || raw.memberPrice == null ? null : Math.round(Number(raw.memberPrice) * 100) });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the form." };
   }
@@ -51,7 +55,7 @@ export async function createGame(
   if (startsAt <= new Date()) {
     return { error: "Choose a future start time." };
   }
-  const data = { ...parsed.data, startsAt };
+  const data = { ...parsed.data, startsAt, ...(parsed.data.model === "FREE" ? { priceCents: 0, memberPriceCents: null } : {}) };
   const addWeeks = (date: Date, weeks: number) => addWeeksInZone(date, weeks, APP_TIME_ZONE);
 
   try {
@@ -59,6 +63,15 @@ export async function createGame(
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Not authorized." };
   }
+
+  const org = await db.organization.findUniqueOrThrow({ where: { id: data.orgId } });
+  if ((data.access === "MEMBERS" || data.memberPriceCents != null || data.leagueId) && !org.membershipEnabled) {
+    return { error: "Enable paid club memberships before adding membership benefits." };
+  }
+  if (data.memberPriceCents != null && data.memberPriceCents > data.priceCents) return { error: "Member price cannot exceed the regular price." };
+  if (data.leagueId && !await db.league.findFirst({ where: { id: data.leagueId, orgId: data.orgId } })) return { error: "Choose a league from this club." };
+  if (data.leagueId && data.access !== "MEMBERS") return { error: "League sessions must use paid-members-only access." };
+  const benefits = { access: data.access, memberPriceCents: data.memberPriceCents, leagueId: data.leagueId || null };
 
   const firstGame = await db.$transaction(async (tx) => {
     if (data.recurrenceMode === "WEEKLY") {
@@ -79,6 +92,7 @@ export async function createGame(
           durationMins: data.durationMins,
           format: data.format,
           skill: data.skill,
+          ...benefits,
           priceCents: data.priceCents,
           capacity: data.capacity,
           model: data.model,
@@ -101,6 +115,7 @@ export async function createGame(
               durationMins: data.durationMins,
               format: data.format,
               skill: data.skill,
+              ...benefits,
               priceCents: data.priceCents,
               capacity: data.capacity,
               model: data.model,
@@ -122,6 +137,7 @@ export async function createGame(
         durationMins: data.durationMins,
         format: data.format,
         skill: data.skill,
+        ...benefits,
         priceCents: data.priceCents,
         capacity: data.capacity,
         model: data.model,
@@ -162,7 +178,7 @@ export async function postAnnouncement(
 
   // Notify all members.
   const members = await db.membership.findMany({
-    where: { orgId: parsed.data.orgId },
+    where: { orgId: parsed.data.orgId, OR: clubVisibility(user.id).OR },
     select: { userId: true },
   });
   const org = await db.organization.findUnique({
@@ -195,35 +211,15 @@ export type RosterResult = { ok: true } | { ok: false; error: string };
  */
 export async function markPaid(registrationId: string): Promise<RosterResult> {
   const user = await requireUser();
-  const reg = await db.registration.findUnique({
-    where: { id: registrationId },
-    include: { game: true },
-  });
-  if (!reg) return { ok: false, error: "Registration not found." };
-  await assertOrganizer(user.id, reg.game.orgId);
-  if (!["PROVISIONAL", "OFFERED"].includes(reg.status) || reg.payStatus === "PAID") {
-    return { ok: false, error: "Only players holding an unpaid spot can be marked paid." };
+  const result = await markOfflinePayment(registrationId, user.id);
+  if (result.gameId) {
+    revalidatePath(`/manage/games/${result.gameId}`);
+    revalidatePath(`/games/${result.gameId}`);
+    revalidatePath("/home");
+    revalidatePath("/profile");
+    revalidatePath("/manage/finances");
   }
-
-  await db.$transaction(async (tx) => {
-    await tx.registration.update({
-      where: { id: registrationId },
-      data: { status: "CONFIRMED", payStatus: "PAID", offerExpiresAt: null },
-    });
-    // No Stripe id: refunds for in-person payments are settled by the organizer.
-    await tx.payment.create({
-      data: {
-        userId: reg.userId,
-        gameId: reg.gameId,
-        amountCents: reg.game.priceCents,
-        method: "In person (marked by organizer)",
-        status: "SUCCEEDED",
-      },
-    });
-  });
-  revalidatePath(`/manage/games/${reg.gameId}`);
-  revalidatePath(`/games/${reg.gameId}`);
-  return { ok: true };
+  return result;
 }
 
 /** Organizer removes a player from a game, refunding any card payment in full. */
@@ -305,12 +301,22 @@ export async function offerWaitlistedSpot(registrationId: string) {
       where: { gameId: reg.gameId, status: { in: [...OCCUPYING] } },
     });
     if (taken >= game.capacity) return;
+    const fullGame = await tx.game.findUniqueOrThrow({ where: { id: game.id } });
+    const candidates = await orderedWaitlist(tx, fullGame);
+    const candidate = candidates.find((entry) => entry.id === registrationId);
+    if (!candidate?.eligible) return;
+    const priorityAhead = candidates.some((entry) => entry.eligible && entry.priority && !candidate.priority);
+    if (priorityAhead) return;
+    const terms = await sessionTerms(tx, reg.userId, fullGame);
+    if (terms.error) return;
+
 
     await tx.registration.update({
       where: { id: registrationId },
       data: {
         status: "OFFERED",
-        payStatus: game.model === "FREE" ? "FREE" : "UNPAID",
+        payStatus: terms.priceCents === 0 ? "FREE" : "UNPAID",
+        priceCents: null,
         waitlistPos: null,
         offerExpiresAt: offerExpiry(game.startsAt),
         offerEmailedAt: null,

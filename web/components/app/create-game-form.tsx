@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, Repeat2 } from "lucide-react";
 import { createGame, type FormState } from "@/lib/actions/manage";
@@ -21,9 +21,11 @@ function Submit() {
 export function CreateGameForm({
   orgs,
 }: {
-  orgs: { id: string; name: string; sport?: string }[];
+  orgs: { id: string; name: string; sport?: string; membershipEnabled: boolean; leagues: { id: string; name: string }[] }[];
 }) {
   const [state, action] = useActionState<FormState, FormData>(createGame, undefined);
+  const [orgId, setOrgId] = useState(orgs[0]?.id ?? "");
+  const selectedOrg = orgs.find((org) => org.id === orgId);
 
   return (
     <form action={action} className="space-y-4">
@@ -35,7 +37,7 @@ export function CreateGameForm({
       )}
 
       <Field label="Club" htmlFor="orgId">
-        <Select id="orgId" name="orgId" required>
+        <Select id="orgId" name="orgId" required value={orgId} onChange={(event) => setOrgId(event.target.value)}>
           {orgs.map((o) => (
             <option key={o.id} value={o.id}>
               {o.name}
@@ -104,6 +106,25 @@ export function CreateGameForm({
             <option value="PAY">Pay to join</option>
             <option value="LATER">Pay later</option>
             <option value="FREE">Free</option>
+          </Select>
+        </Field>
+      </div>
+
+      <div className="space-y-3 rounded-2xl border border-line p-4">
+        <Field label="Session access" htmlFor="access">
+          <Select key={orgId} id="access" name="access" defaultValue="CLUB">
+            <option value="CLUB">Club roster only (existing invite access)</option>
+            <option value="OPEN">Open to members and non-members</option>
+            <option value="MEMBERS" disabled={!selectedOrg?.membershipEnabled}>Active paid members only</option>
+          </Select>
+        </Field>
+        <Field label="Member price (CAD)" htmlFor="memberPrice" hint="Leave blank to use the regular price. Enter 0 for a free member spot.">
+          <Input key={`price-${orgId}`} id="memberPrice" name="memberPrice" type="number" min="0" step="0.01" max="500" disabled={!selectedOrg?.membershipEnabled} />
+        </Field>
+        <Field label="League (optional)" htmlFor="leagueId" hint="League sessions require paid-members-only access and league enrollment.">
+          <Select key={`league-${orgId}`} id="leagueId" name="leagueId" defaultValue="">
+            <option value="">Pickup session · no league</option>
+            {selectedOrg?.leagues.map((league) => <option key={league.id} value={league.id}>{league.name}</option>)}
           </Select>
         </Field>
       </div>

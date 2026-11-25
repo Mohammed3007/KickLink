@@ -33,6 +33,13 @@ const sections: LegalSection[] = [
     ],
   },
   {
+    heading: "Club memberships",
+    body: [
+      "Participating clubs offer monthly or yearly paid memberships. The club's membership page shows the recurring price in Canadian dollars and the benefits included. Membership fees and session registration fees are separate.",
+      "Membership renews automatically at the selected rate until renewal is cancelled. You can cancel renewal from the club membership page; access continues through the paid period. Cancelling membership renewal does not cancel your existing game registrations. Contact the organizer about membership billing or refund questions.",
+    ],
+  },
+  {
     heading: "Acceptable use",
     body: [
       [

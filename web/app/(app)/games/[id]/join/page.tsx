@@ -20,7 +20,7 @@ export default async function CheckoutPage({
   if (!game) notFound();
 
   // Free games don't go through checkout.
-  if (game.model === "FREE") redirect(`/games/${id}`);
+  if (game.effectiveModel === "FREE" || game.accessError) redirect(`/games/${id}`);
 
   if (success) {
     return (

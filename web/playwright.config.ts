@@ -31,12 +31,14 @@ export default defineConfig({
           DISABLE_RATE_LIMITS: "true",
           HOSTNAME: "127.0.0.1",
           PLAYWRIGHT_TEST: "true",
+          STRIPE_SECRET_KEY: "",
+          ALLOW_DEV_PAYMENTS: "true",
           PORT: String(port),
           NEXTAUTH_URL: baseURL,
           NEXT_PUBLIC_APP_URL: baseURL,
           NEXT_PUBLIC_DISABLE_ANALYTICS: "true",
           DATABASE_URL:
-            process.env.DATABASE_URL ??
+            process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL ??
             "postgresql://postgres:postgres@127.0.0.1:5432/kicklink?schema=public",
         },
       }

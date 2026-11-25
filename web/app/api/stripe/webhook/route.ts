@@ -8,6 +8,7 @@ import { refundPayment } from "@/lib/refunds";
 import { CHECKOUT_HOLD_MINUTES, CHECKOUT_SESSION_MINUTES, promoteWaitlist } from "@/lib/waitlist";
 import { readLimitedText, REQUEST_LIMITS } from "@/lib/input";
 import { stripeWebhookSecrets, verifyStripeEvent } from "@/lib/stripe-webhook";
+import { stripeId, syncClubSubscription } from "@/lib/club-billing";
 
 export async function POST(req: Request) {
   // Not IP rate limited: Stripe delivers from a small set of shared IPs, and
@@ -36,13 +37,19 @@ export async function POST(req: Request) {
   // Checkout sessions are created on the platform account (destination
   // charges). Ignore checkout events from a connected account's own Stripe
   // activity so an organizer's unrelated sales can't touch registrations.
-  if (event.account && event.type.startsWith("checkout.")) {
+  if (event.account && /^(checkout\.|invoice\.|customer\.subscription\.)/.test(event.type)) {
     return NextResponse.json({ received: true, ignored: "connected-account checkout" });
   }
 
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
+      if (session.metadata?.purpose === "club_membership") {
+        const id = stripeId(session.subscription);
+        if (id) await syncClubSubscription(stripe, id, event.created);
+        revalidatePath("/", "layout");
+        break;
+      }
       const userId = session.metadata?.userId;
       const gameId = session.metadata?.gameId;
       if (userId && gameId && session.payment_status === "paid") {
@@ -97,6 +104,21 @@ export async function POST(req: Request) {
         });
         revalidatePath(`/games/${gameId}`);
       }
+      break;
+    }
+    case "invoice.paid":
+    case "invoice.payment_failed": {
+      const invoice = event.data.object as Stripe.Invoice;
+      const id = stripeId(invoice.parent?.subscription_details?.subscription);
+      if (id) await syncClubSubscription(stripe, id, event.created);
+      revalidatePath("/", "layout");
+      break;
+    }
+    case "customer.subscription.created":
+    case "customer.subscription.updated":
+    case "customer.subscription.deleted": {
+      await syncClubSubscription(stripe, (event.data.object as Stripe.Subscription).id, event.created);
+      revalidatePath("/", "layout");
       break;
     }
     case "account.updated": {

@@ -1,6 +1,9 @@
 # KickLink Production-Readiness Audit
 
-Date: 2026-10-22 (supersedes the 2026-06-28 audit)
+Date: 2026-10-22 (supersedes the 2026-06-28 audit). Payment, waitlist,
+workflow and browser-test notes updated 2026-11-10. ROS memberships, pricing,
+league enrollment and priority queues added 2026-11-24. Next.js 16.4.5 and the
+Prisma-tooling Effect override clear the production dependency audit.
 
 Status definitions:
 
@@ -26,8 +29,8 @@ coverage.
 | Dependency vulnerabilities | Done | Next 16.4, Auth.js beta.32, Prisma 7.10; `npm audit --omit=dev` is clean and gated in CI (high+). Dev-only eslint advisories remain. |
 | Payments without Stripe | Done | Test-payment flow is off in production unless `ALLOW_DEV_PAYMENTS=true`. |
 | Refunds | Done | Real Stripe refunds (transfer and fee reversed) 24h+ before kickoff and on organizer removal; cancel button states the outcome. |
-| Overfilled games | Done | Payment confirmation and "Mark paid" check capacity under a row lock; late payments are refunded (`refundDue`, retried by the sweep). Integration test covers concurrent payments. |
-| Abandoned holds / offers | Done | Checkout sessions expire at 31 min, holds at 36; offers at 15. Released on page view, by the 10-minute GitHub sweep, and by a daily Vercel cron. |
+| Overfilled games | Done | Payment confirmation locks the game before checking capacity; "Mark paid" locks it, rechecks the registration, expires stale holds and records offline payment once. Late card payments without capacity are flagged for refund (`refundDue`, retried by the sweep). |
+| Abandoned holds / offers | Done | Checkout sessions expire at 31 min, normal holds at 36; offers last 2 hours, 1 hour inside 24 hours of kickoff, or 30 minutes inside 6 hours, capped at kickoff. A longer offer window may be retained during checkout. Expired-offer rejection commits cleanup. Sweep workflow YAML corrected; deployment still needs configured schedules/secrets. |
 | Club privacy | Done | Games, rosters and announcements are members-only; outsiders see a join card. |
 | Invite codes | Done | 8 random characters (CSPRNG), joins rate limited, organizers can rotate codes. Codes created before this change are weak; rotate them (Manage → Members). |
 | Account takeover via Google | Done | Requires Google-verified email; drops the password on unverified accounts before linking. |
@@ -58,8 +61,8 @@ coverage.
 | --- | --- | --- |
 | CI | Done | Lint, unit, Postgres integration tests, prod audit, build, Playwright smoke. |
 | Unit tests | Done | Validators, rate limits, IP handling, time zones, refund policy, config checks, audit hash. |
-| Integration tests | Partial | Payments, waitlist expiry, refunds against Postgres. Server actions (auth/permission paths) still untested at this level. |
-| E2E tests | Partial | Public pages, auth forms, redirects, legal pages. No logged-in join/pay/organizer flows yet. |
+| Integration tests | Partial | Payments, waitlist expiry, refunds, concurrent offline payment retries, cancellation races, organizer authorization and expired-offer cleanup against Postgres. Broader server-action paths still need coverage. |
+| E2E tests | Partial | Public pages, hydrated auth controls/static assets, redirects, legal pages, and signed-in payment-status updates when `TEST_DATABASE_URL` is set. ROS coverage also includes member/non-member session payments, protected sessions, league enrollment, and organizer membership/weekly-session creation. Live Stripe lifecycle checks remain a rollout step. |
 | Docker image | Partial | Compose updated; image build not verified in the October review (no Docker daemon available). |
 | Load testing | Missing | Add light k6 runs for login, games list and checkout. |
 | Accessibility | Partial | No automated axe checks yet. |
@@ -67,8 +70,10 @@ coverage.
 ## Known Limitations
 
 - Single app-wide time zone. Clubs in other regions need a per-club zone.
-- Upfront series passes, recurring billing and spot transfers exist in the
-  schema but are not implemented; the UI no longer offers them.
+- Upfront/recurring payment modes and transfer-policy fields exist in the schema,
+  but series passes, game-series recurring billing and spot transfers are not implemented.
+  Automatically renewing club memberships and paid-member league enrollment are implemented.
+  Weekly series with individual per-game registration/payment are implemented.
 - Pay-later (`LATER`) games have no payment deadline; organizers mark payments
   or remove players.
 - Rate limiting and analytics write to Postgres on each request; fine at MVP

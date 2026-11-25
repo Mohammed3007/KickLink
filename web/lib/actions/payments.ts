@@ -1,5 +1,6 @@
 "use server";
 
+import { sessionTerms } from "@/lib/session-terms";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
@@ -23,71 +24,32 @@ export type PayResult = { ok: true } | { ok: false; error: string };
  * accepted waitlist offers expire after CHECKOUT_HOLD_MINUTES so an abandoned
  * checkout doesn't block the spot; pay-later reservations keep no expiry.
  */
-async function ensureProvisionalHold(
-  userId: string,
-  gameId: string
-): Promise<string | null> {
-  try {
-    await db.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${gameId} FOR UPDATE`;
-      const game = await tx.game.findUnique({ where: { id: gameId } });
-      if (!game) throw new Error("missing");
-      if (game.startsAt <= new Date()) throw new Error("closed");
-      await expireStaleHolds(tx, gameId);
-
-      const holdUntil = new Date(Date.now() + CHECKOUT_HOLD_MINUTES * 60_000);
-      const existing = await tx.registration.findUnique({
-        where: { userId_gameId: { userId, gameId } },
-      });
-      if (existing?.status === "CONFIRMED") throw new Error("confirmed");
-      if (existing?.status === "OFFERED" || (existing?.status === "PROVISIONAL" && existing.offerExpiresAt)) {
-        // Accepted offer or retried checkout: (re)start the checkout hold,
-        // keeping whatever is left of a longer offer window.
-        const keepUntil =
-          existing.offerExpiresAt && existing.offerExpiresAt > holdUntil
-            ? existing.offerExpiresAt
-            : holdUntil;
-        await tx.registration.update({
-          where: { id: existing.id },
-          data: { status: "PROVISIONAL", payStatus: "UNPAID", offerExpiresAt: keepUntil },
-        });
-        return;
-      }
-      if (existing?.status === "PROVISIONAL") return; // pay-later reservation
-
-      const taken = await tx.registration.count({
-        where: { gameId, status: { in: [...OCCUPYING] } },
-      });
-      if (taken >= game.capacity) throw new Error("full");
-      const data = {
-        status: "PROVISIONAL" as const,
-        payStatus: "UNPAID" as const,
-        waitlistPos: null,
-        offerExpiresAt: game.model === "PAY" ? holdUntil : null,
-      };
-      await tx.registration.upsert({
-        where: { userId_gameId: { userId, gameId } },
-        create: { userId, gameId, ...data },
-        update: data,
-      });
-    });
-  } catch (error) {
-    if (error instanceof Error && error.message === "confirmed") {
-      return "You're already confirmed.";
+async function ensureProvisionalHold(userId: string, gameId: string): Promise<{ priceCents: number } | { error: string }> {
+  return db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "Game" WHERE "id" = ${gameId} FOR UPDATE`;
+    const game = await tx.game.findUnique({ where: { id: gameId } });
+    if (!game) return { error: "Game not found." };
+    if (game.startsAt <= new Date()) return { error: "Registration is closed for this game." };
+    const terms = await sessionTerms(tx, userId, game);
+    if (terms.error) return { error: terms.error };
+    await expireStaleHolds(tx, gameId);
+    const existing = await tx.registration.findUnique({ where: { userId_gameId: { userId, gameId } } });
+    if (existing?.status === "CONFIRMED") return { error: "You're already confirmed." };
+    const holdsSpot = existing && ["OFFERED", "PROVISIONAL"].includes(existing.status);
+    if (!holdsSpot) {
+      const taken = await tx.registration.count({ where: { gameId, status: { in: [...OCCUPYING] } } });
+      if (taken >= game.capacity) return { error: "This game just filled up." };
     }
-    if (error instanceof Error && error.message === "closed") {
-      return "Registration is closed for this game.";
-    }
-    if (error instanceof Error && error.message === "missing") {
-      return "Game not found.";
-    }
-    if (error instanceof Error && error.message === "full") {
-      return "This game just filled up.";
-    }
-    console.error("Could not hold spot for checkout", error);
-    return "Could not hold your spot. Please try again.";
-  }
-  return null;
+    const priceCents = existing?.status === "PROVISIONAL" && existing.priceCents != null ? existing.priceCents : terms.priceCents;
+    if (priceCents === 0) return { error: "This spot is free for you. Reserve it from the game page." };
+    const holdUntil = new Date(Date.now() + CHECKOUT_HOLD_MINUTES * 60_000);
+    const offerExpiresAt = game.model === "PAY"
+      ? (existing?.offerExpiresAt && existing.offerExpiresAt > holdUntil ? existing.offerExpiresAt : holdUntil)
+      : null;
+    const data = { status: "PROVISIONAL" as const, payStatus: "UNPAID" as const, priceCents, offerExpiresAt, waitlistPos: null };
+    await tx.registration.upsert({ where: { userId_gameId: { userId, gameId } }, create: { userId, gameId, ...data }, update: data });
+    return { priceCents };
+  });
 }
 
 /** Create a Stripe Checkout Session (destination charge to the club). */
@@ -106,19 +68,15 @@ export async function createCheckout(gameId: string): Promise<CheckoutResult> {
     return { error: "This game does not require checkout." };
   }
 
-  const membership = await db.membership.findUnique({
-    where: { userId_orgId: { userId: user.id, orgId: game.orgId } },
-  });
-  if (!membership) return { error: "Join the club first." };
-
   if (!game.org.stripeAccountId || !game.org.chargesEnabled) {
     return { error: "This club hasn't finished setting up payments yet." };
   }
 
   const hold = await ensureProvisionalHold(user.id, gameId);
-  if (hold) return { error: hold };
+  if ("error" in hold) return hold;
+  const priceCents = hold.priceCents;
 
-  const fee = Math.round((game.priceCents * platformFeeBps()) / 10000);
+  const fee = Math.round((priceCents * platformFeeBps()) / 10000);
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
@@ -129,7 +87,7 @@ export async function createCheckout(gameId: string): Promise<CheckoutResult> {
         quantity: 1,
         price_data: {
           currency: "cad",
-          unit_amount: game.priceCents,
+          unit_amount: priceCents,
           product_data: { name: game.title, description: game.org.name },
         },
       },
@@ -142,7 +100,7 @@ export async function createCheckout(gameId: string): Promise<CheckoutResult> {
       userId: user.id,
       gameId,
       orgId: game.orgId,
-      amountCents: String(game.priceCents),
+      amountCents: String(priceCents),
       platformFeeCents: String(fee),
     },
     customer_email: user.email,
@@ -165,7 +123,7 @@ export async function devCompletePayment(gameId: string): Promise<PayResult> {
   }
   const user = await requireUser();
   const game = await db.game.findFirst({
-    where: { id: gameId, org: { memberships: { some: { userId: user.id } } } },
+    where: { id: gameId },
   });
   if (!game) return { ok: false, error: "Game not found." };
   if (game.startsAt <= new Date()) return { ok: false, error: "Registration is closed for this game." };
@@ -174,12 +132,12 @@ export async function devCompletePayment(gameId: string): Promise<PayResult> {
   }
 
   const hold = await ensureProvisionalHold(user.id, gameId);
-  if (hold) return { ok: false, error: hold };
+  if ("error" in hold) return { ok: false, error: hold.error };
 
   const result = await confirmPaidRegistration({
     userId: user.id,
     gameId,
-    amountCents: game.priceCents,
+    amountCents: hold.priceCents,
     method: "Test payment (dev)",
     stripeId: `dev_${Date.now().toString(36)}`,
   });

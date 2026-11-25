@@ -1,4 +1,7 @@
 import { spawn } from "node:child_process";
+import { prepareStandalone } from "./prepare-standalone.mjs";
+
+await prepareStandalone();
 
 const child = spawn(process.execPath, [".next/standalone/server.js"], {
   env: process.env,

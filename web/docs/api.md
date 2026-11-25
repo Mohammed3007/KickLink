@@ -47,5 +47,11 @@ Stripe webhook endpoint.
 - Rejects oversized bodies.
 - Requires Stripe signature verification against `STRIPE_WEBHOOK_SECRET`
   (platform endpoint) or `STRIPE_CONNECT_WEBHOOK_SECRET` (connected-accounts endpoint).
-- Handles `checkout.session.completed`, `checkout.session.expired` and `account.updated`.
-- Ignores checkout events that originate on a connected account.
+- Handles `checkout.session.completed`, `checkout.session.expired`, `account.updated`,
+  `invoice.paid`, `invoice.payment_failed`, and `customer.subscription.created`,
+  `.updated`, and `.deleted`.
+- Membership events retrieve current Stripe state and grant benefits only from a
+  paid CAD invoice for the expected club, customer, subscription attempt and rate.
+  Invoice IDs deduplicate renewals; delayed events cannot reduce paid-through dates.
+- Ignores Checkout, invoice, and subscription events originating on a connected
+  account; subscriptions are created on the platform with destination charges.

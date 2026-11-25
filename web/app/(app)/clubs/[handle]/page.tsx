@@ -72,11 +72,17 @@ export default async function ClubPage({
           )}
         </Card>
 
+        {club.membershipEnabled && <Card className="space-y-3 p-5">
+          <h2 className="font-bold">{club.paidMember ? "Your paid membership is active" : "Become a paid member"}</h2>
+          <p className="text-sm text-ink-2">Join leagues, unlock member-only sessions, and get member prices{club.memberWaitlistPriority ? " and waitlist priority" : ""}.</p>
+          <Link className="inline-block text-brand-700 underline" href={`/clubs/${club.handle}/membership`}>Memberships & leagues</Link>
+        </Card>}
+
         {!club.isMember && <JoinClubForm />}
 
         {/* Games */}
-        {club.isMember && <SectionLabel>Upcoming games</SectionLabel>}
-        {!club.isMember ? null : games.length > 0 ? (
+        <SectionLabel>Upcoming games</SectionLabel>
+        {games.length > 0 ? (
           <div className="space-y-2.5">
             {games.map((g) => (
               <GameCard
